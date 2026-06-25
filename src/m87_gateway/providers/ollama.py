@@ -1,4 +1,6 @@
 import os
+import time
+
 import httpx
 
 from m87_gateway.api.schemas import ChatCompletionRequest
@@ -20,6 +22,7 @@ class OllamaProvider(Provider):
         return {
             "id": "m87-ollama-response",
             "object": "chat.completion",
+            "created": int(time.time()),
             "model": f"ollama:{model}",
             "choices": [
                 {
@@ -28,4 +31,5 @@ class OllamaProvider(Provider):
                     "finish_reason": "stop",
                 }
             ],
+            "usage": None,
         }
