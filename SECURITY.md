@@ -7,7 +7,7 @@ Please do not open public GitHub issues for security vulnerabilities.
 Report security concerns by emailing:
 
 ```text
-contact@sandeepsingh.us
+m87admin@m87techlabs.com
 ```
 
 Include:
