@@ -1,0 +1,11 @@
+services:
+  m87-ai-gateway:
+    build: .
+    container_name: m87-ai-gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./config.example.yaml:/app/config.example.yaml:ro
+    restart: unless-stopped

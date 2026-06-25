@@ -1,0 +1,32 @@
+[project]
+name = "m87-ai-gateway"
+version = "0.1.0"
+description = "Secure, observable, provider-neutral AI gateway for production apps."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "M87 Tech Labs", email = "contact@sandeepsingh.us" }
+]
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "pyyaml>=6.0.0",
+  "httpx>=0.27.0",
+  "prometheus-client>=0.20.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.5.0"
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
