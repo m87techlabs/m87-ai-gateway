@@ -27,7 +27,8 @@ container are separate actions. Complete the relevant gates before each action.
    python -m pip wheel --no-deps . --wheel-dir dist
    ```
 
-4. Follow [container deployment](container-deployment.md) and record health,
+4. Check [deferred validation](../validation.md) and arrange an on-demand Docker
+   session. Follow [container deployment](container-deployment.md) and record health,
    valid/invalid auth, allowed/disallowed models, and a real chat result for each
    advertised provider. Run guardrail and safe-error checks for the declared scope.
 5. Review files, package contents, history, tags, and release assets for secrets,
@@ -35,13 +36,14 @@ container are separate actions. Complete the relevant gates before each action.
    well as file contents. If historical findings remain, resolve them through a
    separate history-cleanup or clean-public-repository plan before changing visibility.
 6. Confirm a working private security-reporting path, issue templates, and
-   dependency update automation. Enable required CI/review protections when the
+   dependency update automation. Enable appropriate CI/branch protections when the
    repository's hosting plan permits them. Do not change visibility to bypass a plan limit.
 
 ## Publish
 
-1. Merge the approved release change through a pull request and verify CI on the
-   release commit. Check `git status --short` is empty.
+1. Commit and push the validated release preparation to `main` using the current
+   direct-push workflow; verify CI on that exact commit. Check `git status --short`
+   is empty. Do not open a pull request unless explicitly requested.
 2. Set a generic project author/committer identity for release metadata.
 3. Create a new annotated tag for that exact reviewed commit. Inspect the tag
    before pushing it. `scripts/release-tag.sh` creates and immediately pushes a

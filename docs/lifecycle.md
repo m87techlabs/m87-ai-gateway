@@ -27,10 +27,10 @@ stateDiagram-v2
 
 1. Describe the user problem, affected contract, and success criteria in an issue.
 2. Record substantial design choices and update the roadmap status.
-3. Implement on a focused branch with tests, configuration examples, and docs.
+3. Implement a focused change with tests, configuration examples, and docs.
 4. Review behavior, failure handling, privacy, and operational implications.
 5. Record validation against the exact commit and supported environment.
-6. Merge through a pull request and update the changelog.
+6. Update the changelog, commit and push to `main`, then verify hosted CI.
 7. Publish only after release gates pass; collect feedback for the next milestone.
 
 A new provider additionally needs shared contract tests, an opt-in live smoke
@@ -58,12 +58,13 @@ planned cloud integration passed these gates.
 
 ## Git and review policy
 
-- Use focused branches such as `docs/product-foundation` or `feature/provider-errors`.
+- Commit and push directly to `main` for the current development workflow.
+- Do not open pull requests unless explicitly requested; temporary branches are optional.
 - Use Conventional Commits describing the change and its reason.
 - Use a generic project identity for new commits; keep personal identity and
   generated-tool attribution out of commit messages and repository content.
-- Require CI and review for the default branch when repository settings permit it.
-- Prefer squash merging focused pull requests; do not force-push the default branch.
+- Run relevant local checks before pushing and verify hosted CI afterward.
+- Fetch and preserve remote changes; never force-push the default branch.
 - Preserve existing tags and published history. Any history cleanup needs a
   separate, reviewed plan because it changes commit identifiers and downstream clones.
 
@@ -73,9 +74,14 @@ The repository currently remains private. Squash merging, automatic deletion of
 merged branches, dependency alerts, and automated dependency security fixes are
 enabled. Workflow permissions are restricted to read-only repository contents.
 The current hosting plan does not permit private-repository branch protection;
-review and passing CI remain the contribution policy. Before public release,
-enable required `test` and `docs` checks, pull-request review, and protection
-against force pushes/deletion. Verify private vulnerability reporting separately.
+local checks and hosted CI remain required under the direct-to-main workflow.
+Before public release, reassess the review workflow and enable appropriate
+protection against force pushes/deletion and required `test` and `docs` checks
+when available. Verify private vulnerability reporting separately.
+
+Docker is an on-demand validation dependency, not a prerequisite for ordinary
+documentation work. See [validation status](validation.md) for completed checks,
+deferred container/provider checks, and their prerequisites.
 
 ## Compatibility and maintenance
 

@@ -32,21 +32,25 @@ python scripts/check_docs.py
 
 When packaging changes, also build a wheel. Use synthetic data and mocked
 providers in normal tests; live provider checks must be deliberate and opt-in.
+Docker is enabled on demand to conserve local resources. See
+[validation status](docs/validation.md) for deferred checks and when it is needed.
 
 ## Branches and commits
 
-Use focused branches: `feature/<name>`, `fix/<name>`, or `docs/<name>`.
+The current workflow commits and pushes directly to `main`. Temporary focused
+branches are optional. Do not open a pull request unless explicitly requested.
 Use Conventional Commits, for example:
 
 - `feat: add provider error normalization`
 - `fix: authorize resolved model routes`
 - `docs: add gateway operations runbooks`
 
-Push the branch and open a pull request. Require passing CI and review before
-merging when hosting settings support enforcement. Prefer squash merging a
-focused change. Do not force-push the default branch or move published tags.
+Run the relevant local checks, fetch remote changes, and push a normal fast-forward
+update to `main`. Verify hosted CI on the pushed commit. Preserve others' work;
+never force-push the default branch or move published tags. Record any unverified
+checks and their prerequisites in the validation page.
 
-## Pull requests
+## Change documentation
 
 Explain the user-visible result, important design choices, validation performed,
 and any remaining limitations. Update the changelog, configuration examples,

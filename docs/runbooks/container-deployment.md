@@ -7,6 +7,11 @@ Docker with Compose. Have a provider endpoint/model and credentials available.
 For development, access the published port through the local machine. A shared
 deployment requires TLS ingress and an explicit network/access policy.
 
+Docker is enabled on demand in the development environment. Arrange a session
+only when the checks in [validation status](../validation.md) are needed; batch
+related checks and stop this project's test deployment afterward. Enabling or
+stopping Docker Desktop itself remains an operator action.
+
 ## Procedure
 
 1. Follow [quickstart](../quickstart.md) to prepare the ignored `.env` file and

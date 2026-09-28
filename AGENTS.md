@@ -36,8 +36,19 @@ repository content or new commit metadata/messages. Configure identity locally t
 this repository; do not change global Git identity. Preserve published history/tags;
 historical identity cleanup requires a separate reviewed plan before public release.
 
-Use focused branches, Conventional Commits, CI, and pull requests. Preserve the
-historical `v0.1.0` tag and choose a new version for the completed local MVP.
+Current workflow: commit and push directly to `main` after local checks, then verify
+hosted CI. Do not open a pull request unless explicitly requested. Use Conventional
+Commits and the generic repository-local identity. Fetch before pushing; preserve
+remote work and never force-push `main`. Topic branches are optional temporary
+workspaces, not a required review flow.
+
+Docker in WSL is enabled only when needed because local resources are constrained.
+Keep documentation, lint, unit tests, and package builds independent of Docker.
+State the required container checks before asking the operator to enable it; batch
+those checks and stop project containers afterward. Record verified and deferred
+checks in `docs/validation.md`, including prerequisites and release implications.
+
+Preserve the historical `v0.1.0` tag and choose a new version for the completed local MVP.
 `docs/roadmap.md` and `docs/lifecycle.md` define current release gates; references
 to the original v0.1.0 MVP below describe the baseline requirements to complete.
 

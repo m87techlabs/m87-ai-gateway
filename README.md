@@ -84,7 +84,7 @@ from Docker. See the [full quickstart](docs/quickstart.md) and
 - [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
 - [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
 - [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
-- [Operational runbooks](docs/runbooks/README.md)
+- [Operational runbooks](docs/runbooks/README.md) · [Validation status](docs/validation.md)
 - [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## Repository structure

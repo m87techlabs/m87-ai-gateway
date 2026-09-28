@@ -20,6 +20,7 @@ gates in the lifecycle guide.
 | [Security](security.md) | Trust boundaries and security controls |
 | [Observability](observability.md) | Current logging and planned operational signals |
 | [Runbooks](runbooks/README.md) | Repeatable operational procedures |
+| [Validation status](validation.md) | Verified checks, deferred checks, and on-demand Docker policy |
 
 ## Read implementation status literally
 

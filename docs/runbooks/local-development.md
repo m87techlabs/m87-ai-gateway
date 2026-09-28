@@ -4,6 +4,8 @@
 
 Use this procedure to prepare a development checkout. Install Python 3.11+ and
 Git. A provider is needed for a real chat request, but not for the unit tests.
+Docker can stay disabled for this procedure. See [validation status](../validation.md)
+for the separate checks that require a container runtime.
 
 ## Procedure
 

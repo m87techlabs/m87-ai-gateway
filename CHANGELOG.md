@@ -17,6 +17,8 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - FastAPI gateway skeleton.
 
 ### Changed
+- Adopted direct-to-main development with local checks and hosted CI verification.
+- Documented deferred runtime checks and resource-conscious, on-demand Docker validation.
 - Defined public gateway framework scope and major cloud provider targets.
 - Replaced personal package contact metadata with a generic project identity.
 - Documented actual implementation gaps and preserved the historical release tag.
