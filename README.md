@@ -1,91 +1,108 @@
 # M87 AI Gateway
 
-Secure, observable, provider-neutral AI gateway for production apps.
+A lightweight, self-hostable AI gateway for developers and small organizations.
 
-> Early-stage open-source project. Built in public by M87 Tech Labs.
+> Early development. The goal is a public gateway framework with a tested core,
+> documented extension points, and straightforward operations. Cloud provider
+> coverage and a stable extension contract are planned.
 
-## Why this exists
+## What it does
 
-Most AI apps start by calling LLM providers directly from a frontend or application backend. That works for demos, but production systems need a controlled service layer for authentication, authorization, model routing, guardrails, logging, observability, and cost visibility.
+Applications call one gateway instead of managing every model provider directly.
+The gateway centralizes application authentication, model access, routing, policy
+checks, and operational visibility.
 
-M87 AI Gateway provides a lightweight, self-hostable AI gateway that apps can call instead of calling providers directly.
-
-```text
-Frontend / App / Worker / Backend
-        |
-        | HTTPS + API key / JWT
-        v
-M87 AI Gateway
-        |
-        | AuthN/AuthZ, routing, guardrails, logs, metrics
-        v
-OpenAI / Anthropic / Ollama / Bedrock / other providers
+```mermaid
+flowchart LR
+    App[Application backend] --> Gateway[M87 AI Gateway]
+    Gateway --> Auth[Identity and model access]
+    Auth --> Policy[Routing and policy checks]
+    Policy --> Adapter[Provider adapter]
+    Adapter --> OpenAI[OpenAI]
+    Adapter --> Ollama[Ollama]
+    Adapter -. Planned .-> Cloud[AWS Bedrock, Azure OpenAI, Vertex AI]
+    Gateway -.-> Logs[Audit logs and planned metrics]
 ```
 
 ## Current status
 
-This repository is in early development. The first public milestone is `v0.1.0`.
+Implemented foundations include YAML/environment configuration, bearer API keys,
+requested-model allowlists, direct/default routing, basic OpenAI and Ollama adapters,
+a hardcoded blocklist, selected audit events, and a health endpoint.
 
-## Planned v0.1.0 features
-
-- OpenAI-compatible `/v1/chat/completions` endpoint
-- API key authentication
-- OpenAI provider
-- Ollama provider
-- Rule-based model routing
-- Basic guardrail blocklist
-- Structured JSON logs
-- Docker Compose quickstart
-- Prometheus `/metrics` endpoint foundation
+The MVP still needs configuration wiring, resolved-model authorization, safe
+provider errors, complete request logging, metrics, and broader provider tests.
+Streaming, enforced rate limits/budgets, and major cloud adapters are not implemented.
+See the [roadmap](docs/roadmap.md) for acceptance criteria.
 
 ## Quickstart
 
-Copy the environment file:
+Prerequisites: Docker with Compose and either a reachable Ollama service with a
+model installed or an OpenAI account with model access.
 
-```bash
-cp .env.example .env
-```
+1. Copy the example environment if you do not already have a local file:
 
-Edit `.env` and set at least one provider key, or run with Ollama locally.
+   ```bash
+   cp .env.example .env
+   ```
 
-Start the gateway:
+2. Edit the ignored `.env` file:
+   - Replace `GATEWAY_APP_API_KEY` with a private app key.
+   - **Ollama:** keep the default route and set `OLLAMA_BASE_URL` to a URL
+     reachable from the gateway container.
+   - **OpenAI:** set `OPENAI_API_KEY` and
+     `GATEWAY_DEFAULT_MODEL=openai:gpt-4.1-mini`. Use another configured and
+     allowed model if needed.
 
-```bash
-docker compose up --build
-```
+3. Start and check the gateway:
 
-Call the gateway:
+   ```bash
+   docker compose up --build -d
+   curl --fail-with-body http://localhost:8080/health
+   ```
 
-```bash
-curl http://localhost:8080/v1/chat/completions \
-  -H "Authorization: Bearer demo-app-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "auto",
-    "messages": [
-      {"role": "user", "content": "Explain AWS VPC in simple terms"}
-    ]
-  }'
-```
+4. Enter the same app key at the prompt and send a synthetic request:
 
-## Repo structure
+   ```bash
+   read -r -s -p "Gateway app key: " GATEWAY_APP_KEY
+   printf '\n'
+   curl --fail-with-body http://localhost:8080/v1/chat/completions \
+     -H "Authorization: Bearer ${GATEWAY_APP_KEY}" \
+     -H "Content-Type: application/json" \
+     -d '{"model":"auto","messages":[{"role":"user","content":"Explain a network gateway in one sentence."}]}'
+   unset GATEWAY_APP_KEY
+   ```
+
+The Compose port binds to host loopback. For host-based Ollama,
+`host.docker.internal` is mapped, but the service still needs a listener reachable
+from Docker. See the [full quickstart](docs/quickstart.md) and
+[container runbook](docs/runbooks/container-deployment.md).
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
+- [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
+- [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
+- [Operational runbooks](docs/runbooks/README.md)
+- [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+## Repository structure
 
 ```text
-src/m87_gateway/        Gateway source code
-docs/                   Project documentation
-examples/               Sample integrations
-deploy/                 Deployment assets
-tests/                  Automated tests
-.github/                GitHub workflows and templates
+src/m87_gateway/   Gateway core and provider adapters
+tests/            Automated checks
+docs/             Product and technical documentation
+docs/runbooks/    Operational procedures
+examples/         Integration and observability examples
+deploy/           Deployment documentation and future assets
+.github/          CI, dependency updates, and contribution templates
 ```
 
-## Versioning
+## Versioning and license
 
-This project uses Semantic Versioning.
+Versions follow Semantic Versioning. The historical `v0.1.0` tag is the initial
+scaffold; the completed MVP will use a new version. Public preview and stable
+release criteria are defined in the [lifecycle](docs/lifecycle.md).
 
-- `v0.x.x`: early development; breaking changes may occur
-- `v1.0.0`: stable public API and configuration contract
-
-## License
-
-Apache License 2.0.
+Licensed under [Apache License 2.0](LICENSE).

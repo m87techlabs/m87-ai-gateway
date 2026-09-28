@@ -14,7 +14,7 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Provide a minimal reproducible example.
+      description: Provide a minimal example. Remove credentials, personal data, and real prompts.
     validations:
       required: true
   - type: input

@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+dist
+build
+**/*.egg-info
+config.yaml
+config.local.yaml
+*.pem
+*.key

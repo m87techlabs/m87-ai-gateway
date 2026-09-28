@@ -1,6 +1,45 @@
 # AGENTS.md — M87 AI Gateway
 
-This file is the working guide for AI coding agents such as Codex in VS Code. Follow it when modifying this repository.
+This file is the project working guide. Follow it when modifying this repository.
+
+## Product direction and durable project context
+
+Build a public, self-hostable gateway framework for developers and small organizations.
+Treat it as a product with a documented core, tested provider interfaces, operational
+runbooks, and explicit release gates. Public availability follows readiness; routine
+development does not change repository visibility.
+
+The core covers API compatibility, application authentication and authorization,
+deterministic routing, provider adapters, policy checks, safe errors, observability,
+and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are
+explicit provider targets. Hosting on AWS, Azure, and Google Cloud is a separate
+deployment objective. Cloud capabilities remain planned until tested and documented.
+
+Use these pages as the lasting source of project context:
+
+- `docs/README.md`: documentation navigation and status conventions.
+- `docs/roadmap.md`: milestone scope, acceptance criteria, and provider coverage.
+- `docs/design.md`: product boundaries, assumptions, and extension design.
+- `docs/glossary.md`: shared terminology.
+- `docs/lifecycle.md`: development, publication, compatibility, and retirement.
+- `docs/stack.md`: technology choices and deployment targets.
+- `docs/runbooks/`: repeatable procedures for implemented operational workflows.
+
+Keep existing files and entry points. Update related docs and runbooks with behavior
+changes. Use Mermaid diagrams where a flow, boundary, or lifecycle is easier to
+understand visually. Distinguish implemented, partial, planned, and verified
+capabilities; a parsed configuration field is not an enforced feature.
+
+Use generic project identities and examples. Do not add personal names, personal
+email addresses, workstation paths, credentials, or generated-tool attribution to
+repository content or new commit metadata/messages. Configure identity locally to
+this repository; do not change global Git identity. Preserve published history/tags;
+historical identity cleanup requires a separate reviewed plan before public release.
+
+Use focused branches, Conventional Commits, CI, and pull requests. Preserve the
+historical `v0.1.0` tag and choose a new version for the completed local MVP.
+`docs/roadmap.md` and `docs/lifecycle.md` define current release gates; references
+to the original v0.1.0 MVP below describe the baseline requirements to complete.
 
 ## Project identity
 
@@ -430,7 +469,7 @@ vMAJOR.MINOR.PATCH
 Initial release plan:
 
 ```text
-v0.1.0 - Local Gateway MVP
+Next 0.1.x - Complete Local Gateway MVP (preserve historical v0.1.0 tag)
 v0.2.0 - Observability Release
 v0.3.0 - Security Foundation
 v0.4.0 - Cloud-Native Deployment
@@ -441,11 +480,12 @@ v1.0.0 - Stable Public API
 Use annotated Git tags for releases:
 
 ```bash
-git tag -a v0.1.0 -m "Release v0.1.0"
-git push origin v0.1.0
+# Example only: first verify this version is unused and all release gates pass.
+git tag -a v0.1.1 -m "Release v0.1.1"
+git push origin v0.1.1
 ```
 
-## First implementation tasks for Codex
+## Implementation sequence
 
 Work in this order:
 

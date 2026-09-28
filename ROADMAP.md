@@ -1,58 +1,20 @@
 # Roadmap
 
-## v0.1.0 - Local Gateway MVP
+The detailed roadmap is maintained in [docs/roadmap.md](docs/roadmap.md).
 
-- OpenAI-compatible `/v1/chat/completions` endpoint
-- API key authentication
-- OpenAI provider
-- Ollama provider
-- Rule-based model routing
-- Basic guardrail blocklist
-- Structured JSON logs
-- Docker Compose
-- README quickstart
+| Milestone | Outcome |
+| --- | --- |
+| Next 0.1.x | Complete and verify the local gateway MVP |
+| 0.2 | Operational visibility |
+| 0.3 | Security and resource controls |
+| 0.4 | Major cloud providers and tested deployment paths |
+| 0.5 | Stable extension interfaces and developer experience |
+| 1.0 | Stable public API, configuration, and adapter contracts |
 
-## v0.2.0 - Observability Release
+The project targets developers and small organizations. AWS Bedrock, Azure OpenAI,
+and Google Cloud Vertex AI are explicit provider targets; hosting the gateway on
+those clouds is a separate requirement.
 
-- Prometheus `/metrics`
-- Request ID propagation
-- Latency metrics
-- Token usage metrics
-- Provider error metrics
-- Grafana dashboard example
-- Splunk-friendly JSON logs
-
-## v0.3.0 - Security Foundation
-
-- JWT validation
-- Per-app allowed models
-- Rate limits
-- PII redaction
-- Prompt injection checks
-- Audit log schema
-- Expanded security documentation
-
-## v0.4.0 - Cloud-Native Deployment
-
-- Helm chart
-- Kubernetes manifests
-- Terraform ECS example
-- Cloudflare Worker sample app
-- PostgreSQL support
-
-## v0.5.0 - Developer Experience
-
-- Config validation CLI
-- Health checks
-- JavaScript and Python integration examples
-- Provider fallback
-- Better error messages
-
-## v1.0.0 - Stable Public API
-
-- Stable config schema
-- Stable OpenAI-compatible endpoint behavior
-- Documented provider interface
-- Documented plugin interface
-- Production deployment guide
-- Security review checklist
+The historical `v0.1.0` tag remains unchanged. Public availability follows the
+[lifecycle release gates](docs/lifecycle.md), with a clearly scoped preview
+possible before every roadmap item is complete.

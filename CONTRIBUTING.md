@@ -1,44 +1,60 @@
 # Contributing
 
-Thank you for your interest in contributing to M87 AI Gateway.
+## Working agreement
 
-## Development principles
+Read [AGENTS.md](AGENTS.md), the [design](docs/design.md), and the
+[roadmap](docs/roadmap.md) before making a substantial change. Keep scope focused
+on gateway capabilities and label implementation status accurately.
 
-- Keep the gateway lightweight and self-hostable.
-- Prefer clear interfaces over provider-specific shortcuts.
-- Do not log secrets, API keys, raw authorization headers, or sensitive credentials.
-- Keep public APIs documented and backward-compatible where possible.
+Use generic project examples and identities. Do not add personal contact details,
+workstation paths, credentials, private prompts, or generated-tool attribution
+to repository content or new commits.
 
-## Branch naming
+For this repository, configure a project identity locally:
 
-Use descriptive branches:
-
-```text
-feature/openai-provider
-feature/prometheus-metrics
-fix/auth-header-validation
-docs/quickstart
+```bash
+git config --local user.name "M87 Gateway Maintainers"
+git config --local user.email "maintainers@example.invalid"
 ```
 
-## Commit style
+The email is a reserved example address, not a support mailbox. Account-level
+hosting records and existing Git history are separate from new commit metadata.
 
-Use Conventional Commits:
+## Development
 
-```text
-feat: add OpenAI-compatible chat endpoint
-fix: validate missing authorization header
-docs: add local quickstart
-chore: add Docker Compose
-test: add auth middleware tests
-refactor: extract provider interface
-security: redact API key from logs
+Follow [local development](docs/runbooks/local-development.md). Before submitting:
+
+```bash
+ruff check src tests scripts
+pytest -q
+python scripts/check_docs.py
 ```
+
+When packaging changes, also build a wheel. Use synthetic data and mocked
+providers in normal tests; live provider checks must be deliberate and opt-in.
+
+## Branches and commits
+
+Use focused branches: `feature/<name>`, `fix/<name>`, or `docs/<name>`.
+Use Conventional Commits, for example:
+
+- `feat: add provider error normalization`
+- `fix: authorize resolved model routes`
+- `docs: add gateway operations runbooks`
+
+Push the branch and open a pull request. Require passing CI and review before
+merging when hosting settings support enforcement. Prefer squash merging a
+focused change. Do not force-push the default branch or move published tags.
 
 ## Pull requests
 
-Before opening a pull request:
+Explain the user-visible result, important design choices, validation performed,
+and any remaining limitations. Update the changelog, configuration examples,
+roadmap/support claims, and applicable runbooks together.
 
-1. Run tests.
-2. Run linting.
-3. Update documentation if behavior changes.
-4. Update `CHANGELOG.md` for notable changes.
+Use Mermaid for flows or boundaries that benefit from a diagram. Preserve existing
+documentation entry points. A provider contribution needs capability documentation,
+contract tests, credential guidance, and troubleshooting steps.
+
+See [lifecycle](docs/lifecycle.md) for release gates and [SECURITY.md](SECURITY.md)
+for private vulnerability reporting.

@@ -1,29 +1,32 @@
-# Security Policy
+# Security policy
 
 ## Reporting vulnerabilities
 
-Please do not open public GitHub issues for security vulnerabilities.
-
-Report security concerns by emailing:
+Do not disclose vulnerabilities in public issues. Use the existing project
+security mailbox:
 
 ```text
 m87admin@m87techlabs.com
 ```
 
-Include:
+If GitHub private vulnerability reporting is enabled, the repository Security tab
+provides another private reporting path. Verify reporting availability before a
+public release.
 
-- Affected version or commit
-- Description of the issue
-- Steps to reproduce
-- Potential impact
-- Suggested remediation, if known
+Include the affected version/commit, impact, and a minimal reproduction. Remove
+credentials, personal data, and real prompt content. Share sensitive reproduction
+material only through the agreed private channel.
 
-## Security design goals
+## Supported versions
 
-M87 AI Gateway should:
+The project is in early development. Fixes target the latest released version;
+there is no long-term support commitment for older versions. A historical tag
+does not establish production readiness. See the [lifecycle](docs/lifecycle.md).
 
-- Avoid logging secrets or authorization headers.
-- Support per-app authentication and authorization.
-- Support model allowlists.
-- Provide structured audit logs.
-- Make guardrail behavior explicit and configurable.
+## Security design
+
+See [security architecture and current limits](docs/security.md). The current
+gateway has app keys and requested-model authorization; several controls remain
+planned. Follow [incident response](docs/runbooks/incident-response.md) for an
+operational incident and [configuration changes](docs/runbooks/configuration-changes.md)
+for credential rotation.

@@ -1,12 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "m87-ai-gateway"
 version = "0.1.0"
-description = "Secure, observable, provider-neutral AI gateway for production apps."
+description = "A lightweight, self-hostable AI gateway for applications."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [
-  { name = "M87 Tech Labs", email = "contact@sandeepsingh.us" }
+  { name = "M87 AI Gateway Maintainers" }
 ]
 dependencies = [
   "fastapi>=0.115.0",
@@ -23,9 +27,20 @@ dev = [
   "ruff>=0.5.0"
 ]
 
+[project.urls]
+Repository = "https://github.com/m87techlabs/m87-ai-gateway"
+Documentation = "https://github.com/m87techlabs/m87-ai-gateway/tree/main/docs"
+Issues = "https://github.com/m87techlabs/m87-ai-gateway/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
