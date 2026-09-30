@@ -9,9 +9,9 @@
 | Validation | Pydantic v2 | Request/response and configuration models |
 | Configuration | YAML, PyYAML, environment variables | Implemented loader; some settings are not connected to runtime behavior |
 | Provider HTTP | HTTPX | Async OpenAI and Ollama requests; currently creates a client per request |
-| Logging | Python logging and JSON serialization | Partial audit logging; default formatter adds a text prefix |
-| Metrics | Prometheus client | Dependency declared; endpoint/instrumentation not implemented |
-| Tests | pytest and FastAPI TestClient | Eight baseline tests; provider calls are mocked in API tests |
+| Logging | JSON stdout and an optional rotating JSONL file | Correlated metadata plus explicitly enabled bounded content capture |
+| Metrics | Prometheus client | Per-process `/metrics` with bounded labels |
+| Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Configuration, policy, adapter, error, metrics, and logging checks; live providers deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
 | Containers | Docker and Docker Compose | Loopback publishing and host mapping configured; live container validation is pending |

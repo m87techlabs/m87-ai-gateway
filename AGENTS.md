@@ -370,7 +370,11 @@ Never log:
 - Full completions by default
 - Secrets or credentials
 
-Future option: allow prompt/response logging only when explicitly enabled per environment.
+Prompt/response capture is implemented only for non-streaming chat. It requires
+both an environment-level traffic-log switch and per-app permission, writes to a
+private rotating JSONL file, and remains best effort. Metadata stdout and metrics
+must never contain message/completion text. Future remote exporters must consume
+sanitized events asynchronously and define retention/access controls.
 
 ## Metrics design
 
@@ -600,4 +604,3 @@ Use honest maturity language:
 - “Developer preview”
 - “Local MVP”
 - “Built in public”
-

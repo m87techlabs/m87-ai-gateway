@@ -35,7 +35,8 @@ def check_document(path: Path) -> list[str]:
             ):
                 if language == "mermaid":
                     content = [
-                        item.strip() for item in diagram_lines
+                        item.strip()
+                        for item in diagram_lines
                         if item.strip() and not item.strip().startswith("%%")
                     ]
                     if not content or not MERMAID.match(content[0]):

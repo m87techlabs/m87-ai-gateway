@@ -35,6 +35,12 @@ curl --fail-with-body http://localhost:8080/health
 Expect HTTP 200 with `status: ok`. The port is published on host loopback.
 Health checks only the gateway process, not provider access.
 
+Confirm that aggregate metrics are available on the operator network:
+
+```bash
+curl --fail-with-body http://localhost:8080/metrics
+```
+
 ## Send a request
 
 In Bash, enter the same app key configured in `.env`:
@@ -72,5 +78,7 @@ Expect `401`.
 
 - [Local Python development](runbooks/local-development.md)
 - [Provider troubleshooting](runbooks/provider-troubleshooting.md)
+- [Private LLM traffic logging](runbooks/traffic-logging.md)
+- [Worker-to-local inference](integrations/worker-local-inference.md)
 - [Configuration and limitations](configuration.md)
 - [Roadmap and release readiness](roadmap.md)

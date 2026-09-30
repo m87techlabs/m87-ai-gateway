@@ -1,58 +1,77 @@
 # Configuration
 
-The gateway loads YAML into Pydantic models and applies selected environment
-overrides. Settings are cached for the process lifetime; restart after changes.
+The gateway loads YAML, applies selected environment overrides, and validates it
+at startup. Unknown fields, malformed routes/endpoints, duplicate app IDs/keys,
+and invalid limits fail startup. Settings are cached until the process restarts.
 
-## File selection
+## File selection and overrides
 
-The loader uses an explicit path when supplied by code. Otherwise it looks for:
-
-1. `M87_GATEWAY_CONFIG`, then `GATEWAY_CONFIG`.
-2. `config.yaml`, then `config.example.yaml` in the working directory.
-3. An ancestor `config.example.yaml` relative to the configuration module.
-
-A missing selected file currently falls back to empty settings instead of failing
-startup. Always verify the selected file exists. Unknown configuration fields are
-generally ignored; accepting a file does not establish that every setting is used.
-
-For local customization, copy the example to ignored `config.yaml` and point
-`M87_GATEWAY_CONFIG` at it. Compose mounts only `config.example.yaml` by default;
-add a matching read-only mount if selecting another file inside the container.
-
-## Environment variables
-
-| Variable | Current effect |
-| --- | --- |
-| `M87_GATEWAY_CONFIG` / `GATEWAY_CONFIG` | Select YAML file |
-| `GATEWAY_NAME`, `GATEWAY_ENVIRONMENT`, `GATEWAY_LOG_LEVEL` | Override parsed gateway metadata; not all metadata drives app/log setup |
-| `SERVER_HOST`, `SERVER_PORT` | Override parsed settings; Uvicorn CLI arguments still control the actual listener |
-| `GATEWAY_DEFAULT_MODEL` | Override the default route used by `auto` |
-| `GATEWAY_APP_API_KEY` / `M87_GATEWAY_APP_API_KEY` | Override the first `auth.api_keys` entry's `key` |
-| `GATEWAY_APP_ID` / `M87_GATEWAY_APP_ID` | Override the first `auth.api_keys` entry's app ID |
-| `GATEWAY_ALLOWED_MODELS` | Comma-separated allowlist override for the first `auth.api_keys` entry |
-| `OPENAI_API_KEY` | Read directly by the OpenAI adapter |
-| `OLLAMA_BASE_URL` | Read directly by the Ollama adapter |
+The loader uses an explicit code-supplied path, then `M87_GATEWAY_CONFIG` or
+`GATEWAY_CONFIG`, then `config.yaml` or `config.example.yaml` in the working
+directory. An explicitly selected missing file fails startup. Without a file,
+the default configuration has no app keys and denies application access. Ancestor
+directories are not searched for demonstration keys.
 
 The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
-`--env-file .env` or an already configured process environment.
+`--env-file .env` or a configured process environment.
 
-The example uses `auth.api_keys[].key`. The loader also accepts
-`apps[].api_key`, but environment app-key overrides do not replace those entries.
-An `auth.api_keys` entry using `api_key` instead of `key` can also retain its
-old key due to alias precedence. Use the shipped spelling or edit such entries
-directly until override behavior is corrected.
+| Variable | Effect |
+| --- | --- |
+| `M87_GATEWAY_CONFIG` / `GATEWAY_CONFIG` | Select YAML file |
+| `GATEWAY_NAME`, `GATEWAY_ENVIRONMENT`, `GATEWAY_LOG_LEVEL` | Parsed gateway metadata; audit events remain at INFO independently |
+| `SERVER_HOST`, `SERVER_PORT` | Validated server settings; Uvicorn CLI still selects the actual listener |
+| `GATEWAY_DEFAULT_MODEL` | Override the concrete default route |
+| `GATEWAY_APP_API_KEY` / `M87_GATEWAY_APP_API_KEY` | Replace the first configured app key |
+| `GATEWAY_APP_ID` / `M87_GATEWAY_APP_ID` | Override that app's ID |
+| `GATEWAY_ALLOWED_MODELS` | Comma-separated allowlist; an empty value clears access |
+| `OPENAI_API_KEY` | Default OpenAI credential variable |
+| `OLLAMA_BASE_URL` | Default Ollama endpoint override |
 
-## Current enforcement
+For app overrides, `apps` takes precedence when non-empty; otherwise the first
+`auth.api_keys` entry is used. Both `key` and `api_key` spellings are supported
+and old keys are removed during replacement. Use one app collection where practical.
+All app identities and keys must be unique across both collections.
 
-| Section | Implemented | Not yet enforced |
-| --- | --- | --- |
-| App identity | Key lookup and requested-model allowlist | Rate limits and monthly budgets |
-| Routing | Concrete routes and `auto` default | Configured rules and final-target authorization |
-| Guardrails | Hardcoded terms in source | YAML enable flag/terms, size limits, response checks |
-| Providers | OpenAI/Ollama using fixed environment variable names | YAML enable flags, alternate credential variable names, custom OpenAI endpoint |
-| Observability | Selected audit events | YAML toggles and Prometheus endpoint |
-| Server | Parsed host/port values | Automatic Uvicorn listener configuration |
+## Models and routing
 
-Keep provider secrets in environment/secret delivery systems. Example keys are
-for demonstrations only. See [configuration changes](runbooks/configuration-changes.md)
-for validation, rotation, verification, and rollback.
+Identifiers use `openai:model` or `ollama:model`. An app must allow both
+`auto` and the selected concrete target. Unknown providers and malformed model
+names are rejected. Models are not checked against a live provider catalog.
+
+Direct concrete requests route to that model. For `auto`, the first matching
+rule wins; otherwise `routing.default_model` is used. Rules can match
+`when_model: auto`, `when_task`, or both. Targets accept `route_to` or the
+legacy `model` spelling. Final-target authorization always applies.
+
+## Providers
+
+Each provider accepts `enabled`, `base_url`, `base_url_env`, `api_key_env`,
+and `timeout_seconds`. Endpoints from the configured environment variable take
+precedence over YAML and are validated at startup. HTTP(S) endpoints cannot
+contain embedded credentials, queries, or fragments.
+
+OpenAI defaults to `https://api.openai.com/v1` and reads its configured credential
+variable when invoked. Ollama defaults to `http://localhost:11434` and calls
+`/api/chat`. A disabled provider is rejected before invocation. Missing OpenAI
+credentials return a safe 503 when that provider is selected.
+
+## Policy and observability
+
+| Setting | Behavior |
+| --- | --- |
+| `guardrails.blocklist.enabled` / `blocked_terms` | Case-insensitive configured request checks; matched terms are not echoed |
+| `guardrails.max_message_chars` | Per-message character bound; default 65,536 |
+| `guardrails.max_request_bytes` | Body limit before JSON parsing, including chunked bodies; default 262,144 bytes |
+| `observability.json_logs` | JSON metadata outcome events on stdout |
+| `observability.prometheus_metrics` | Metrics recording and `/metrics` endpoint |
+| `observability.traffic_log` | Optional private rotating JSONL storage and bounded content capture |
+| `apps[].capture_content` / `auth.api_keys[].capture_content` | Per-app permission, also requiring the global capture switch |
+| `rate_limit_per_minute`, `monthly_budget_usd` | Validated future policy fields; not enforced |
+
+The text-chat contract accepts messages, model, temperature, max_tokens, optional
+task, and `stream: false`. Streaming, tools, images, arbitrary extra options,
+and tool-role messages are rejected with a safe 422.
+
+See [observability](observability.md) for content storage and retention,
+[configuration changes](runbooks/configuration-changes.md) for rotation, and
+[Worker integration](integrations/worker-local-inference.md) for the reference use case.

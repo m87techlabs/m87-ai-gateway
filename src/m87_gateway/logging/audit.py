@@ -1,22 +1,141 @@
 import json
 import logging
+import os
+import re
+import stat
+import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Protocol
 
-logger = logging.getLogger("m87_gateway.audit")
-logging.basicConfig(level=logging.INFO)
+from m87_gateway.config import GatewaySettings
+from m87_gateway.metrics import GatewayMetrics
 
-REDACTED_KEYS = {"authorization", "api_key", "token", "password", "secret"}
-
-
-def _redact(data: dict) -> dict:
-    redacted = {}
-    for key, value in data.items():
-        if key.lower() in REDACTED_KEYS:
-            redacted[key] = "***REDACTED***"
-        else:
-            redacted[key] = value
-    return redacted
+REDACTED = "[REDACTED]"
+CREDENTIAL_PATTERN = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]+|\bsk-[a-z0-9_-]{8,}")
 
 
-def audit_log(event: str, **fields) -> None:
-    payload = {"event": event, **_redact(fields)}
-    logger.info(json.dumps(payload, default=str))
+class EventSink(Protocol):
+    """Local sink boundary; remote exporters should consume sanitized events asynchronously."""
+
+    def emit(self, event: dict) -> None: ...
+    def close(self) -> None: ...
+
+
+class PrivateRotatingHandler(RotatingFileHandler):
+    def _open(self):
+        no_follow = getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(
+            self.baseFilename,
+            os.O_WRONLY | os.O_APPEND | os.O_CREAT | no_follow,
+            0o600,
+        )
+        if stat.S_IMODE(os.fstat(descriptor).st_mode) & 0o077:
+            os.close(descriptor)
+            raise ValueError("Traffic log files must have owner-only permissions")
+        return os.fdopen(descriptor, "a", encoding="utf-8")
+
+    def handleError(self, record):
+        # Standard logging may dump the record to stderr. Never expose captured content that way.
+        raise OSError("Traffic log write failed") from None
+
+
+class JsonFileSink:
+    def __init__(self, path: str, max_bytes: int, backup_count: int):
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.handler = PrivateRotatingHandler(
+            destination,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        self.handler.setFormatter(logging.Formatter("%(message)s"))
+
+    def emit(self, event: dict) -> None:
+        record = logging.LogRecord(
+            "m87_gateway.traffic",
+            logging.INFO,
+            "",
+            0,
+            json.dumps(event),
+            (),
+            None,
+        )
+        self.handler.handle(record)
+
+    def close(self) -> None:
+        self.handler.close()
+
+
+class AuditRecorder:
+    def __init__(self, settings: GatewaySettings, metrics: GatewayMetrics):
+        self.settings = settings
+        self.metrics = metrics
+        self.logger = logging.Logger("m87_gateway.audit", level=logging.INFO)
+        self.logger.propagate = False
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        self.logger.addHandler(handler)
+        secret_values = [app.api_key for app in settings.configured_apps]
+        for name in ("openai", "ollama"):
+            variable = getattr(settings.providers, name).api_key_env
+            if variable and os.getenv(variable):
+                secret_values.append(os.environ[variable])
+        self.secrets = sorted(set(secret_values), key=len, reverse=True)
+        config = settings.observability.traffic_log
+        self.sink: EventSink | None = (
+            JsonFileSink(config.path, config.max_bytes, config.backup_count)
+            if config.path
+            else None
+        )
+
+    def redact(self, value):
+        if isinstance(value, str):
+            for secret in self.secrets:
+                value = value.replace(secret, REDACTED)
+            return CREDENTIAL_PATTERN.sub(REDACTED, value)
+        if isinstance(value, list):
+            return [self.redact(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self.redact(item) for key, item in value.items()}
+        return value
+
+    def content(self, value) -> tuple[str, bool]:
+        # Redact before truncation so a boundary cannot reveal a partial known credential.
+        serialized = json.dumps(self.redact(value), ensure_ascii=False)
+        limit = self.settings.observability.traffic_log.max_content_chars
+        return serialized[:limit], len(serialized) > limit
+
+    def record(self, metadata: dict, request_content=None, response_content=None) -> None:
+        event = self.redact(metadata)
+        if self.settings.observability.json_logs:
+            self.logger.info(json.dumps(event))
+        if self.sink is None:
+            return
+        stored = dict(event)
+        for name, value in (
+            ("request_content", request_content),
+            ("response_content", response_content),
+        ):
+            if value is not None:
+                stored[name], stored[f"{name}_truncated"] = self.content(value)
+        try:
+            self.sink.emit(stored)
+        except Exception:
+            if self.settings.observability.prometheus_metrics:
+                self.metrics.log_errors.inc()
+            self.logger.error(
+                json.dumps(
+                    {
+                        "event": "traffic_log_write_failed",
+                        "request_id": event["request_id"],
+                    }
+                )
+            )
+
+    def close(self) -> None:
+        if self.sink:
+            self.sink.close()
+        for handler in self.logger.handlers:
+            handler.close()

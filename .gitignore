@@ -16,3 +16,5 @@ build/
 *.egg-info/
 .coverage
 htmlcov/
+var/log/
+*.jsonl

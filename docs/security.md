@@ -4,46 +4,50 @@
 
 ```mermaid
 flowchart LR
-    User[End user] --> Backend[Application backend]
-    Backend -->|App bearer key over TLS| Gateway[Gateway]
-    Secrets[Operator-managed credentials] --> Gateway
-    Gateway -->|Provider credential| Provider[Model service]
-    Gateway --> SafeLogs[Restricted operational logs]
+    User[End user] --> Backend[Authenticated application or Worker]
+    Backend -->|App key over protected transport| Gateway[Gateway]
+    Secrets[Operator-managed provider credentials] --> Gateway
+    Gateway -->|Provider credentials| Provider[Model service]
+    Gateway --> Metadata[Metadata logs and metrics]
+    Gateway -. Explicit app and environment permission .-> Content[Private traffic file]
 ```
 
-The app key authenticates a calling backend. Keep it out of public browser code.
-Provider credentials remain server-side. Operators own TLS, network access, secret
-delivery, and credential rotation for their deployment.
+Keep gateway app keys out of public browser code. Provider credentials stay
+server-side. Operators own TLS, tunnel/edge policy, network access, and credential
+rotation. A tunnel does not replace gateway authentication.
 
-## Current controls and limits
+## Implemented controls
 
-- Bearer app-key authentication rejects missing and unknown keys.
-- Requested-model allowlists reject disallowed concrete requests.
-- `auto` does not yet re-authorize its resolved target.
-- The prompt blocklist is hardcoded; YAML policy settings are not connected.
-- Blocklist errors currently include the matched term.
-- Audit redaction checks top-level names only.
-- Rate limits, budgets, size limits, JWT, and response policies are not implemented.
-- Provider enable flags are ignored; they cannot disable access during an incident.
+- App bearer keys use constant-time comparison; missing/unknown keys fail closed.
+- Both the requested alias and resolved model require allowlist permission.
+- Disabled providers cannot be invoked.
+- Configuration is validated at startup, including explicit missing-file failures.
+- Body bytes, message count, and individual message sizes are bounded.
+- Configured blocklist matches return safe errors without the matched term.
+- Upstream bodies, credentials, and exception details stay out of client errors.
+- Metadata logs omit headers and content. Captured text requires two explicit
+  switches and a private rotating file with known-credential redaction.
 
-A keyword blocklist does not provide comprehensive prompt-injection protection.
-Configured controls must be verified before relying on them.
+Blocklists are limited policy checks, not comprehensive prompt-injection defenses.
+Captured free text can contain sensitive material that the redactor does not
+recognize. Use synthetic data for initial capture; define access and retention
+before collecting other content.
 
-## Operator practices
+## Current limits
 
-Use private app keys, keep credentials in an ignored local environment or managed
-secret source, and restrict ingress. The development Compose port binds to
-loopback; a shared service needs deliberate TLS and access configuration.
-Use synthetic prompts for diagnostics and sanitize shared logs.
+Rate/concurrency limits, budgets, JWT, response policy checks, distributed
+coordination, and remote log export are not implemented. Preserve existing
+application/origin controls when testing this gateway alongside another service.
+The metrics endpoint has no app-key auth and belongs on a private operator network.
 
-See [configuration changes](runbooks/configuration-changes.md) for rotation and
-[incident response](runbooks/incident-response.md) for containment.
+## Operations
 
-## Product requirements
+The development Compose port binds to loopback. A shared service needs deliberate
+TLS and access configuration. Mount traffic storage privately if persistence is
+needed; never expose it via a static server or public tunnel.
 
-The [design](design.md) and [roadmap](roadmap.md) require final-target authorization,
-safe errors, startup validation, bounded input, enforced resource controls, and
-tested provider identity mechanisms before advertising those capabilities.
-
-Report vulnerabilities through [SECURITY.md](../SECURITY.md). Public release also
-requires a review of content, history, release assets, and commit metadata.
+See [configuration changes](runbooks/configuration-changes.md),
+[traffic logging](runbooks/traffic-logging.md), and
+[incident response](runbooks/incident-response.md). Report vulnerabilities through
+[SECURITY.md](../SECURITY.md). Public release also requires the existing history
+and artifact privacy review.

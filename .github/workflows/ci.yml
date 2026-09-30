@@ -35,7 +35,9 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint
-        run: ruff check src tests scripts
+        run: |
+          ruff check src tests scripts
+          ruff format --check src tests scripts
 
       - name: Test
         run: pytest
@@ -59,3 +61,7 @@ jobs:
 
       - name: Check documentation links and fences
         run: python scripts/check_docs.py
+
+      - name: Test Worker example
+        working-directory: examples/cloudflare-worker
+        run: npm test

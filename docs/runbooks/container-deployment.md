@@ -45,9 +45,9 @@ stopping Docker Desktop itself remains an operator action.
 
 ## Success checks
 
-The container stays running, health returns 200, valid chat succeeds, and missing
-auth returns 401. Record the image/commit and configuration revision without
-recording secrets. Metrics and readiness are not implemented yet.
+The container stays running, health and metrics return 200, valid chat succeeds,
+and missing auth returns 401. Record the image/commit and configuration revision
+without recording secrets. Readiness is not implemented yet.
 
 ## Recovery and rollback
 

@@ -13,12 +13,11 @@ does not reload the running service.
 
 1. Identify the actual configuration file and environment overrides using
    [configuration](../configuration.md). Do not print the full runtime environment.
-2. Edit the ignored configuration or secret source. For the shipped
-   `auth.api_keys` example, `GATEWAY_APP_API_KEY` overrides the first entry's `key`.
-   The alternative `apps`/`api_key` spelling has override limitations; edit that
-   entry directly until override behavior is corrected.
+2. Edit the ignored configuration or secret source. `GATEWAY_APP_API_KEY`
+   replaces the first entry in a non-empty `apps` collection, or otherwise the
+   first `auth.api_keys` entry. Both `key` and `api_key` spellings are accepted.
 3. For a model change, put both `auto` and the concrete target in the app's
-   allowlist. The runtime does not yet re-authorize the resolved `auto` target.
+   allowlist. The runtime authorizes both the alias and resolved target.
 4. Validate the configuration in the same environment as the application. For a
    local virtual environment, load `.env` without printing settings:
 
@@ -33,8 +32,9 @@ does not reload the running service.
    PY
    ```
 
-   Validation errors may include input values; review them locally. Schema
-   acceptance does not prove that every setting is enforced or a provider is reachable.
+   Startup errors are deliberately generic. Run direct validation locally for
+   field-level diagnostics and keep that output private. Schema acceptance does
+   not prove that a provider is reachable or future limit fields are enforced.
 5. Coordinate app-key updates with callers. There is no dedicated key-rotation
    API or automatic grace period; a single-key change can interrupt old clients.
 6. Restart the process, or recreate the Compose service to apply environment changes:

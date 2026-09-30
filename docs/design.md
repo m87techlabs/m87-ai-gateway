@@ -26,12 +26,12 @@ examples. A separately supported embedded SDK is a future decision.
 | Capability | Product expectation | Current state |
 | --- | --- | --- |
 | API | Documented chat completion contract; explicit handling of unsupported options | Partial: text requests and non-streaming responses |
-| Identity | Per-app authentication and model authorization, including resolved routes | Partial: bearer keys and requested-model checks |
-| Routing | Deterministic selection, aliases, configuration validation | Partial: direct models and a default for `auto` |
-| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: OpenAI and Ollama adapters |
-| Policy | Configurable request/response checks with bounded request sizes | Partial: hardcoded request blocklist |
+| Identity | Per-app authentication and model authorization, including resolved routes | Implemented for bearer app keys and model allowlists |
+| Routing | Deterministic selection, aliases, configuration validation | Implemented for direct models, `auto`, and task rules |
+| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: non-streaming OpenAI and Ollama text chat |
+| Policy | Configurable request/response checks with bounded request sizes | Partial: request bounds and configured blocklist; response checks planned |
 | Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: HTTP timeouts only |
-| Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: selected audit events |
+| Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
 | Resource controls | Per-app rate limits and documented budget semantics | Planned: fields exist but are unenforced |
 | Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: health endpoint, Docker files, and runbooks |
 
@@ -105,7 +105,8 @@ usage data when a provider does not supply it.
 - Establish single-instance limit semantics before promising limits across replicas.
 - Report estimated costs separately from provider billing; pricing requires a maintained source.
 
-These are acceptance requirements. Several are not enforced by the current code.
+Final-target authorization and startup validation are enforced. Retries, fallback,
+shared limits, and maintained cost estimation remain acceptance requirements.
 
 ## Deployment assumptions
 

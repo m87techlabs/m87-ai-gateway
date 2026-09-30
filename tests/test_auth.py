@@ -44,9 +44,10 @@ routing:
         encoding="utf-8",
     )
     monkeypatch.setenv("M87_GATEWAY_CONFIG", str(config_path))
-    monkeypatch.setattr(routes, "get_provider", lambda provider_name: FakeProvider())
+    monkeypatch.setattr(routes, "get_provider", lambda provider_name, settings: FakeProvider())
     get_settings.cache_clear()
-    yield TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
     get_settings.cache_clear()
 
 

@@ -26,13 +26,15 @@ flowchart LR
 
 ## Current status
 
-Implemented foundations include YAML/environment configuration, bearer API keys,
-requested-model allowlists, direct/default routing, basic OpenAI and Ollama adapters,
-a hardcoded blocklist, selected audit events, and a health endpoint.
+Implemented foundations include validated YAML/environment configuration, bearer
+app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
+Ollama adapters, configured request guardrails, safe provider errors, correlated
+JSON outcome events, optional private traffic capture, Prometheus metrics, and a
+health endpoint.
 
-The MVP still needs configuration wiring, resolved-model authorization, safe
-provider errors, complete request logging, metrics, and broader provider tests.
-Streaming, enforced rate limits/budgets, and major cloud adapters are not implemented.
+The MVP still needs live provider and container verification. Streaming, model
+discovery, embeddings, enforced rate limits/budgets, response policies, remote log
+exporters, and major cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.
 
 ## Quickstart
@@ -84,6 +86,7 @@ from Docker. See the [full quickstart](docs/quickstart.md) and
 - [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
 - [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
 - [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
+- [Worker-to-local inference](docs/integrations/worker-local-inference.md)
 - [Operational runbooks](docs/runbooks/README.md) · [Validation status](docs/validation.md)
 - [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)
 

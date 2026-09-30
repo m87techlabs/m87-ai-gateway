@@ -14,6 +14,10 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - Runbooks for development, deployment, configuration, incidents, providers, and releases.
 - Documentation checks, dependency updates, and repository hygiene defaults.
 - Complete Apache 2.0 license text with the existing project copyright in NOTICE.
+- Correlated JSON outcome events, optional bounded private traffic capture, and
+  Prometheus request/provider/guardrail/token/log-sink metrics.
+- A Worker-to-local-inference reference integration and traffic logging runbook.
+- Configuration, routing, policy, provider-failure, metrics, and logging tests.
 - FastAPI gateway skeleton.
 
 ### Changed
@@ -24,6 +28,9 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - Documented actual implementation gaps and preserved the historical release tag.
 - Bound development Compose access to loopback and added host-provider resolution.
 - Made Python packaging explicit and expanded release/readiness guidance.
+- Validate configuration at startup and reject unknown or malformed settings.
+- Authorize resolved routes, apply configured request guardrails/provider flags,
+  preserve Ollama chat semantics, and normalize provider failures.
 
 ### Fixed
 

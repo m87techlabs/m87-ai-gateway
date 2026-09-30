@@ -1,0 +1,8 @@
+{
+  "name": "m87-gateway-worker-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test worker.test.mjs"
+  }
+}

@@ -31,8 +31,16 @@ The local test run emitted a dependency deprecation warning from the TestClient
 stack; it did not fail tests. Mocked provider checks and a successful wheel build
 do not establish live provider behavior or successful container deployment.
 
-Later documentation-only commits use the same lightweight checks and hosted CI.
-Update this baseline when runtime behavior changes or deferred checks are completed.
+## Current implementation validation
+
+The next 0.1.x implementation batch was checked locally on 2026-09-30 with Python
+3.12. The expanded suite passed 74 tests with mocked provider HTTP, and Ruff passed.
+Three zero-dependency Worker relay tests, a clean wheel build, dependency checks,
+33-file documentation validation, YAML parsing, and all 19 Mermaid diagrams also
+passed. A native Uvicorn smoke check verified startup, health, metrics, safe 401
+handling, and metadata-only rejection logging. The existing TestClient dependency
+warning remains non-fatal. Hosted Python 3.11 checks will be recorded after the
+change is committed and pushed.
 
 ## Deferred checks
 
@@ -57,10 +65,8 @@ and image checks still require Docker.
 
 Enabling Docker does not complete these roadmap items:
 
-- Resolved-model authorization, configuration-driven guardrails/provider flags,
-  and normalized provider errors need implementation and regression tests.
-- Metrics, request IDs, complete outcome logs, enforced limits/budgets, and
-  readiness behavior are incomplete or absent.
+- Enforced rate limits/budgets, response policies, readiness, cost estimates, and
+  durable/remote event delivery remain incomplete or absent.
 - AWS Bedrock, Azure OpenAI, Google Cloud Vertex AI, and Anthropic adapters are
   planned; cloud contract/live checks depend on those adapters existing.
 - Cloud deployment, persistence, and migration/restore validation need concrete

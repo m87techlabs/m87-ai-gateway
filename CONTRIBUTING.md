@@ -26,6 +26,7 @@ Follow [local development](docs/runbooks/local-development.md). Before submittin
 
 ```bash
 ruff check src tests scripts
+ruff format --check src tests scripts
 pytest -q
 python scripts/check_docs.py
 ```

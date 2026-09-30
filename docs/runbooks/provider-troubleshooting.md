@@ -28,11 +28,12 @@ flowchart TD
    | --- | --- |
    | 401 | Missing/malformed bearer header, wrong app key, or wrong config file |
    | 403 | Requested model is absent from the app allowlist |
-   | 400 | Hardcoded blocklist matched the prompt |
+   | 400 | Configured guardrail blocked the request |
    | 422 | Request failed Pydantic validation |
-   | 500 | Unhandled provider error, missing provider credential, invalid route, or unsupported provider |
+   | 500 | Unexpected gateway failure; use the request ID to find its safe outcome event |
+   | 502/503/504 | Provider failure, disabled/missing credentials, throttling, or timeout |
    | Slow request | Network/provider latency; adapters currently use a 60-second HTTPX timeout |
-   | Wrong provider for `auto` | Default route differs from expectation; routing rules are currently ignored |
+   | Wrong provider for `auto` | Check first-match task rules, the request `task`, and the default route |
 
    These status meanings describe the current code. Safe normalized upstream
    errors are planned; do not assume upstream HTTP codes are preserved.
@@ -42,8 +43,8 @@ flowchart TD
    that the provider account can access the configured model. Do not print the key.
 5. For Ollama, verify the endpoint is reachable from the same host/container
    network and that the model is installed. See [container deployment](container-deployment.md).
-6. Inspect local logs around the timestamp. Request IDs and full outcome logs are
-   not yet available. Redact credentials, prompts, and personal data before sharing.
+6. Match the response `X-Request-ID` to JSON stdout or the private traffic file.
+   Redact credentials, prompts, and personal data before sharing.
 
 ## Recovery and verification
 

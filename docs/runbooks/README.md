@@ -10,6 +10,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Container deployment](container-deployment.md) | Starting a single gateway container and checking provider connectivity |
 | [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |
 | [Provider troubleshooting](provider-troubleshooting.md) | A chat request fails or returns unexpected behavior |
+| [Traffic logging](traffic-logging.md) | Enable and inspect bounded private LLM request/response records |
 | [Incident response](incident-response.md) | Requests fail broadly or credentials may be exposed |
 | [Release](release.md) | Preparing, publishing, or rolling back a version |
 

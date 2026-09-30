@@ -21,6 +21,7 @@ for the separate checks that require a container runtime.
 
    ```bash
    ruff check src tests scripts
+   ruff format --check src tests scripts
    pytest -q
    python scripts/check_docs.py
    ```
@@ -44,6 +45,7 @@ for the separate checks that require a container runtime.
 
    ```bash
    curl --fail-with-body http://localhost:8080/health
+   curl --fail-with-body http://localhost:8080/metrics
    ```
 
 6. Send the authenticated request in [quickstart](../quickstart.md). Use a

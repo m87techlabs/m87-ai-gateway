@@ -5,13 +5,15 @@ and supported provider adapters. Releases follow acceptance criteria rather than
 calendar promises. See [design](design.md) for scope and [lifecycle](lifecycle.md)
 for release gates.
 
-## Baseline
+## Current baseline
 
-The repository contains configuration loading, bearer-key authentication,
-requested-model authorization, default routing, basic OpenAI/Ollama adapters,
-a hardcoded blocklist, selected audit events, Docker files, and eight tests.
-Existing tests cover configuration, authentication, routing, and health; they do
-not establish live provider compatibility or successful container deployment.
+The repository contains validated configuration, bearer-key authentication,
+requested/resolved-model authorization, deterministic rules, non-streaming
+OpenAI/Ollama text chat, configured request guardrails, safe upstream errors,
+request IDs, JSON outcome events, an optional private rotating traffic file,
+Prometheus metrics, Docker files, and an expanded mocked-provider test suite.
+These tests do not establish live provider compatibility, tunnel behavior, or a
+successful container deployment.
 
 The historical `v0.1.0` tag points to the initial scaffold. Preserve published
 tags. The next release must use a new version and document the capabilities it
@@ -28,14 +30,15 @@ flowchart LR
 
 ## Local MVP completion — next 0.1.x release
 
-- Wire provider and guardrail configuration into runtime behavior.
-- Validate provider/model identifiers and authorize resolved `auto` targets.
-- Define the supported text chat API subset and reject unsupported options clearly.
-- Normalize provider errors and define missing-credential behavior.
-- Preserve message semantics and supported generation settings in both initial adapters.
-- Add request IDs, basic outcome logs, and a minimal `/metrics` endpoint.
+- [x] Wire provider and guardrail configuration into runtime behavior.
+- [x] Validate provider/model identifiers and authorize resolved `auto` targets.
+- [x] Define the supported text chat API subset and reject unsupported options clearly.
+- [x] Normalize provider errors and define missing-credential behavior.
+- [x] Preserve message semantics and supported generation settings in both initial adapters.
+- [x] Add request IDs, outcome logs, optional traffic capture, and `/metrics`.
 - Verify the documented Docker quickstart against a reachable Ollama endpoint and an OpenAI route.
-- Add guardrail, provider, failure, configuration, and packaging checks.
+- Verify a Worker/tunnel/non-streaming Ollama request using the reference integration.
+- [x] Add guardrail, provider, failure, configuration, logging, and packaging checks.
 
 **Exit:** a new user can follow the quickstart, authenticate, receive a real model
 response, inspect safe logs and metrics, and reproduce the documented failure
@@ -44,8 +47,9 @@ maintainer-supplied credentials; ordinary tests make no billable calls.
 
 ## 0.2 — Operational visibility
 
-- Complete the audit event schema and request ID propagation.
-- Add latency, outcome, provider error, guardrail, and token usage metrics.
+- Stabilize the audit event schema and request ID propagation contract.
+- Add dashboard/alert guidance for the implemented latency, outcome, provider
+  error, guardrail, token usage, and log-sink metrics.
 - Add explicitly labeled cost estimates with documented pricing maintenance.
 - Supply a usable Grafana example and structured log ingestion guidance.
 - Define readiness separately from liveness; document incident diagnosis.
@@ -55,7 +59,7 @@ from provider failures without accessing full prompts or credentials.
 
 ## 0.3 — Security and resource controls
 
-- Enforce configured request size and message limits.
+- [x] Enforce configured request size and message limits.
 - Enforce per-app rate limits and specify single-instance versus shared behavior.
 - Define budget accounting and enforcement before claiming budget support.
 - Add key rotation guidance and configuration validation at startup.
@@ -105,8 +109,8 @@ may happen earlier when the same gates are satisfied for a smaller declared scop
 
 | Integration | State | Next requirement |
 | --- | --- | --- |
-| OpenAI | Partial adapter | Safe errors, configuration wiring, compatibility checks |
-| Ollama | Partial adapter | Chat semantics, generation options, container connectivity |
+| OpenAI | Partial adapter | Live compatibility checks and capability matrix |
+| Ollama | Partial adapter | Live/container/tunnel checks and streaming later |
 | Anthropic | Planned | Adapter, contract tests, credential and operations guide |
 | AWS Bedrock | Planned | Adapter, cloud credentials, contract and live smoke checks |
 | Azure OpenAI | Planned | Adapter, deployment/model mapping, contract and live smoke checks |
