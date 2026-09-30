@@ -46,6 +46,10 @@ or to an authorized `auto` route.
 
 ## Test setup
 
+Use the [end-to-end flow testing runbook](../runbooks/end-to-end-flow-testing.md)
+for the ordered procedure, evidence to retain, stop conditions, and cleanup. The
+steps below summarize the integration-specific setup.
+
 1. Configure the gateway's Ollama endpoint for the network where it runs.
 2. Create a dedicated `worker-test` app with a private key and an allowlist
    containing both `auto` and its concrete model.

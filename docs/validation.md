@@ -42,6 +42,43 @@ handling, and metadata-only rejection logging. The existing TestClient dependenc
 warning remains non-fatal. Hosted Python 3.11 test/package and documentation/Worker
 jobs passed for implementation commit `7867838` on 2026-09-30.
 
+## Worker-to-local flow session
+
+The first execution of the
+[end-to-end flow runbook](runbooks/end-to-end-flow-testing.md) started on
+2026-09-30 against gateway commit `38e2977`. Documentation changes for the runbook
+were uncommitted during the runtime checks and did not change gateway behavior.
+
+| Phase / check | Result | Sanitized evidence |
+| --- | --- | --- |
+| Phase 0: Docker | Deferred | Docker CLI was present through Docker Desktop, but WSL integration was disabled |
+| Phase 0: Ollama API | Partial | `GET /api/tags` succeeded and returned an empty model list |
+| Phase 0: Tunnel | Deferred | No local `cloudflared` process was active; remote configuration was not inspected |
+| Phase 1: Python baseline | Passed | 74 tests; project-scoped Ruff lint and format; compile check |
+| Phase 1: documentation | Passed | Links and fences checked in 34 Markdown files |
+| Phase 1: Worker relay | Passed | 3 Node tests |
+| N1 health | Passed | HTTP 200 with healthy service response |
+| N2 metrics | Passed | HTTP 200 with Prometheus text |
+| N3 missing app key | Passed | HTTP 401; response and metadata request IDs matched |
+| N4 invalid app key | Passed | HTTP 401 without credential disclosure |
+| N5 successful Ollama chat | Deferred | No model was installed, so a successful completion could not run |
+| N6 disallowed model | Passed | HTTP 403 before provider invocation |
+| N7 blocklist | Passed | Safe HTTP 400 before provider invocation |
+| N8 missing Ollama model | Passed | Safe HTTP 502; provider request and error counters increased once |
+| Metadata privacy | Passed | Synthetic prompt markers were absent; events contained bounded metadata |
+| Native cleanup | Passed | Uvicorn stopped cleanly after the test |
+
+The native test verified gateway authentication, authorization, guardrails,
+routing to Ollama, safe provider errors, request correlation, metadata logging,
+and bounded metrics. It did not verify a successful completion or response-content
+capture because Ollama had no installed model. Content-capture behavior remains
+covered by automated tests.
+
+Next session prerequisites are an installed test model and Docker Desktop WSL
+integration. After Phases 2 and 3 pass fully, enable the dedicated Tunnel and
+Worker test route for Phases 4 through 6. Do not reuse an established application
+route for the first remote test.
+
 ## Deferred checks
 
 | Check | Why it is unverified | Needed to run | Procedure / expected evidence |
