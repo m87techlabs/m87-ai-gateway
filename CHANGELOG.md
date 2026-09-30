@@ -28,6 +28,7 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - Documented actual implementation gaps and preserved the historical release tag.
 - Bound development Compose access to loopback and added host-provider resolution.
 - Made Python packaging explicit and expanded release/readiness guidance.
+- Updated CI action pins and fixed the hosted runner to Ubuntu 24.04.
 - Validate configuration at startup and reject unknown or malformed settings.
 - Authorize resolved routes, apply configured request guardrails/provider flags,
   preserve Ollama chat semantics, and normalize provider failures.

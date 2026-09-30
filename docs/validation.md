@@ -39,8 +39,8 @@ Three zero-dependency Worker relay tests, a clean wheel build, dependency checks
 33-file documentation validation, YAML parsing, and all 19 Mermaid diagrams also
 passed. A native Uvicorn smoke check verified startup, health, metrics, safe 401
 handling, and metadata-only rejection logging. The existing TestClient dependency
-warning remains non-fatal. Hosted Python 3.11 checks will be recorded after the
-change is committed and pushed.
+warning remains non-fatal. Hosted Python 3.11 test/package and documentation/Worker
+jobs passed for implementation commit `7867838` on 2026-09-30.
 
 ## Deferred checks
 
