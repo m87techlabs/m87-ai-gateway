@@ -37,6 +37,10 @@ discovery, embeddings, enforced rate limits/budgets, response policies, remote l
 exporters, and major cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.
 
+For a Docker-free workstation test, run the
+[Windows/WSL flow application](examples/local_test_app/README.md). It starts a
+browser relay and gateway in WSL and calls Ollama running on Windows.
+
 ## Quickstart
 
 Prerequisites: Docker with Compose and either a reachable Ollama service with a
@@ -86,6 +90,7 @@ from Docker. See the [full quickstart](docs/quickstart.md) and
 - [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
 - [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
 - [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
+- [Windows/WSL flow lab](docs/runbooks/windows-wsl-flow-lab.md)
 - [Worker-to-local inference](docs/integrations/worker-local-inference.md)
 - [Operational runbooks](docs/runbooks/README.md) · [Validation status](docs/validation.md)
 - [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)

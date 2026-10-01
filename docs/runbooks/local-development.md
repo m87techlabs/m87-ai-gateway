@@ -20,8 +20,8 @@ for the separate checks that require a container runtime.
 2. Run the baseline checks:
 
    ```bash
-   ruff check src tests scripts
-   ruff format --check src tests scripts
+   ruff check src tests scripts examples
+   ruff format --check src tests scripts examples
    pytest -q
    python scripts/check_docs.py
    ```

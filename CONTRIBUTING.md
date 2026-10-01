@@ -25,8 +25,8 @@ hosting records and existing Git history are separate from new commit metadata.
 Follow [local development](docs/runbooks/local-development.md). Before submitting:
 
 ```bash
-ruff check src tests scripts
-ruff format --check src tests scripts
+ruff check src tests scripts examples
+ruff format --check src tests scripts examples
 pytest -q
 python scripts/check_docs.py
 ```

@@ -17,6 +17,8 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - Correlated JSON outcome events, optional bounded private traffic capture, and
   Prometheus request/provider/guardrail/token/log-sink metrics.
 - A Worker-to-local-inference reference integration and traffic logging runbook.
+- A Docker-free Windows/WSL browser flow application with an ephemeral gateway
+  identity, coordinated launcher, and local testing runbook.
 - Configuration, routing, policy, provider-failure, metrics, and logging tests.
 - FastAPI gateway skeleton.
 

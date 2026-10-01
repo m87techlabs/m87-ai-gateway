@@ -21,8 +21,8 @@ container are separate actions. Complete the relevant gates before each action.
    python3 -m venv .venv
    . .venv/bin/activate
    python -m pip install -e '.[dev]'
-   ruff check src tests scripts
-   ruff format --check src tests scripts
+   ruff check src tests scripts examples
+   ruff format --check src tests scripts examples
    pytest -q
    python scripts/check_docs.py
    python -m pip wheel --no-deps . --wheel-dir dist

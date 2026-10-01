@@ -74,10 +74,35 @@ and bounded metrics. It did not verify a successful completion or response-conte
 capture because Ollama had no installed model. Content-capture behavior remains
 covered by automated tests.
 
-Next session prerequisites are an installed test model and Docker Desktop WSL
-integration. After Phases 2 and 3 pass fully, enable the dedicated Tunnel and
-Worker test route for Phases 4 through 6. Do not reuse an established application
-route for the first remote test.
+The remaining native prerequisite is an installed test model. Docker Desktop WSL
+integration is needed separately for Phase 3 container checks. After Phases 2 and
+3 pass fully, enable the dedicated Tunnel and Worker test route for Phases 4
+through 6. Do not reuse an established application route for the first remote test.
+
+### Docker-free Windows/WSL flow lab
+
+The local flow application was checked on 2026-10-01 with Python 3.12. The
+launcher started a WSL relay on loopback port 8787 and a WSL gateway on loopback
+port 8080. The gateway reached the Windows Ollama API on port 11434 without Docker.
+
+| Check | Result | Sanitized evidence |
+| --- | --- | --- |
+| Relay unit tests | Passed | 5 tests for key isolation, request forwarding, correlation, safe failures, and size limits |
+| Windows-to-WSL forwarding | Passed | Windows HTTP client reached the page and status route through `localhost:8787` |
+| Page and static assets | Passed | HTML, JavaScript, and CSS returned HTTP 200 |
+| Browser security headers | Passed | Same-origin CSP, no-store, frame denial, and content-type protection |
+| Gateway status through relay | Passed | HTTP 200; gateway reported reachable |
+| Ephemeral app authentication | Passed | Gateway identified `local-flow-lab`; key was absent from browser responses |
+| Ollama provider attempt | Passed | `auto` resolved to the selected Ollama route and reached the Windows service |
+| Missing-model behavior | Passed | Browser received a safe HTTP 502 and gateway-generated request ID |
+| Correlation and privacy | Passed | Browser ID matched metadata; synthetic marker was absent from response metadata and event output |
+| Coordinated cleanup | Passed | One Ctrl+C stopped relay and gateway cleanly |
+| Successful completion | Deferred | Windows Ollama returned an empty installed-model list |
+
+This session verifies the application, relay, gateway, and Windows provider
+boundary through the expected model-missing response. Install a Windows Ollama
+test model to complete the successful chat and response-content checks. Docker
+remains required only for the separate image and Compose acceptance phase.
 
 ## Deferred checks
 

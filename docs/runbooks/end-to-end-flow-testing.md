@@ -94,10 +94,10 @@ Run the Docker-independent checks:
 
 ```bash
 pytest -q
-ruff check src tests scripts
-ruff format --check src tests scripts
+ruff check src tests scripts examples
+ruff format --check src tests scripts examples
 python scripts/check_docs.py
-python -m compileall -q src tests
+python -m compileall -q src tests examples/local_test_app
 npm test --prefix examples/cloudflare-worker
 ```
 
@@ -106,8 +106,9 @@ an integration result.
 
 ### Phase 2: native gateway and Ollama
 
-Start the gateway directly with Ollama configured at the reachable host URL. Then
-verify these cases through `http://127.0.0.1:8080`:
+Use the [Windows/WSL flow lab](windows-wsl-flow-lab.md) for the browser and relay
+path, or start the gateway directly with Ollama configured at the reachable host
+URL. Then verify these cases through `http://127.0.0.1:8080`:
 
 | ID | Request | Expected result |
 | --- | --- | --- |

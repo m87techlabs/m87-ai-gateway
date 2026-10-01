@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Gateway Flow Lab</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">M87 AI Gateway · local integration</p>
+          <h1>Gateway Flow Lab</h1>
+          <p class="lede">
+            Send a synthetic prompt from the Windows browser through the WSL relay
+            and gateway to Ollama running on Windows.
+          </p>
+        </div>
+        <div class="status-card" aria-live="polite">
+          <span id="status-dot" class="status-dot pending"></span>
+          <div>
+            <span class="status-label">Gateway</span>
+            <strong id="gateway-status">Checking</strong>
+          </div>
+          <button id="refresh-status" class="icon-button" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="flow-panel" aria-labelledby="flow-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Request path</p>
+            <h2 id="flow-title">Live trace</h2>
+          </div>
+          <span id="flow-state" class="pill">Ready</span>
+        </div>
+        <ol class="flow" aria-label="Request flow">
+          <li id="stage-browser" class="flow-step">
+            <span class="step-number">01</span>
+            <strong>Windows browser</strong>
+            <small>Same-origin request</small>
+          </li>
+          <li id="stage-relay" class="flow-step">
+            <span class="step-number">02</span>
+            <strong>WSL test relay</strong>
+            <small>Gateway key stays here</small>
+          </li>
+          <li id="stage-gateway" class="flow-step">
+            <span class="step-number">03</span>
+            <strong>AI gateway</strong>
+            <small>Auth, route, policy, logs</small>
+          </li>
+          <li id="stage-model" class="flow-step">
+            <span class="step-number">04</span>
+            <strong>Windows Ollama</strong>
+            <small>Local model response</small>
+          </li>
+        </ol>
+      </section>
+
+      <div class="workspace">
+        <section class="composer-panel" aria-labelledby="composer-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Synthetic request</p>
+              <h2 id="composer-title">Chat completion</h2>
+            </div>
+            <span class="local-badge">Local only</span>
+          </div>
+
+          <form id="chat-form">
+            <label for="prompt">Prompt</label>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="7"
+              maxlength="65536"
+              required
+              placeholder="Explain what an API gateway does in two sentences."
+            ></textarea>
+            <p class="field-help">Use synthetic content. The browser does not receive the gateway key.</p>
+
+            <details>
+              <summary>Request options</summary>
+              <div class="option-grid">
+                <label>
+                  Model
+                  <input id="model" name="model" value="auto" maxlength="200" required>
+                </label>
+                <label>
+                  Temperature
+                  <input id="temperature" name="temperature" type="number" value="0.2" min="0" max="2" step="0.1">
+                </label>
+                <label>
+                  Maximum tokens
+                  <input id="max-tokens" name="max_tokens" type="number" value="256" min="1" max="32768">
+                </label>
+              </div>
+              <label for="system-prompt">System prompt</label>
+              <textarea
+                id="system-prompt"
+                name="system_prompt"
+                rows="3"
+                maxlength="4096"
+                placeholder="Optional synthetic instruction"
+              ></textarea>
+            </details>
+
+            <div class="form-actions">
+              <span id="keyboard-hint">Ctrl + Enter to send</span>
+              <button id="send-button" class="primary-button" type="submit">
+                <span>Run flow</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="result-panel" aria-labelledby="result-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Gateway response</p>
+              <h2 id="result-title">Result</h2>
+            </div>
+            <span id="result-status" class="pill muted">Waiting</span>
+          </div>
+
+          <div id="empty-result" class="empty-result">
+            <div class="pulse-mark"></div>
+            <p>Run the flow to see the completion and correlation details.</p>
+          </div>
+
+          <div id="result-content" class="result-content" hidden>
+            <p id="answer" class="answer"></p>
+            <dl class="metadata">
+              <div>
+                <dt>Request ID</dt>
+                <dd id="request-id">—</dd>
+              </div>
+              <div>
+                <dt>Resolved model</dt>
+                <dd id="resolved-model">—</dd>
+              </div>
+              <div>
+                <dt>Relay latency</dt>
+                <dd id="latency">—</dd>
+              </div>
+              <div>
+                <dt>Token usage</dt>
+                <dd id="usage">—</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+      </div>
+
+      <footer>
+        Traffic stays on the workstation. Gateway metadata remains available for
+        request correlation; content capture follows gateway configuration.
+      </footer>
+    </main>
+  </body>
+</html>

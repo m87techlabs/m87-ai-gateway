@@ -19,6 +19,7 @@ gates in the lifecycle guide.
 | [Configuration](configuration.md) | Configuration inputs and current limitations |
 | [Security](security.md) | Trust boundaries and security controls |
 | [Observability](observability.md) | Current logging and planned operational signals |
+| [Windows/WSL flow lab](runbooks/windows-wsl-flow-lab.md) | Browser-to-Windows-Ollama testing without Docker |
 | [Worker/local inference](integrations/worker-local-inference.md) | Reference tunnel integration and acceptance checks |
 | [Runbooks](runbooks/README.md) | Repeatable operational procedures |
 | [Validation status](validation.md) | Verified checks, deferred checks, and on-demand Docker policy |
