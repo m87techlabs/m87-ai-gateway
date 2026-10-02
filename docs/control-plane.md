@@ -98,13 +98,29 @@ private channel, or stored provider credentials will be unrecoverable.
 
 The default database retains events for 30 days. Set
 `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` from 1 through 3650. Expired events are
-pruned at gateway startup. The implementation uses SQLite WAL mode and targets
+pruned at gateway startup, on Controls saves, and on event writes. The implementation uses SQLite WAL mode and targets
 one gateway instance. PostgreSQL and multi-instance migrations are planned.
 
-UI-managed provider connections and the selected default/capture settings are
+UI-managed provider connections, traffic/log controls, and default/capture settings are
 stored alongside events and keys. They override the corresponding startup values
 while that database is in use. Other YAML and environment settings remain startup
 configuration. Updates clear the response cache and apply to new requests.
 
 See the [control-plane runbook](runbooks/control-plane.md) for startup, rotation,
 export, and recovery procedures.
+
+## Traffic controls and readiness
+
+The **Controls** page edits persistent traffic policies and shows configuration/
+storage readiness. Managed application rate/concurrency limits can be changed
+without key replacement. `/health` is liveness; `/ready` returns 200 when the default
+provider configuration, required credential, and local storage checks pass, or 503.
+Readiness does not call upstream services or prove model availability. Explicit
+model discovery and chat testing supply that evidence.
+
+Admins may delete SQLite event history for a selected project or all projects,
+with an explicit confirmation. This changes dashboards and exports, preserves keys
+and configuration, and leaves separate JSONL copies untouched. Deletion is logical;
+it does not promise forensic erasure from SQLite pages, backups, or exported copies.
+In-flight requests can write new events after deletion. Details and acceptance
+steps are in the [controls runbook](runbooks/gateway-controls-testing.md).

@@ -35,7 +35,7 @@ async function fixture(t, chatResponse) {
   await until(() => $("status").textContent.includes("Ready"));
   return {$, send, requests};
 }
-const reply = () => new Response(JSON.stringify({content: "<script>untrusted model text</script>", model: "ollama:sample", usage: {prompt_tokens: 8, completion_tokens: 5, total_tokens: 13}, request_id: "sample-request", latency_ms: 12}));
+const reply = () => new Response(JSON.stringify({content: "<script>untrusted model text</script>", model: "ollama:sample", usage: {prompt_tokens: 8, completion_tokens: 5, total_tokens: 13}, request_id: "sample-request", cache_status: "HIT", latency_ms: 12}));
 
 test("chat renders text safely, forwards history, and clears the conversation", async (t) => {
   const {$, send, requests} = await fixture(t, reply);
@@ -43,6 +43,7 @@ test("chat renders text safely, forwards history, and clears the conversation", 
   send("Synthetic question");
   await until(() => !$("send").disabled);
   assert.equal($("total-tokens").textContent, "13");
+  assert.equal($("cache-status").textContent, "HIT");
   assert.equal($("request-id").textContent, "sample-request");
   assert.equal($("messages").querySelectorAll("script").length, 0);
   assert.ok($("messages").textContent.includes("<script>"));
@@ -59,12 +60,13 @@ test("chat renders text safely, forwards history, and clears the conversation", 
 
 test("failed requests preserve the draft and exclude failed turns from history", async (t) => {
   const {$, send, requests} = await fixture(t, (_, count) => count === 1
-    ? new Response(JSON.stringify({error: "Application rate limit reached", request_id: "failure-id"}), {status: 429})
+    ? new Response(JSON.stringify({error: "Application rate limit reached", retry_after: 60, request_id: "failure-id"}), {status: 429})
     : reply());
   send("Retry this");
   await until(() => !$("send").disabled);
   assert.equal($("prompt").value, "Retry this");
   assert.equal($("request-id").textContent, "failure-id");
+  assert.equal($("retry-after").textContent, "60 seconds");
   assert.equal($("error").hidden, false);
   assert.equal($("messages").children.length, 0);
   send("Retry this");

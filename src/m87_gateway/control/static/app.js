@@ -96,6 +96,7 @@ async function loadOverview() {
 
 async function loadLogs() {
   const scope = activeProject;
+  $("delete-logs").textContent = scope ? "Delete selected project logs" : "Delete all logs";
   const response = await api(scoped("/logs", {limit: 250}));
   const data = await response.json();
   if (scope === activeProject && adminKey) renderLogs($("logs"), data.items, 250);
@@ -166,7 +167,7 @@ async function showDetail(requestId) {
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Latency", `${item.latency_ms} ms`]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";
@@ -177,13 +178,15 @@ async function showDetail(requestId) {
     const title = document.createElement("h3"); title.textContent = label;
     const pre = document.createElement("pre"); pre.textContent = value == null ? "Content was not recorded for this exchange. Gateway capture applies to new requests." : JSON.stringify(value, null, 2);
     body.append(title, pre);
+    const truncated = label === "LLM input" ? item.request_content_truncated : item.response_content_truncated;
+    if (truncated) { const note = document.createElement("p"); note.className = "muted"; note.textContent = "Content was truncated at the configured capture limit."; body.append(note); }
   });
   $("detail").showModal();
 }
 
 async function loadApps() {
   const [response] = await Promise.all([api("/apps"), loadProjectOptions()]);
-  table($("apps"), ["Application", "Project", "Key prefix", "Models", "RPM", ""], (await response.json()).items, (row, item) => {
+  table($("apps"), ["Application", "Project", "Key prefix", "Models", "Limits", ""], (await response.json()).items, (row, item) => {
     cell(row, item.app_id);
     const projectCell = cell(row, ""); const selection = document.createElement("select"); selection.setAttribute("aria-label", `Project for ${item.app_id}`);
     projects.forEach((project) => { const option = document.createElement("option"); option.value = project.project_id; option.textContent = project.name; selection.append(option); });
@@ -204,7 +207,21 @@ async function loadApps() {
       } catch (error) { notice(error.message); }
       finally { saveModels.disabled = models.disabled = false; }
     });
-    modelCell.append(models, saveModels); cell(row, item.rate_limit_per_minute || "Unlimited");
+    modelCell.append(models, saveModels);
+    const limitCell = cell(row, "");
+    const rpm = document.createElement("input"); rpm.type = "number"; rpm.min = "1"; rpm.max = "100000"; rpm.placeholder = "Unlimited RPM"; rpm.value = item.rate_limit_per_minute ?? ""; rpm.setAttribute("aria-label", `Requests per minute for ${item.app_id}`);
+    const concurrent = document.createElement("input"); concurrent.type = "number"; concurrent.min = "1"; concurrent.max = "10000"; concurrent.placeholder = "Gateway concurrency limit"; concurrent.value = item.max_concurrent_requests ?? ""; concurrent.setAttribute("aria-label", `Concurrent requests for ${item.app_id}`);
+    const saveLimits = document.createElement("button"); saveLimits.type = "button"; saveLimits.textContent = "Save limits";
+    saveLimits.addEventListener("click", async () => {
+      if (!rpm.reportValidity() || !concurrent.reportValidity()) return;
+      saveLimits.disabled = true;
+      try {
+        await api(`/apps/${encodeURIComponent(item.app_id)}/limits`, {method: "PATCH", body: JSON.stringify({rate_limit_per_minute: rpm.value ? Number(rpm.value) : null, max_concurrent_requests: concurrent.value ? Number(concurrent.value) : null})});
+        notice("Limits saved; application key unchanged. Existing rate windows and active requests remain.");
+      } catch (error) { notice(error.message); }
+      finally { saveLimits.disabled = false; }
+    });
+    limitCell.append(rpm, concurrent, saveLimits);
     const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
     button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
     action.append(button);
@@ -260,7 +277,19 @@ async function loadSetup() {
   return data;
 }
 
-const loaders = {setup: loadSetup, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+async function loadControls() {
+  const session = sessionGeneration;
+  const [values, report] = await Promise.all([api("/controls").then((r) => r.json()), api("/diagnostics").then((r) => r.json())]);
+  if (session !== sessionGeneration || !adminKey) return;
+  const fields = {...values, ...values.cache, ...values.retry, ...values.limits};
+  const form = $("controls-form");
+  for (const name of ["max_concurrent_requests", "max_request_bytes", "max_message_chars", "max_attempts", "backoff_ms", "ttl_seconds", "max_entries", "retention_days", "max_content_chars"]) form.elements[name].value = fields[name];
+  form.elements.cache_enabled.checked = values.cache.enabled;
+  $("readiness-status").textContent = `${report.ready ? "Ready" : "Needs configuration"} · ${report.default_model} · ${report.active_requests} active requests`;
+  table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
+}
+
+const loaders = {setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -291,6 +320,7 @@ $("app-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const session = sessionGeneration;
   const payload = {app_id: form.get("app_id"), project_id: form.get("project_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean)};
   if (form.get("rate_limit_per_minute")) payload.rate_limit_per_minute = Number(form.get("rate_limit_per_minute"));
+  if (form.get("max_concurrent_requests")) payload.max_concurrent_requests = Number(form.get("max_concurrent_requests"));
   try {
     const response = await api("/apps", {method: "POST", body: JSON.stringify(payload)}); const item = await response.json();
     if (session !== sessionGeneration || !adminKey) return;
@@ -366,4 +396,26 @@ $("tester-form").addEventListener("submit", async (event) => {
 });
 $("tester-detail").addEventListener("click", async () => {
   try { await showDetail(testerRequestId); } catch (error) { notice(`${error.message}. The audit write may still be finishing; retry shortly.`); }
+});
+
+$("controls-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const form = new FormData(event.currentTarget); const number = (name) => Number(form.get(name));
+  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), max_content_chars: number("max_content_chars")};
+  const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
+  try { await api("/controls", {method: "PUT", body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
+  catch (error) { notice(error.message); }
+  finally { button.disabled = false; }
+});
+$("clear-cache").addEventListener("click", async () => {
+  try { await api("/cache/clear", {method: "POST"}); notice("Response cache cleared"); }
+  catch (error) { notice(error.message); }
+});
+$("delete-logs").addEventListener("click", async () => {
+  const project = activeProject;
+  const scope = project ? `project ${project}` : "ALL projects";
+  if (!window.confirm(`Delete SQLite logs and their usage history for ${scope}? Separate JSONL files and in-flight requests are unaffected.`)) return;
+  try {
+    const data = await (await api("/logs", {method: "DELETE", body: JSON.stringify({confirmation: "DELETE", project_id: project || null})})).json();
+    notice(`${data.deleted} records deleted`); await loadLogs();
+  } catch (error) { notice(error.message); }
 });

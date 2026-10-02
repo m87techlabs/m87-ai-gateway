@@ -29,6 +29,13 @@ class LocalControlStore:
         self._fernet = Fernet(key)
         self._digest_key = hashlib.sha256(key + b":application-key-digests").digest()
         self._initialize()
+        controls = self.runtime_config().get("controls", {})
+        self.config = ControlPlaneConfig.model_validate(
+            {
+                **config.model_dump(),
+                "retention_days": controls.get("retention_days", config.retention_days),
+            }
+        )
         self.prune_events()
 
     @contextmanager
@@ -103,6 +110,7 @@ class LocalControlStore:
             },
             "app_keys": {
                 "rate_limit_per_minute": "INTEGER",
+                "max_concurrent_requests": "INTEGER",
                 "project_id": "TEXT NOT NULL DEFAULT 'default'",
             },
         }
@@ -184,6 +192,30 @@ class LocalControlStore:
                 values,
             )
         _tighten_sqlite_files(self.database_path)
+        self.prune_events()
+
+    def update_app_limits(self, app_id, rate_limit_per_minute, max_concurrent_requests):
+        with self._connect() as connection:
+            result = connection.execute(
+                "UPDATE app_keys SET rate_limit_per_minute = ?, max_concurrent_requests = ? "
+                "WHERE app_id = ? AND enabled = 1",
+                (rate_limit_per_minute, max_concurrent_requests, app_id),
+            )
+        return result.rowcount > 0
+
+    def delete_events(self, project_id=None) -> int:
+        with self._connect() as connection:
+            if project_id is None:
+                cursor = connection.execute("DELETE FROM events")
+            else:
+                cursor = connection.execute(
+                    "DELETE FROM events WHERE project_id = ?", (project_id,)
+                )
+        return cursor.rowcount
+
+    def check_storage(self):
+        with self._connect() as connection:
+            connection.execute("SELECT COUNT(*) FROM runtime_config").fetchone()
 
     def prune_events(self) -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(days=self.config.retention_days)
@@ -285,6 +317,7 @@ class LocalControlStore:
         capture_content: bool,
         rate_limit_per_minute: int | None = None,
         project_id: str = "default",
+        max_concurrent_requests: int | None = None,
     ) -> tuple[dict[str, Any], str]:
         raw_key = f"m87_{secrets.token_urlsafe(32)}"
         created_at = datetime.now(timezone.utc).isoformat()
@@ -293,8 +326,8 @@ class LocalControlStore:
             connection.execute(
                 """INSERT INTO app_keys
                    (app_id, key_digest, key_prefix, allowed_models, capture_content,
-                    rate_limit_per_minute, created_at, project_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    rate_limit_per_minute, created_at, project_id, max_concurrent_requests)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     app_id,
                     self._digest(raw_key),
@@ -304,6 +337,7 @@ class LocalControlStore:
                     rate_limit_per_minute,
                     created_at,
                     project_id,
+                    max_concurrent_requests,
                 ),
             )
         return (
@@ -314,6 +348,7 @@ class LocalControlStore:
                 "allowed_models": allowed_models,
                 "capture_content": capture_content,
                 "rate_limit_per_minute": rate_limit_per_minute,
+                "max_concurrent_requests": max_concurrent_requests,
                 "created_at": created_at,
             },
             raw_key,
@@ -334,13 +369,14 @@ class LocalControlStore:
             allowed_models=json.loads(row["allowed_models"]),
             capture_content=bool(row["capture_content"]),
             rate_limit_per_minute=row["rate_limit_per_minute"],
+            max_concurrent_requests=row["max_concurrent_requests"],
         )
 
     def list_apps(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
                 """SELECT app_id, project_id, key_prefix, allowed_models, capture_content,
-                          rate_limit_per_minute, enabled, created_at
+                          rate_limit_per_minute, max_concurrent_requests, enabled, created_at
                    FROM app_keys ORDER BY created_at DESC"""
             ).fetchall()
         result = []

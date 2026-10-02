@@ -37,6 +37,15 @@ choices. Container lifecycle management is planned until implemented and tested.
 Do not start Docker or optional services during routine development; retain the
 on-demand Docker policy below. Track this target in `docs/ecosystem.md` and roadmap.
 
+Phase 1 controls are available in the included console: persistent cache/retry,
+gateway concurrency, request/message bounds, SQLite retention and capture limits.
+Managed application rate/concurrency limits can be edited without key replacement.
+`/health` is liveness and `/ready` checks default-provider configuration/credentials
+and local storage; it does not establish upstream connectivity. The chat sample's
+isolated `python -m examples.chat_app.scenarios` suite exercises the HTTP flow and
+failure/recovery without Docker or changes to a running gateway. Keep limits/cache
+scoped to one process; budget/shared enforcement and remote delivery remain planned.
+
 The core covers API compatibility, application authentication and authorization,
 deterministic routing, provider adapters, policy checks, safe errors, observability,
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are

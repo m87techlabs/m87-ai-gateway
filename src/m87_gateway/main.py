@@ -13,7 +13,7 @@ from m87_gateway.config import GatewaySettings, get_settings
 from m87_gateway.control import LocalControlStore
 from m87_gateway.control.api import router as control_router
 from m87_gateway.control.setup import apply_overrides
-from m87_gateway.controls import ExactResponseCache, SlidingWindowRateLimiter
+from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
 from m87_gateway.metrics import GatewayMetrics
@@ -27,9 +27,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             application.state.settings = active
             application.state.metrics = GatewayMetrics()
             application.state.rate_limiter = SlidingWindowRateLimiter()
-            application.state.response_cache = ExactResponseCache(
-                active.cache.enabled, active.cache.ttl_seconds, active.cache.max_entries
-            )
+            application.state.inflight_limiter = InFlightLimiter()
             application.state.control_store = None
             application.state.admin_api_key = ""
             if active.control_plane.enabled:
@@ -43,6 +41,12 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
                 application.state.control_store.ensure_projects(
                     [item.project_id for item in active.configured_apps]
                 )
+            # Build the cache from persisted controls, including after a restart.
+            application.state.response_cache = ExactResponseCache(
+                active.cache.enabled, active.cache.ttl_seconds, active.cache.max_entries
+            )
+            if application.state.control_store:
+                application.state.control_store.config = active.control_plane
             application.state.recorder = AuditRecorder(
                 active, application.state.metrics, application.state.control_store
             )
@@ -100,6 +104,17 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     @application.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "m87-ai-gateway"}
+
+    @application.get("/ready")
+    async def ready(request: Request):
+        from m87_gateway.control.diagnostics import diagnostics
+
+        report = diagnostics(request.app.state)
+        return Response(
+            content='{"status":"ready"}' if report["ready"] else '{"status":"not_ready"}',
+            status_code=200 if report["ready"] else 503,
+            media_type="application/json",
+        )
 
     @application.get("/metrics", include_in_schema=False)
     def metrics(request: Request):

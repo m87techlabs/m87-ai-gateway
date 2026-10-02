@@ -43,7 +43,7 @@ sequenceDiagram
 ## Create an application key
 
 Open **Applications**, enter a generic app ID and explicit model allowlist, and
-choose whether payload capture is permitted. Copy the generated key immediately;
+choose request limits as needed. Enable gateway-wide payload capture in **Setup**. Copy the generated key immediately;
 the console cannot show it again. Place it only in the application's server-side
 secret storage. Revoke the row to invalidate it.
 
@@ -60,8 +60,9 @@ Use **Logs → Export JSON** for a bounded operator export. Exports can contain
 captured prompts and completions. Store them as sensitive data and delete them
 under the same retention policy as the source events.
 
-The gateway prunes expired events at startup. To change retention, set
-`GATEWAY_CONTROL_PLANE_RETENTION_DAYS` and restart. Back up `control.db` and
+The gateway prunes expired SQLite events at startup, on Controls saves, and on event
+writes. Change retention in **Controls**; its saved value overrides the startup
+`GATEWAY_CONTROL_PLANE_RETENTION_DAYS` value. Back up `control.db` and
 `master.key` together while access is restricted. Keep the master key separate
 from ordinary database-only backups when possible.
 

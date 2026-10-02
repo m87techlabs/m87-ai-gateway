@@ -67,6 +67,13 @@ class GatewayMetrics:
             registry=self.registry,
         )
 
+        self.concurrency_limits = Counter(
+            "m87_gateway_concurrency_limit_rejections_total",
+            "Requests rejected by gateway or application concurrency limits",
+            ("app_id",),
+            registry=self.registry,
+        )
+
     def observe(self, event: dict) -> None:
         provider = event.get("provider") or "none"
         self.requests.labels(
@@ -97,6 +104,9 @@ class GatewayMetrics:
             self.cache_requests.labels(cache_status).inc()
         if event.get("error_type") == "rate_limit_exceeded":
             self.rate_limits.labels(event.get("app_id") or "anonymous").inc()
+
+        if event.get("error_type") == "concurrency_limit_exceeded":
+            self.concurrency_limits.labels(event.get("app_id") or "anonymous").inc()
 
     def render(self) -> bytes:
         return generate_latest(self.registry)

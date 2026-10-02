@@ -7,6 +7,9 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+- Persistent console traffic/logging controls, editable application rate/concurrency
+  limits, gateway admission caps, readiness diagnostics, scoped log deletion, and
+  nine isolated sample HTTP failure/recovery scenarios.
 - Single-process per-app rate limits, opt-in exact-response caching, bounded
   transient provider retries, console outcome fields, and traffic-control runbook.
 - Initial public repository scaffold.

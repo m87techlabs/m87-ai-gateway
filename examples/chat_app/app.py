@@ -117,9 +117,14 @@ class Chat(BaseModel):
         return self
 
 
-def error(message, status, request_id=None):
+def error(message, status, request_id=None, *, code=None, retry_after=None):
     return JSONResponse(
-        {"error": message, "request_id": request_id},
+        {
+            "error": message,
+            "request_id": request_id,
+            "error_code": code,
+            "retry_after": retry_after,
+        },
         status_code=status,
         headers={"X-Request-ID": request_id} if request_id else {},
     )
@@ -214,6 +219,9 @@ def create_app(settings: Settings, *, transport=None):
                 "provider_timeout": "Model provider timed out. Check its readiness and gateway timeout setting",
                 "provider_rejected": "Model provider rejected the request. Check the installed model and provider credentials",
                 "provider_rate_limited": "Model provider rate limit reached. Wait before retrying",
+                "concurrency_limit_exceeded": "Gateway concurrency limit reached. Wait for active requests to finish",
+                "request_too_large": "Request exceeds the gateway size limit. Start a shorter conversation",
+                "message_too_large": "Message exceeds the gateway character limit. Shorten the prompt",
             }
             try:
                 code = response.json().get("error", {}).get("code")
@@ -234,6 +242,13 @@ def create_app(settings: Settings, *, transport=None):
                 else messages.get(response.status_code, "Gateway could not complete the request"),
                 response.status_code if 400 <= response.status_code < 600 else 502,
                 request_id,
+                code=code
+                if isinstance(code, str) and re.fullmatch(r"[a-z_]{1,64}", code)
+                else None,
+                retry_after=int(response.headers["retry-after"])
+                if response.headers.get("retry-after", "").isdecimal()
+                and len(response.headers["retry-after"]) <= 6
+                else None,
             )
         try:
             payload = response.json()
@@ -258,6 +273,7 @@ def create_app(settings: Settings, *, transport=None):
                 "usage": counts,
                 "request_id": request_id,
                 "latency_ms": round((time.perf_counter() - started) * 1000),
+                "cache_status": response.headers.get("x-gateway-cache", "UNKNOWN"),
             },
             headers={"X-Request-ID": request_id} if request_id else {},
         )

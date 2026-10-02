@@ -61,6 +61,7 @@ class AppConfig(ConfigModel):
         description="Legacy compatibility field; gateway settings control content capture",
     )
     rate_limit_per_minute: int | None = Field(default=None, ge=1)
+    max_concurrent_requests: int | None = Field(default=None, ge=1, le=10000)
     monthly_budget_usd: float | None = Field(default=None, ge=0)
 
     @field_validator("allowed_models")
@@ -243,6 +244,10 @@ class RetryConfig(ConfigModel):
     backoff_ms: int = Field(default=100, ge=0, le=10000)
 
 
+class LimitsConfig(ConfigModel):
+    max_concurrent_requests: int = Field(default=64, ge=1, le=10000)
+
+
 class GatewaySettings(ConfigModel):
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -255,6 +260,7 @@ class GatewaySettings(ConfigModel):
     control_plane: ControlPlaneConfig = Field(default_factory=ControlPlaneConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     retry: RetryConfig = Field(default_factory=RetryConfig)
+    limits: LimitsConfig = Field(default_factory=LimitsConfig)
 
     @field_validator("apps", mode="before")
     @classmethod

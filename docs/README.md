@@ -13,6 +13,7 @@ gates in the lifecycle guide.
 | [Guided setup](runbooks/guided-setup.md) | Launch, connect a provider in the console, and create an application key |
 | [Provider adapters](adapters.md) | Extend the reusable core with trusted source adapters |
 | [Ecosystem vision](ecosystem.md) | Full gateway product and planned managed dashboard/logging/secrets services |
+| [Gateway controls acceptance](runbooks/gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
 | [Projects and usage](runbooks/projects-and-usage.md) | Group applications, filter dashboards/logs, and test APIs |
 | [Roadmap](roadmap.md) | Milestones, acceptance criteria, and provider coverage |
 | [Design](design.md) | Product scope, boundaries, and design decisions |

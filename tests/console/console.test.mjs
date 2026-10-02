@@ -32,6 +32,7 @@ async function consoleFixture(t) {
     {project_id: "alpha", name: "Alpha", app_count: 1}];
   const apps = [{app_id: "sample-app", project_id: "alpha", key_prefix: "fixture", allowed_models: ["auto"], capture_content: false, rate_limit_per_minute: null}];
   const event = {request_id: "fixture-request", created_at: "2026-10-02T12:00:00Z", project_id: "alpha", app_id: "sample-app", routed_model: "ollama:small", status_code: 200, total_tokens: 13, latency_ms: 12, cache_status: "disabled", provider_attempts: 1};
+  let controls = {cache: {enabled: false, ttl_seconds: 300, max_entries: 1000}, retry: {max_attempts: 1, backoff_ms: 100}, limits: {max_concurrent_requests: 64}, max_request_bytes: 262144, max_message_chars: 65536, retention_days: 30, max_content_chars: 16384};
   const requests = [];
   let pendingChat = null;
   let deferredChat = false;
@@ -51,6 +52,10 @@ async function consoleFixture(t) {
       return response({model: "ollama:small", choices: [{message: {content: "synthetic answer"}}], usage: {prompt_tokens: 8, completion_tokens: 5, total_tokens: 13}}, 200, {"X-Request-ID": "fixture-request"});
     }
     assert.equal(options.headers.Authorization, "Bearer synthetic-admin-key");
+    if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls); }
+    if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
+    if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
+    if (url.pathname.endsWith("/limits")) { Object.assign(apps[0], body); return response(null, 204); }
     if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
     if (url.pathname.endsWith("/projects")) {
       if (method === "POST") { projects.push({...body, app_count: 0}); return response(body, 201); }
@@ -64,7 +69,7 @@ async function consoleFixture(t) {
     if (url.pathname.includes("/apps/") && url.pathname.endsWith("/models")) { apps[0].allowed_models = body.allowed_models; return response(null, 204); }
     if (url.pathname.endsWith("/overview")) return response({requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12});
     if (url.pathname.endsWith("/usage")) return response({series: [{bucket: "2026-10-02T12:00:00Z", requests: 1, total_tokens: 13}], by_app: [{app_id: "sample-app", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}], by_model: [{model: "ollama:small", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}]});
-    if (url.pathname.endsWith("/logs")) return response({items: [event]});
+    if (url.pathname.endsWith("/logs")) return method === "DELETE" ? response({deleted: 1}) : response({items: [event]});
     if (url.pathname.endsWith("/logs/export")) return response([event]);
     if (url.pathname.endsWith("/logs/fixture-request")) {
       if (deferredDetail) return new Promise((resolve) => { pendingDetail = () => resolve(response(event)); });
@@ -190,4 +195,54 @@ test("an exchange response arriving after lock cannot reopen its detail", async 
   await delay(10);
   assert.equal($("detail").hasAttribute("open"), false);
   assert.equal($("detail-body").textContent, "");
+});
+
+
+test("controls edit persistent values and show readiness, then clear response cache", async (t) => {
+  const {$, window, submit, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="controls"]').click();
+  await until(() => $("controls-form").elements.retention_days.value === "30");
+  assert.match($("readiness-status").textContent, /Ready/);
+  const form = $("controls-form");
+  form.elements.max_concurrent_requests.value = "8";
+  form.elements.max_attempts.value = "2";
+  form.elements.retention_days.value = "90";
+  form.elements.cache_enabled.checked = true;
+  submit("controls-form");
+  await until(() => requests.some((r) => r.path.endsWith("/controls") && r.method === "PUT"));
+  const request = requests.find((r) => r.path.endsWith("/controls") && r.method === "PUT");
+  assert.equal(request.body.limits.max_concurrent_requests, 8);
+  assert.equal(request.body.retry.max_attempts, 2);
+  assert.equal(request.body.retention_days, 90);
+  assert.equal(request.body.cache.enabled, true);
+  $("clear-cache").click();
+  await until(() => requests.some((r) => r.path.endsWith("/cache/clear")));
+});
+
+test("application limits edit without replacing its key", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="apps"]').click();
+  await until(() => $("apps").querySelector('input[aria-label="Requests per minute for sample-app"]'));
+  $("apps").querySelector('input[aria-label="Requests per minute for sample-app"]').value = "5";
+  $("apps").querySelector('input[aria-label="Concurrent requests for sample-app"]').value = "2";
+  [...$("apps").querySelectorAll("button")].find((b) => b.textContent === "Save limits").click();
+  await until(() => requests.some((r) => r.path.endsWith("/limits")));
+  const request = requests.find((r) => r.path.endsWith("/limits"));
+  assert.deepEqual(request.body, {rate_limit_per_minute: 5, max_concurrent_requests: 2});
+  assert.equal(request.method, "PATCH");
+});
+
+test("log deletion requires confirmation and follows selected project", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  $("project-filter").value = "alpha";
+  $("project-filter").dispatchEvent(new window.Event("change"));
+  window.document.querySelector('[data-view="logs"]').click();
+  window.confirm = () => false;
+  $("delete-logs").click();
+  assert.equal(requests.some((r) => r.method === "DELETE"), false);
+  window.confirm = (message) => { assert.match(message, /project alpha/); return true; };
+  $("delete-logs").click();
+  await until(() => requests.some((r) => r.method === "DELETE"));
+  const deletion = requests.find((r) => r.method === "DELETE");
+  assert.deepEqual(deletion.body, {confirmation: "DELETE", project_id: "alpha"});
 });

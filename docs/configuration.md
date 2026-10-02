@@ -2,7 +2,8 @@
 
 The gateway loads YAML, applies selected environment overrides, and validates it
 at startup. Unknown fields, malformed routes/endpoints, duplicate app IDs/keys,
-and invalid limits fail startup. Settings are cached until the process restarts.
+and invalid limits fail startup. File/environment settings are loaded at startup; saved console settings override
+the supported fields and apply to new requests.
 
 ## File selection and overrides
 
@@ -29,7 +30,7 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_CONTROL_PLANE_ENABLED` | Enable the local SQLite store, admin API, and console |
 | `GATEWAY_CONTROL_PLANE_DATABASE_PATH` | Local SQLite event and key-metadata path |
 | `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
-| `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | Event retention in days; pruned at startup |
+| `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | SQLite event retention in days; pruned at startup and on event writes |
 | `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
 | `GATEWAY_CACHE_ENABLED`, `GATEWAY_CACHE_TTL_SECONDS`, `GATEWAY_CACHE_MAX_ENTRIES` | Cache enablement, expiry, and capacity |
 | `GATEWAY_PROVIDER_MAX_ATTEMPTS`, `GATEWAY_PROVIDER_RETRY_BACKOFF_MS` | Maximum attempts and initial retry delay |
@@ -98,7 +99,7 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `control_plane.enabled` | Optional local SQLite event/key store, admin API, and `/admin` console |
 | `control_plane.database_path`, `master_key_path` | Private local persistence paths |
 | `control_plane.admin_api_key_env` | Environment variable containing the admin key |
-| `control_plane.retention_days` | Startup event-pruning window; default 30 days |
+| `control_plane.retention_days` | SQLite event-pruning window; default 30 days |
 | `apps[].capture_content` / `auth.api_keys[].capture_content` | Legacy compatibility fields; ignored by gateway-wide capture |
 | `rate_limit_per_minute` | Enforced rolling 60-second request allowance per app and process |
 | `monthly_budget_usd` | Validated future budget field; not enforced |
@@ -112,3 +113,26 @@ and tool-role messages are rejected with a safe 422.
 See [observability](observability.md) for content storage and retention,
 [configuration changes](runbooks/configuration-changes.md) for rotation, and
 [Worker integration](integrations/worker-local-inference.md) for the reference use case.
+
+## Persistent console controls
+
+Use **Controls** to edit gateway concurrency, request bytes/message characters,
+retry attempts/backoff, cache enablement/TTL/capacity, SQLite retention days, and
+capture character limits. Set the per-provider timeout in **Setup**, gateway-wide
+content capture in **Setup**, and managed application rate/concurrency limits in
+**Applications**. A blank application limit inherits the gateway concurrency cap
+or disables its rate allowance. Existing keys remain valid.
+
+Updates apply to new requests and persist in the private SQLite runtime
+configuration. Saving setup, connections, or controls clears response caching;
+in-flight requests keep their original settings. Active concurrency counts and
+rate windows are preserved on edits, but reset at process restart. Lowering a
+concurrency cap does not cancel admitted work. Admission rejects excess work with
+429 and `Retry-After: 1`, without queueing.
+
+YAML supports `limits.max_concurrent_requests` (default 64) and application
+`max_concurrent_requests` (default null). These are single-process limits.
+SQLite retention is applied at startup, on Controls save, and on event writes.
+Idle instances do not run a background expiry timer. Shortening retention removes
+older records and affects usage summaries. It does not manage separate JSONL
+files. See [acceptance runbook](runbooks/gateway-controls-testing.md).

@@ -16,7 +16,7 @@ function bubble(role, content) {
   return article;
 }
 function resetDetails() {
-  for (const id of ["input-tokens", "output-tokens", "total-tokens", "latency", "response-model", "request-id"]) $(id).textContent = "—";
+  for (const id of ["input-tokens", "output-tokens", "total-tokens", "latency", "response-model", "request-id", "cache-status", "retry-after"]) $(id).textContent = "—";
   $("error").hidden = true;
 }
 $("clear").addEventListener("click", () => {
@@ -46,6 +46,8 @@ $("chat-form").addEventListener("submit", async (event) => {
     const response = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages})});
     const result = await response.json();
     $("request-id").textContent = result.request_id || "Unavailable";
+    $("cache-status").textContent = result.cache_status || "—";
+    $("retry-after").textContent = result.retry_after == null ? "—" : `${result.retry_after} seconds`;
     if (!response.ok) throw new Error(result.error || "Request failed. Check the gateway logs.");
     history = [...messages, {role: "assistant", content: result.content}];
     bubble("assistant", result.content);

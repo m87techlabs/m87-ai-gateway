@@ -139,3 +139,24 @@ The server binds to loopback and rejects cross-origin browser submissions. It ha
 no end-user login and is a local sample, not a public chat deployment. Configure
 authentication, authorization, TLS, and resource controls before adapting it for
 remote users. Gateway provider secrets belong only in the gateway console.
+
+## Gateway control scenarios
+
+From the repository root with the gateway virtual environment active:
+
+```bash
+python -m examples.chat_app.scenarios
+```
+
+This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
+inference service on reserved, temporary loopback ports. It exercises nine scenarios
+and reports PASS for each. It uses a private temporary database and generated keys;
+all test services/data are cleaned up afterward. Your running gateway, existing
+keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
+
+The scenarios cover successful input/output capture, cache hits and token accounting,
+rate limits, concurrency limits, retries/outages, timeouts, readiness, request bounds,
+truncation, restart persistence, and log deletion. These same scenarios run in pytest.
+The sample UI displays cache status and retry delay; retries/provider attempts are
+visible in gateway log details. For live Ollama/manual UI checks, follow the
+[acceptance runbook](../../docs/runbooks/gateway-controls-testing.md).

@@ -70,7 +70,8 @@ and other provider differences must be declared rather than silently dropped.
 The console now includes persistent provider connection setup, model discovery,
 default routing and content-capture choices, inspection, and key operations. A
 loopback launcher starts without demo credentials. A Linux standalone build is
-experimental. Complete policy editing, native Windows packaging, cross-platform
+experimental. Rate/concurrency, request bounds, cache/retry, and log-retention editing are included.
+Budget and response-policy editing, native Windows packaging, cross-platform
 secret protection, and production service management remain planned. See
 [guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
 
@@ -102,10 +103,10 @@ provide separate operator roles or tenant isolation. See
 | Policy | Configurable request/response checks with bounded request sizes | Partial: request bounds and configured blocklist; response checks planned |
 | Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: timeouts and opt-in bounded retries; fallback planned |
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
-| Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate enforcement and opt-in response cache; budgets planned |
+| Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate/concurrency enforcement, UI controls and opt-in response cache; budgets planned |
 | Projects and dashboard | Project/application usage, logs, API testing and trends | Implemented local grouping; roles, project budgets and billing remain planned |
 | Ecosystem services | Optional managed dashboards, metrics, logging and secrets | Planned lifecycle adapters and service profiles; no automatic Docker startup yet |
-| Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: health endpoint, Docker files, and runbooks |
+| Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: liveness and configuration/storage readiness, Docker files, and runbooks |
 
 ## Target request path
 

@@ -246,6 +246,33 @@ provider. It verifies a dynamically generated application key can authorize a
 chat and that the matching admin event contains provider-reported tokens and
 opted-in request/response content. Hosted CI remains the full-suite gate.
 
+## Phase 1 controls and sample acceptance
+
+Checked on 2026-10-02 with Python 3.12 and Node 24 on Linux/WSL:
+
+- Source suite: 143 tests passed, including nine real HTTP sample/gateway/synthetic
+  inference scenarios, operator authorization, invalid controls, persisted cache
+  initialization, retention on writes/save/restart, migration, scoped deletion,
+  readiness credential/storage failures, concurrency isolation and cancellation.
+- Console/sample DOM suite: 14 tests passed, including Controls editing, application
+  limit updates without key replacement, project deletion confirmation, and sample
+  cache/retry display. These do not establish visual/browser/accessibility behavior.
+- Experimental Linux executable rebuilt and its smoke checks cover persisted
+  controls, application limits, readiness, restart, inference, logs, and token usage.
+- Ruff lint/format, JavaScript syntax, Markdown links/fences and whitespace passed.
+- The managed source gateway/sample were reloaded on their existing ports without
+  changing keys or saved configuration. Controls and `/ready` returned successfully;
+  a short Windows Ollama completion returned HTTP 200 with cache-status metadata.
+  Live fault/recovery exercises were not run against this inference service.
+
+The isolated scenarios start only temporary loopback services with private temporary
+storage and generated credentials; they make no cloud calls and clean up afterward.
+They test predictable synthetic failures rather than real Ollama/provider behavior.
+Live Ollama fault/recovery exercises, Docker networking, native Windows packaging,
+clean-host distribution, multi-replica controls, and cloud adapters/deployments remain
+unverified. Docker stayed disabled. See the
+[acceptance runbook](runbooks/gateway-controls-testing.md).
+
 ## Deferred checks
 
 ### Projects, dashboard, and ecosystem vision
@@ -340,12 +367,13 @@ and image checks still require Docker.
 
 Enabling Docker does not complete these roadmap items:
 
-- Budget enforcement, response policies, readiness, cost estimates, and
+- Budget enforcement, response policies, live-provider readiness, cost estimates, and
   durable/remote event delivery remain incomplete or absent.
 - AWS Bedrock, Azure OpenAI, Google Cloud Vertex AI, and Anthropic adapters are
   planned; cloud contract/live checks depend on those adapters existing.
-- Cloud deployment, persistence, and migration/restore validation need concrete
-  implementations before operational support can be claimed.
+- Cloud deployment and migration/restore validation need tested procedures before
+  operational support can be claimed. Local SQLite persistence and additive migrations
+  are implemented.
 
 These are feature acceptance gaps, distinct from checks deferred by the environment.
 Track them in the [roadmap](roadmap.md).

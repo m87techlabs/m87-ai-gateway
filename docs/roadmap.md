@@ -48,6 +48,22 @@ restart without losing data, stop only that profile, and recover or roll back
 through documented procedures. No plaintext secrets or captured prompts appear
 in metrics, process arguments, generated manifests, or default logs.
 
+## Phase 1: gateway controls and sample acceptance — implemented locally
+
+- [x] Edit managed application rate and concurrency limits without replacing keys.
+- [x] Add a gateway concurrency cap and configurable request/message bounds.
+- [x] Manage cache, retry, SQLite retention, and capture limits through Controls.
+- [x] Persist controls and use them after restart; clear cache on configuration updates.
+- [x] Separate `/health` liveness from `/ready` configuration/storage readiness.
+- [x] Show actionable checks and keep live connectivity discovery explicit.
+- [x] Add confirmed, project-scoped SQLite log deletion and truncation indicators.
+- [x] Exercise nine isolated sample → gateway → synthetic inference scenarios.
+
+See [controls acceptance runbook](runbooks/gateway-controls-testing.md). Live Ollama
+failure/recovery exercises, visual browser checks, Docker and cloud validation
+remain separate evidence requirements. Limits/cache are per process; budgets,
+shared enforcement and remote exporters are follow-up milestones.
+
 ## Next product milestone: guided setup and standalone distribution
 
 Prioritize the first-run experience alongside completion of core controls:
@@ -56,9 +72,10 @@ Prioritize the first-run experience alongside completion of core controls:
   selection, and application-key creation; launcher supplies private operator access.
 - [x] Add a generic OpenAI-compatible text adapter and source adapter registration;
   live vLLM verification and Anthropic/Bedrock adapters remain follow-up work.
-- Manage provider connections, models, app policies, retention, and traffic controls
-  through the included UI, with validated updates and clear restart requirements.
-- Show supported capabilities and safe, actionable connection diagnostics.
+- [x] Manage provider connections, models, app rate/concurrency policies, retention,
+  and traffic controls through the included UI with validated, persistent updates.
+- [x] Show the current text/non-streaming contract, configuration readiness, and
+  explicit model-discovery connectivity diagnostics.
 - Build the runtime, UI, and embedded persistence as native platform artifacts;
   experimental Linux bundling exists, with clean-host and Windows verification pending.
 - Define cross-platform credential protection, backup/restore, service startup,
@@ -125,7 +142,8 @@ maintainer-supplied credentials; ordinary tests make no billable calls.
   error, guardrail, token usage, and log-sink metrics.
 - Add explicitly labeled cost estimates with documented pricing maintenance.
 - Supply a usable Grafana example and structured log ingestion guidance.
-- Define readiness separately from liveness; document incident diagnosis.
+- [x] Define configuration/storage readiness separately from liveness; keep live
+  provider connectivity and completion checks explicit.
 
 **Exit:** operators can trace a failed request and distinguish gateway failures
 from provider failures without accessing full prompts or credentials.

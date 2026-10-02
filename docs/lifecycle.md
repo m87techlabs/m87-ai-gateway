@@ -107,5 +107,6 @@ flowchart LR
 
 Use the [release runbook](runbooks/release.md) for publication and the
 [configuration runbook](runbooks/configuration-changes.md) for runtime changes.
-Persistence is not currently implemented. Add migration, backup, and restore
-runbooks before shipping a feature that relies on durable state.
+Local SQLite persistence and additive migrations are implemented for configuration,
+keys, projects, and events. Tested backup/restore and upgrade/rollback procedures
+remain release requirements.

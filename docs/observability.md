@@ -69,7 +69,8 @@ exceed the rotation threshold, so size is an approximate disk bound.
 Known configured app/provider credentials and common bearer/key patterns are
 redacted before truncation. This is not general PII or arbitrary-secret detection.
 Free-form prompts and responses can still contain sensitive text: enable capture
-only for a deliberately selected app and use synthetic data during initial tests.
+only when the operator intends to capture authorized gateway traffic, and use
+synthetic data during initial tests.
 
 Native runs can use the relative `var/log/gateway/` path, ignored by Git and
 Docker builds. Container files are ephemeral unless that path is mounted on a
@@ -90,6 +91,7 @@ automatically. See the [traffic logging runbook](runbooks/traffic-logging.md).
 - `m87_gateway_cache_requests_total`
 - `m87_gateway_provider_retries_total`
 - `m87_gateway_rate_limit_rejections_total`
+- `m87_gateway_concurrency_limit_rejections_total`
 
 Events and console rows include cache status, provider attempts, and retries.
 Cache hits retain original response usage for inspection but do not increment

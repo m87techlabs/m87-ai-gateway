@@ -35,6 +35,23 @@ async def chat_completions(
             "rate_limit_error",
             headers={"Retry-After": str(retry_after)},
         )
+    with request.app.state.inflight_limiter.admit(
+        app_context.app_id,
+        settings.limits.max_concurrent_requests,
+        app_context.max_concurrent_requests,
+    ):
+        return await complete(payload, request, http_response, app_context, settings)
+
+
+async def complete(
+    payload: ChatCompletionRequest,
+    request: Request,
+    http_response: Response,
+    app_context: AppConfig,
+    settings: GatewaySettings,
+) -> ChatCompletionResponse:
+    """Run the provider path while the caller holds a concurrency slot."""
+    audit = request.state.audit
     try:
         selected = select_model(payload.model, app_context, settings, payload.task)
     except ModelNotAllowedError as exc:

@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.config import validate_model
-from m87_gateway.config.settings import ProviderConfig
+from m87_gateway.config.settings import CacheConfig, LimitsConfig, ProviderConfig, RetryConfig
 from m87_gateway.adapters import adapters
 from m87_gateway.providers.factory import get_provider
 from m87_gateway.control.setup import activate, apply_overrides
@@ -93,6 +93,81 @@ class AppKeyCreate(AppModelAccess):
         description="Legacy compatibility field; gateway settings control content capture",
     )
     rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
+    max_concurrent_requests: int | None = Field(default=None, ge=1, le=10000)
+
+
+class AppLimitsWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rate_limit_per_minute: int | None = Field(ge=1, le=100000)
+    max_concurrent_requests: int | None = Field(ge=1, le=10000)
+
+
+class ControlsWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    cache: CacheConfig
+    retry: RetryConfig
+    limits: LimitsConfig
+    max_message_chars: int = Field(ge=1, le=1048576)
+    max_request_bytes: int = Field(ge=1, le=10485760)
+    retention_days: int = Field(ge=1, le=3650)
+    max_content_chars: int = Field(ge=1, le=65536)
+
+    def overrides(self):
+        values = self.model_dump()
+        values["guardrails"] = {
+            "max_message_chars": values.pop("max_message_chars"),
+            "max_request_bytes": values.pop("max_request_bytes"),
+        }
+        return values
+
+
+class LogDeletion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmation: str = Field(pattern=r"^DELETE$")
+    project_id: ProjectIdentifier | None = None
+
+
+@router.get("/admin/api/controls")
+async def controls(request: Request, store: AdminStore):
+    settings = request.app.state.settings
+    return ControlsWrite(
+        cache=settings.cache,
+        retry=settings.retry,
+        limits=settings.limits,
+        max_message_chars=settings.guardrails.max_message_chars,
+        max_request_bytes=settings.guardrails.max_request_bytes,
+        retention_days=settings.control_plane.retention_days,
+        max_content_chars=settings.observability.traffic_log.max_content_chars,
+    )
+
+
+@router.put("/admin/api/controls", status_code=204)
+async def save_controls(payload: ControlsWrite, request: Request, store: AdminStore):
+    saved = store.runtime_config()
+    saved["controls"] = payload.overrides()
+    settings = apply_overrides(request.app.state.settings, saved)
+    store.save_runtime_config(saved)
+    activate(request, settings)
+    store.prune_events()
+    return Response(status_code=204)
+
+
+@router.post("/admin/api/cache/clear", status_code=204)
+async def clear_cache(request: Request, store: AdminStore):
+    request.app.state.response_cache.clear()
+    return Response(status_code=204)
+
+
+@router.get("/admin/api/diagnostics")
+async def gateway_diagnostics(request: Request, store: AdminStore):
+    from m87_gateway.control.diagnostics import diagnostics
+
+    return diagnostics(request.app.state)
+
+
+@router.delete("/admin/api/logs")
+async def remove_logs(payload: LogDeletion, store: AdminStore):
+    return {"deleted": store.delete_events(payload.project_id)}
 
 
 class ProviderKeyWrite(BaseModel):
@@ -213,6 +288,7 @@ async def create_app(payload: AppKeyCreate, store: AdminStore):
             payload.capture_content,
             payload.rate_limit_per_minute,
             payload.project_id,
+            payload.max_concurrent_requests,
         )
     except sqlite3.IntegrityError as exc:
         raise GatewayError(409, "app_exists", "Application identifier already exists") from exc
@@ -235,6 +311,15 @@ async def assign_project(app_id: str, payload: ProjectAssignment, store: AdminSt
 @router.patch("/admin/api/apps/{app_id}/models", status_code=204)
 async def update_app_models(app_id: str, payload: AppModelAccess, store: AdminStore):
     if not store.update_app_models(app_id, payload.allowed_models):
+        raise GatewayError(404, "not_found", "Application was not found")
+    return Response(status_code=204)
+
+
+@router.patch("/admin/api/apps/{app_id}/limits", status_code=204)
+async def update_app_limits(app_id: str, payload: AppLimitsWrite, store: AdminStore):
+    if not store.update_app_limits(
+        app_id, payload.rate_limit_per_minute, payload.max_concurrent_requests
+    ):
         raise GatewayError(404, "not_found", "Application was not found")
     return Response(status_code=204)
 

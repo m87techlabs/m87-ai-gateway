@@ -6,7 +6,48 @@ import threading
 import time
 from collections import OrderedDict, deque
 from copy import deepcopy
+from contextlib import contextmanager
 from typing import Any
+
+from m87_gateway.api.errors import GatewayError
+
+
+class InFlightLimiter:
+    """Reject excess work immediately; release admission on errors and cancellation."""
+
+    def __init__(self):
+        self._apps: dict[str, int] = {}
+        self._total = 0
+        self._lock = threading.Lock()
+
+    @contextmanager
+    def admit(self, app_id: str, global_limit: int, app_limit: int | None):
+        with self._lock:
+            count = self._apps.get(app_id, 0)
+            if self._total >= global_limit or (app_limit is not None and count >= app_limit):
+                raise GatewayError(
+                    429,
+                    "concurrency_limit_exceeded",
+                    "Gateway concurrent request limit exceeded",
+                    "rate_limit_error",
+                    headers={"Retry-After": "1"},
+                )
+            self._total += 1
+            self._apps[app_id] = count + 1
+        try:
+            yield
+        finally:
+            with self._lock:
+                self._total -= 1
+                remaining = self._apps[app_id] - 1
+                if remaining:
+                    self._apps[app_id] = remaining
+                else:
+                    del self._apps[app_id]
+
+    def snapshot(self):
+        with self._lock:
+            return {"active_requests": self._total}
 
 
 class SlidingWindowRateLimiter:
@@ -76,3 +117,7 @@ class ExactResponseCache:
             self._entries.move_to_end(key)
             while len(self._entries) > self.max_entries:
                 self._entries.popitem(last=False)
+
+    def clear(self):
+        with self._lock:
+            self._entries.clear()

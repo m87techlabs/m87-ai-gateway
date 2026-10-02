@@ -1,6 +1,7 @@
 import json
 import sqlite3
 import stat
+from datetime import datetime, timezone
 
 from m87_gateway.config import ControlPlaneConfig
 from m87_gateway.control import LocalControlStore
@@ -19,7 +20,7 @@ def store(tmp_path):
 def event(**updates):
     value = {
         "request_id": "request-1",
-        "created_at": "2026-10-02T12:00:00+00:00",
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "app_id": "flow-lab",
         "provider": "ollama",
         "model": "auto",
@@ -111,6 +112,7 @@ def test_existing_database_upgrades_without_losing_keys(tmp_path):
     _, key = control.create_app_key("existing", ["auto"], False)
     with sqlite3.connect(tmp_path / "control.db") as connection:
         connection.execute("ALTER TABLE app_keys DROP COLUMN rate_limit_per_minute")
+        connection.execute("ALTER TABLE app_keys DROP COLUMN max_concurrent_requests")
         for name in ("provider_attempts", "provider_retries", "cache_status"):
             connection.execute(f"ALTER TABLE events DROP COLUMN {name}")
     upgraded = store(tmp_path)

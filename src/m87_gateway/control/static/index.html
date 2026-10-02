@@ -26,6 +26,7 @@
       <nav>
         <button class="nav" data-view="setup">Setup</button>
         <button class="nav active" data-view="overview">Overview</button>
+        <button class="nav" data-view="controls">Controls</button>
         <button class="nav" data-view="projects">Projects</button>
         <button class="nav" data-view="tester">API tester</button>
         <button class="nav" data-view="logs">Logs</button>
@@ -61,7 +62,7 @@
             <label>Prompt<textarea name="prompt" rows="5" maxlength="65536" required>Hello, say one short sentence.</textarea></label>
             <label>Maximum output tokens<input name="max_tokens" type="number" value="128" min="1" max="4096" required></label>
             <button type="submit">Send through gateway</button>
-            <p class="muted">Input/output storage follows the gateway and app capture settings. The key is cleared after submission.</p>
+            <p class="muted">Input/output storage follows the gateway capture setting. The key is cleared after submission.</p>
           </form>
           <div class="panel"><h3>Gateway result</h3><p id="tester-status">No request sent.</p><pre id="tester-result"></pre><button id="tester-detail" type="button" class="secondary" hidden>Open matching log</button></div>
         </div>
@@ -98,6 +99,27 @@
         </div>
       </section>
 
+      <section id="view-controls" class="view" hidden>
+        <div class="panel"><h3>Gateway readiness</h3><p id="readiness-status"></p><div id="readiness-checks"></div><p class="muted">Readiness checks configuration and local storage. In Setup, discover models to test connectivity and use the API tester to verify inference.</p></div>
+        <form id="controls-form" class="panel form-panel">
+          <h3>Traffic and logging controls</h3>
+          <p>Changes apply to new requests and survive restart. Saving clears cached responses. Limits apply to this gateway process.</p>
+          <label>Gateway concurrent requests<input name="max_concurrent_requests" type="number" min="1" max="10000" required></label>
+          <label>Maximum request bytes<input name="max_request_bytes" type="number" min="1" max="10485760" required></label>
+          <label>Maximum characters per message<input name="max_message_chars" type="number" min="1" max="1048576" required></label>
+          <label>Provider attempts (including first call)<input name="max_attempts" type="number" min="1" max="5" required><small>Retries can duplicate provider work and charges.</small></label>
+          <label>Initial retry backoff in milliseconds<input name="backoff_ms" type="number" min="0" max="10000" required></label>
+          <label class="check"><input name="cache_enabled" type="checkbox">Cache identical responses per application and model</label>
+          <label>Cache lifetime in seconds<input name="ttl_seconds" type="number" min="1" max="86400" required></label>
+          <label>Maximum cached responses<input name="max_entries" type="number" min="1" max="100000" required></label>
+          <label>SQLite log retention in days<input name="retention_days" type="number" min="1" max="3650" required><small>Older records are removed on save, restart, and subsequent request logging. Usage summaries reflect retained records.</small></label>
+          <label>Captured characters per input/output record<input name="max_content_chars" type="number" min="1" max="65536" required><small>Gateway-wide capture is enabled in Setup. Redaction happens before truncation.</small></label>
+          <button type="submit">Save controls</button>
+          <button id="clear-cache" type="button" class="secondary">Clear response cache</button>
+          <p class="muted">Set provider timeouts in Setup and application limits in Applications. JSONL files use their separate rotation policy.</p>
+        </form>
+      </section>
+
       <section id="view-overview" class="view">
         <div class="cards">
           <article><span>Requests · 24h</span><strong id="requests">—</strong></article>
@@ -118,7 +140,7 @@
 
       <section id="view-logs" class="view" hidden>
         <div class="panel">
-          <div class="panel-head"><div><h3>Request logs</h3><p>Token usage, status, latency, and opted-in payloads.</p></div><a class="button" id="export" href="#">Export JSON</a></div>
+          <div class="panel-head"><div><h3>Request logs</h3><p>Token usage, status, latency, and opted-in payloads.</p></div><div><a class="button" id="export" href="#">Export JSON</a><button id="delete-logs" type="button" class="danger">Delete selected project logs</button></div></div>
           <div id="logs"></div>
         </div>
       </section>
@@ -131,6 +153,7 @@
             <label>Project<select name="project_id" id="app-project"></select></label>
             <label>Allowed models<input name="allowed_models" required value="auto,ollama:gemma3:1b"><small>Comma-separated provider:model values.</small></label>
             <label>Requests per minute<input name="rate_limit_per_minute" type="number" min="1" max="100000" placeholder="Unlimited"></label>
+            <label>Concurrent requests<input name="max_concurrent_requests" type="number" min="1" max="10000" placeholder="Gateway limit"></label>
             <button type="submit">Create key</button>
             <div id="new-key" class="secret" hidden></div>
           </form>

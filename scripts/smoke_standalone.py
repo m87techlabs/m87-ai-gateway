@@ -157,9 +157,26 @@ def exercise(executable):
                     {"allowed_models": ["auto", model]},
                     admin,
                 )
+                controls = call("/admin/api/controls", key=admin)
+                controls["cache"]["enabled"] = True
+                controls["limits"]["max_concurrent_requests"] = 8
+                controls["retention_days"] = 90
+                call("/admin/api/controls", "PUT", controls, admin)
+                call(
+                    "/admin/api/apps/bundle-check/limits",
+                    "PATCH",
+                    {
+                        "rate_limit_per_minute": 10,
+                        "max_concurrent_requests": 2,
+                    },
+                    admin,
+                )
                 process.terminate()
                 process.wait(timeout=10)
                 process = launch(output)
+                assert call("/admin/api/controls", key=admin) == controls
+                assert call("/ready")["status"] == "ready"
+                assert call("/admin/api/diagnostics", key=admin)["ready"]
                 response = call(
                     "/v1/chat/completions",
                     "POST",
@@ -187,7 +204,7 @@ def exercise(executable):
                 assert sum(item["requests"] for item in usage["series"]) == 1
                 assert b"synthetic-provider-key" not in (data_dir / "control.db").read_bytes()
                 print(
-                    "Standalone startup, UI, auth, discovery, restart, chat, project usage and logs passed"
+                    "Standalone startup, UI, auth, controls, readiness, restart, chat, usage and logs passed"
                 )
         finally:
             if process is not None and process.poll() is None:
