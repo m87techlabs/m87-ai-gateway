@@ -15,6 +15,9 @@ async def authenticate_app(
             401, "invalid_api_key", "Missing or invalid API key", "authentication_error"
         )
     app_context = settings.app_for_api_key(token.strip())
+    store = getattr(request.app.state, "control_store", None)
+    if app_context is None and store is not None:
+        app_context = store.authenticate_app_key(token.strip())
     if app_context is None:
         raise GatewayError(
             401, "invalid_api_key", "Missing or invalid API key", "authentication_error"

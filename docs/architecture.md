@@ -9,7 +9,7 @@ sequenceDiagram
     participant Auth as App authentication and routing
     participant Policy as Configured request policy
     participant Provider as Provider adapter
-    participant Logs as Metadata and optional traffic storage
+    participant Logs as Metadata and optional local stores
     App->>API: POST /v1/chat/completions
     API->>API: Generate request ID and bound body size
     API->>Auth: Authenticate key and authorize requested/resolved model
@@ -25,7 +25,7 @@ sequenceDiagram
 
 Middleware also records auth, validation, body-size, and unexpected failures.
 An allowed app and environment can opt into bounded message/completion capture
-in a dedicated local file. Metadata stdout and metrics never contain that text.
+in a dedicated local store. Metadata stdout and metrics never contain that text.
 
 ## Components
 
@@ -39,6 +39,7 @@ in a dedicated local file. Metadata stdout and metrics never contain that text.
 | Providers | `src/m87_gateway/providers/` | Configured OpenAI/Ollama calls and safe upstream failures |
 | Traffic | `src/m87_gateway/logging/` | Body limits, request IDs, outcome records, redaction, local sink |
 | Metrics | `src/m87_gateway/metrics/` | Isolated per-process registry with bounded labels |
+| Local control plane | `src/m87_gateway/control/` | SQLite events, runtime keys, admin API, and packaged console |
 
 ## Process and failure boundaries
 
@@ -47,7 +48,9 @@ provider request currently creates an HTTP client. The traffic sink is local,
 rotates under a thread lock, and writes through the thread pool after response
 delivery. Use one process per traffic file.
 
-The gateway has no shared limiter, database, durable event queue, or control plane.
+The optional SQLite control plane belongs to one instance and is not a shared
+coordination or durable-delivery system. The gateway has no shared limiter or
+durable event queue.
 If the host is down, it cannot observe requests that fail at the Worker or tunnel.
 See [observability](observability.md) for delivery limits and
 [Worker/local inference](integrations/worker-local-inference.md) for deployment boundaries.

@@ -12,6 +12,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |
 | [Provider troubleshooting](provider-troubleshooting.md) | A chat request fails or returns unexpected behavior |
 | [Traffic logging](traffic-logging.md) | Enable and inspect bounded private LLM request/response records |
+| [Local control plane](control-plane.md) | Inspect usage and exchanges; manage local application/provider keys |
 | [End-to-end flow testing](end-to-end-flow-testing.md) | Verify Worker, Access, Tunnel, gateway, Ollama, logs, and metrics |
 | [Incident response](incident-response.md) | Requests fail broadly or credentials may be exposed |
 | [Release](release.md) | Preparing, publishing, or rolling back a version |

@@ -46,7 +46,8 @@ observability:
 ```
 
 Both `traffic_log.capture_content` and the app's `capture_content` must be true.
-Content capture also requires a file path. The shipped example leaves it disabled.
+Content capture also requires a private JSONL path or the enabled local control
+plane. The shipped example leaves it disabled.
 Content is retained only after authentication, final-model authorization, and
 request guardrails pass. Failed upstream calls can retain the permitted request,
 but do not store upstream error bodies.
@@ -110,19 +111,25 @@ flowchart LR
     Loki --> Grafana
 ```
 
-The in-process `EventSink` protocol is the initial extension boundary. The
-current implementation is a local file sink only. A later collector such as
+The in-process `EventSink` protocol is the initial extension boundary. Implemented
+sinks are rotating JSONL and the local SQLite control store. A later collector such as
 Grafana Alloy or an OpenTelemetry Collector can ship sanitized events without
 coupling provider requests to a remote logging service. Exporting captured content
 needs a separate explicit destination, access, retention, and redaction policy.
 
 ## Reliability limits
 
-File writes run in the thread pool after the response is sent. A write failure
+Sink writes run in the thread pool after the response is sent. A write failure
 increments the sink-error metric and emits a safe metadata error; it does not
 turn a successful model response into a failed request. Logs are best effort:
 disk failure, abrupt termination, or cancellation can lose an event. There is no
-durable queue, replay, encrypted database, search UI, or exactly-once delivery.
+durable queue, replay, remote delivery, or exactly-once delivery. The local
+SQLite store and search UI target one instance; provider credentials are encrypted,
+while captured LLM content is protected by filesystem permissions rather than
+field-level encryption.
+
+The [local control plane](control-plane.md) provides request/token summaries,
+event detail, bounded JSON export, key operations, and a destination inventory.
 
 The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and

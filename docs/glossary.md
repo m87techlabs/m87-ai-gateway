@@ -5,7 +5,9 @@
 | Gateway | The service applications call to access model providers through shared controls. |
 | Framework | The gateway core plus documented interfaces and tools for extending it. The public extension contract is planned. |
 | Application / app | A calling backend or service with its own identity and access policy. |
-| App API key | A bearer credential used to authenticate an app to the gateway. |
+| App API key | A bearer credential used to authenticate an app to the gateway. Configured keys and local runtime keys are supported. |
+| Admin key | A separate environment-supplied bearer credential for the local operator API and console. |
+| Control plane | The optional single-instance console, admin API, SQLite event store, and runtime key store. |
 | Provider credential | A secret or workload identity used by the gateway to authenticate upstream. It is separate from the app key. |
 | Authentication / AuthN | Establishing which application is calling. |
 | Authorization / AuthZ | Deciding which models and operations that application may use. |
@@ -22,7 +24,7 @@
 | API compatibility | Support for a documented subset of request, response, streaming, and error behavior. It is not a claim of full feature parity. |
 | Capability | A feature an adapter/model combination explicitly supports, such as streaming or tools. |
 | Streaming | Sending incremental response events before generation finishes; not currently implemented. |
-| Request ID | A correlation identifier used across response headers, logs, and traces; planned. |
+| Request ID | A gateway-generated correlation identifier used across response headers and logs. |
 | Audit event | A structured record of a request or policy outcome without sensitive content by default. |
 | Metric | An aggregate operational measurement. Labels must avoid secrets and unbounded values. |
 | Trace | Related spans describing work across components; a future observability option. |

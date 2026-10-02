@@ -56,8 +56,28 @@ class TrafficMiddleware:
                 message["headers"] = [
                     (key, value)
                     for key, value in message.get("headers", [])
-                    if key.lower() != b"x-request-id"
-                ] + [(b"x-request-id", request_id.encode())]
+                    if key.lower()
+                    not in {
+                        b"x-request-id",
+                        b"x-content-type-options",
+                        b"x-frame-options",
+                        b"referrer-policy",
+                    }
+                ] + [
+                    (b"x-request-id", request_id.encode()),
+                    (b"x-content-type-options", b"nosniff"),
+                    (b"x-frame-options", b"DENY"),
+                    (b"referrer-policy", b"no-referrer"),
+                ]
+                if scope["path"].startswith("/admin"):
+                    message["headers"] += [
+                        (b"cache-control", b"no-store"),
+                        (
+                            b"content-security-policy",
+                            b"default-src 'self'; style-src 'self'; script-src 'self'; "
+                            b"connect-src 'self'; img-src 'self' data:",
+                        ),
+                    ]
             await send(message)
 
         async def reject(error):

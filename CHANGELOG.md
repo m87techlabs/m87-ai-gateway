@@ -19,6 +19,11 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - A Worker-to-local-inference reference integration and traffic logging runbook.
 - A Docker-free Windows/WSL browser flow application with an ephemeral gateway
   identity, coordinated launcher, and local testing runbook.
+- An optional local control plane with SQLite event retention, request/token
+  analytics, opted-in LLM input/output inspection, JSON export, and a packaged
+  operator console.
+- Runtime application-key creation/revocation and encrypted local OpenAI-key
+  storage with separate operator authentication.
 - Configuration, routing, policy, provider-failure, metrics, and logging tests.
 - FastAPI gateway skeleton.
 

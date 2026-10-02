@@ -9,7 +9,9 @@ flowchart LR
     Secrets[Operator-managed provider credentials] --> Gateway
     Gateway -->|Provider credentials| Provider[Model service]
     Gateway --> Metadata[Metadata logs and metrics]
-    Gateway -. Explicit app and environment permission .-> Content[Private traffic file]
+    Gateway -. Explicit app and environment permission .-> Content[Private traffic stores]
+    Operator[Operator with admin key] --> Console[Local admin API and console]
+    Console --> Content
 ```
 
 Keep gateway app keys out of public browser code. Provider credentials stay
@@ -26,7 +28,11 @@ rotation. A tunnel does not replace gateway authentication.
 - Configured blocklist matches return safe errors without the matched term.
 - Upstream bodies, credentials, and exception details stay out of client errors.
 - Metadata logs omit headers and content. Captured text requires two explicit
-  switches and a private rotating file with known-credential redaction.
+  switches and a private store with known-credential redaction.
+- Runtime app keys are stored as keyed digests. Stored OpenAI credentials use
+  Fernet encryption with a separate owner-only master-key file.
+- The admin API uses a distinct environment-supplied bearer key. The console does
+  not persist it in HTML, browser storage, or SQLite.
 
 Blocklists are limited policy checks, not comprehensive prompt-injection defenses.
 Captured free text can contain sensitive material that the redactor does not

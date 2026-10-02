@@ -100,12 +100,20 @@ def main() -> int:
     gateway_port = int(environment.get("LOCAL_TEST_GATEWAY_PORT", "8080"))
     gateway_url = f"http://127.0.0.1:{gateway_port}"
     ephemeral_key = secrets.token_urlsafe(32)
+    admin_key = secrets.token_urlsafe(32)
+    control_directory = ROOT / "var" / "lib" / "m87-gateway"
     environment.update(
         {
             "GATEWAY_APP_API_KEY": ephemeral_key,
             "GATEWAY_APP_ID": "local-flow-lab",
             "GATEWAY_ALLOWED_MODELS": f"auto,{selected}",
             "GATEWAY_DEFAULT_MODEL": selected,
+            "GATEWAY_APP_CAPTURE_CONTENT": "true",
+            "GATEWAY_CAPTURE_CONTENT": "true",
+            "GATEWAY_CONTROL_PLANE_ENABLED": "true",
+            "GATEWAY_CONTROL_PLANE_DATABASE_PATH": str(control_directory / "control.db"),
+            "GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH": str(control_directory / "master.key"),
+            "GATEWAY_ADMIN_API_KEY": admin_key,
             "OLLAMA_BASE_URL": ollama_url,
             "M87_GATEWAY_CONFIG": str(ROOT / "config.example.yaml"),
             "LOCAL_TEST_GATEWAY_API_KEY": ephemeral_key,
@@ -155,6 +163,8 @@ def main() -> int:
         )
         app_port = environment.get("LOCAL_TEST_PORT", "8787")
         print(f"Open http://localhost:{app_port} in the Windows browser.")
+        print(f"Gateway console: {gateway_url}/admin")
+        print(f"Admin key (shown once): {admin_key}")
         print("Press Ctrl+C here to stop both local processes.")
         while gateway.poll() is None and relay.poll() is None:
             time.sleep(0.5)

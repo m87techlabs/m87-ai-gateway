@@ -12,7 +12,9 @@ from m87_gateway.config import GatewaySettings
 from m87_gateway.metrics import GatewayMetrics
 
 REDACTED = "[REDACTED]"
-CREDENTIAL_PATTERN = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]+|\bsk-[a-z0-9_-]{8,}")
+CREDENTIAL_PATTERN = re.compile(
+    r"(?i)\bbearer\s+[a-z0-9._~+/=-]+|\bsk-[a-z0-9_-]{8,}|\bm87_[a-z0-9_-]{8,}"
+)
 
 
 class EventSink(Protocol):
@@ -69,7 +71,12 @@ class JsonFileSink:
 
 
 class AuditRecorder:
-    def __init__(self, settings: GatewaySettings, metrics: GatewayMetrics):
+    def __init__(
+        self,
+        settings: GatewaySettings,
+        metrics: GatewayMetrics,
+        control_sink: EventSink | None = None,
+    ):
         self.settings = settings
         self.metrics = metrics
         self.logger = logging.Logger("m87_gateway.audit", level=logging.INFO)
@@ -82,6 +89,8 @@ class AuditRecorder:
             variable = getattr(settings.providers, name).api_key_env
             if variable and os.getenv(variable):
                 secret_values.append(os.environ[variable])
+        if control_sink is not None and hasattr(control_sink, "provider_secret_values"):
+            secret_values.extend(control_sink.provider_secret_values())
         self.secrets = sorted(set(secret_values), key=len, reverse=True)
         config = settings.observability.traffic_log
         self.sink: EventSink | None = (
@@ -89,6 +98,12 @@ class AuditRecorder:
             if config.path
             else None
         )
+        self.sinks = [sink for sink in (self.sink, control_sink) if sink is not None]
+
+    def add_secret(self, value: str) -> None:
+        if value not in self.secrets:
+            self.secrets.append(value)
+            self.secrets.sort(key=len, reverse=True)
 
     def redact(self, value):
         if isinstance(value, str):
@@ -111,7 +126,7 @@ class AuditRecorder:
         event = self.redact(metadata)
         if self.settings.observability.json_logs:
             self.logger.info(json.dumps(event))
-        if self.sink is None:
+        if not self.sinks:
             return
         stored = dict(event)
         for name, value in (
@@ -120,22 +135,23 @@ class AuditRecorder:
         ):
             if value is not None:
                 stored[name], stored[f"{name}_truncated"] = self.content(value)
-        try:
-            self.sink.emit(stored)
-        except Exception:
-            if self.settings.observability.prometheus_metrics:
-                self.metrics.log_errors.inc()
-            self.logger.error(
-                json.dumps(
-                    {
-                        "event": "traffic_log_write_failed",
-                        "request_id": event["request_id"],
-                    }
+        for sink in self.sinks:
+            try:
+                sink.emit(stored)
+            except Exception:
+                if self.settings.observability.prometheus_metrics:
+                    self.metrics.log_errors.inc()
+                self.logger.error(
+                    json.dumps(
+                        {
+                            "event": "traffic_log_write_failed",
+                            "request_id": event["request_id"],
+                        }
+                    )
                 )
-            )
 
     def close(self) -> None:
-        if self.sink:
-            self.sink.close()
+        for sink in self.sinks:
+            sink.close()
         for handler in self.logger.handlers:
             handler.close()

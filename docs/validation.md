@@ -105,6 +105,26 @@ successful request ID matched the metadata event, and synthetic prompt content
 remained absent from metadata and metrics. Docker remains required only for the
 separate image and Compose acceptance phase.
 
+## Local control-plane implementation
+
+The developer-preview control plane was checked locally on 2026-10-02 with
+Python 3.12.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Focused configuration, store, and ASGI integration | Passed | 10 tests covering environment switches, usage/content events, app-key hashing/revocation, provider-key encryption, admin auth, and console APIs |
+| Credential plaintext checks | Passed | Generated app and provider keys were absent from SQLite bytes; provider secrets were absent from list responses |
+| Private storage permissions | Passed | Database, SQLite sidecars, and master key use owner-only permissions |
+| Package build | Passed | Wheel built; HTML, CSS, and JavaScript console assets were present |
+| Static checks | Passed | Ruff lint/format, Python compilation, JavaScript syntax, Markdown links/fences, YAML parsing, and whitespace |
+| Full local pytest suite | Runner limitation | The current isolated WSL command runner stalls in AnyIO blocking portals and thread workers, including a minimal empty FastAPI application; tests using TestClient could not complete in this runner |
+| Live Ollama control-plane flow | Deferred in this batch | Windows Ollama was not reachable from the isolated command runner; the earlier native completion remains recorded above |
+
+The control-plane integration test uses HTTPX ASGI transport and a synthetic
+provider. It verifies a dynamically generated application key can authorize a
+chat and that the matching admin event contains provider-reported tokens and
+opted-in request/response content. Hosted CI remains the full-suite gate.
+
 ## Deferred checks
 
 | Check | Why it is unverified | Needed to run | Procedure / expected evidence |

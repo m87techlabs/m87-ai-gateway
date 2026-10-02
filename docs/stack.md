@@ -11,6 +11,9 @@
 | Provider HTTP | HTTPX | Async OpenAI and Ollama requests; currently creates a client per request |
 | Logging | JSON stdout and an optional rotating JSONL file | Correlated metadata plus explicitly enabled bounded content capture |
 | Metrics | Prometheus client | Per-process `/metrics` with bounded labels |
+| Local persistence | SQLite WAL | Optional single-instance event and key-metadata store |
+| Credential encryption | `cryptography` Fernet | Encrypts stored provider keys with a separate local master key |
+| Operator UI | Packaged HTML, CSS, and JavaScript | Local request analytics, exchange inspection, and key operations |
 | Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Automated core checks plus a verified native Ollama flow; OpenAI/cloud live checks deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
@@ -26,7 +29,7 @@ not establish compatibility with every future dependency release.
 
 | Concern | Direction | Adoption condition |
 | --- | --- | --- |
-| Durable configuration/usage | Evaluate SQLite locally and PostgreSQL for shared deployments | A feature requires persistence and migration/backup semantics are defined |
+| Shared configuration/usage | PostgreSQL or another coordinated store | Multi-instance persistence and migration/backup semantics are defined |
 | Shared rate limiting | Evaluate shared state or an external limiter | Limits must remain correct across replicas |
 | Distributed tracing | OpenTelemetry integration | Stable request IDs and a documented trace schema exist |
 | Dashboards | Prometheus and Grafana examples | Metrics names/labels are implemented and documented |

@@ -24,6 +24,13 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_APP_API_KEY` / `M87_GATEWAY_APP_API_KEY` | Replace the first configured app key |
 | `GATEWAY_APP_ID` / `M87_GATEWAY_APP_ID` | Override that app's ID |
 | `GATEWAY_ALLOWED_MODELS` | Comma-separated allowlist; an empty value clears access |
+| `GATEWAY_APP_CAPTURE_CONTENT` | Enable or disable content capture for the first configured app |
+| `GATEWAY_CAPTURE_CONTENT` | Global content-capture switch; still requires per-app permission |
+| `GATEWAY_CONTROL_PLANE_ENABLED` | Enable the local SQLite store, admin API, and console |
+| `GATEWAY_CONTROL_PLANE_DATABASE_PATH` | Local SQLite event and key-metadata path |
+| `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
+| `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | Event retention in days; pruned at startup |
+| `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
 | `OPENAI_API_KEY` | Default OpenAI credential variable |
 | `OLLAMA_BASE_URL` | Default Ollama endpoint override |
 
@@ -50,8 +57,9 @@ and `timeout_seconds`. Endpoints from the configured environment variable take
 precedence over YAML and are validated at startup. HTTP(S) endpoints cannot
 contain embedded credentials, queries, or fragments.
 
-OpenAI defaults to `https://api.openai.com/v1` and reads its configured credential
-variable when invoked. Ollama defaults to `http://localhost:11434` and calls
+OpenAI defaults to `https://api.openai.com/v1`. It first uses the encrypted
+`default` key from the enabled local control plane, then its configured environment
+variable. Ollama defaults to `http://localhost:11434` and calls
 `/api/chat`. A disabled provider is rejected before invocation. Missing OpenAI
 credentials return a safe 503 when that provider is selected.
 
@@ -65,6 +73,10 @@ credentials return a safe 503 when that provider is selected.
 | `observability.json_logs` | JSON metadata outcome events on stdout |
 | `observability.prometheus_metrics` | Metrics recording and `/metrics` endpoint |
 | `observability.traffic_log` | Optional private rotating JSONL storage and bounded content capture |
+| `control_plane.enabled` | Optional local SQLite event/key store, admin API, and `/admin` console |
+| `control_plane.database_path`, `master_key_path` | Private local persistence paths |
+| `control_plane.admin_api_key_env` | Environment variable containing the admin key |
+| `control_plane.retention_days` | Startup event-pruning window; default 30 days |
 | `apps[].capture_content` / `auth.api_keys[].capture_content` | Per-app permission, also requiring the global capture switch |
 | `rate_limit_per_minute`, `monthly_budget_usd` | Validated future policy fields; not enforced |
 

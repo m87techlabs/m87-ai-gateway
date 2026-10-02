@@ -57,3 +57,12 @@ observability:
     max_content_chars: 16384
     max_bytes: 10485760
     backup_count: 3
+
+control_plane:
+  # Developer-preview console and local persistence. Set a strong admin key in
+  # GATEWAY_ADMIN_API_KEY before enabling.
+  enabled: false
+  database_path: "var/lib/m87-gateway/control.db"
+  master_key_path: "var/lib/m87-gateway/master.key"
+  admin_api_key_env: "GATEWAY_ADMIN_API_KEY"
+  retention_days: 30

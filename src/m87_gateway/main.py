@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,8 @@ from starlette.exceptions import HTTPException
 from m87_gateway.api.errors import GatewayError, error_response
 from m87_gateway.api.routes import router
 from m87_gateway.config import GatewaySettings, get_settings
+from m87_gateway.control import LocalControlStore
+from m87_gateway.control.api import router as control_router
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
 from m87_gateway.metrics import GatewayMetrics
@@ -21,12 +24,26 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             active = settings if settings is not None else get_settings()
             application.state.settings = active
             application.state.metrics = GatewayMetrics()
-            application.state.recorder = AuditRecorder(active, application.state.metrics)
+            application.state.control_store = None
+            application.state.admin_api_key = ""
+            if active.control_plane.enabled:
+                admin_key = os.getenv(active.control_plane.admin_api_key_env, "")
+                if len(admin_key) < 24 or any(character.isspace() for character in admin_key):
+                    raise ValueError("Control plane requires a strong admin key")
+                application.state.admin_api_key = admin_key
+                application.state.control_store = LocalControlStore(active.control_plane)
+            application.state.recorder = AuditRecorder(
+                active, application.state.metrics, application.state.control_store
+            )
         except Exception:
             raise RuntimeError(
                 "Gateway configuration or traffic log initialization failed"
             ) from None
-        application.dependency_overrides[get_settings] = lambda: active
+
+        async def active_settings() -> GatewaySettings:
+            return active
+
+        application.dependency_overrides[get_settings] = active_settings
         try:
             yield
         finally:
@@ -40,6 +57,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     )
     application.add_middleware(TrafficMiddleware)
     application.include_router(router)
+    application.include_router(control_router)
 
     @application.exception_handler(GatewayError)
     async def gateway_error(request: Request, exc: GatewayError):

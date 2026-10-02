@@ -17,4 +17,5 @@ build/
 .coverage
 htmlcov/
 var/log/
+var/lib/
 *.jsonl

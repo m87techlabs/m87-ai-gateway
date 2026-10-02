@@ -13,6 +13,8 @@ flowchart LR
     Relay -->|ephemeral app key| Gateway[WSL gateway localhost:8080]
     Gateway -->|localhost:11434| Ollama[Windows Ollama]
     Gateway --> Event[JSON metadata event]
+    Gateway --> Store[(Local control store)]
+    Console[Operator console localhost:8080/admin] --> Store
 ```
 
 This is a disposable local integration fixture. It supports non-streaming text
@@ -45,8 +47,9 @@ chat and does not replace the Cloudflare Worker, Access, and Tunnel checks.
    ```
 
    The launcher discovers installed models, selects the first one, generates an
-   ephemeral gateway key, and starts both WSL services. It does not download a
-   model or write the generated key to disk.
+   ephemeral gateway and admin keys, enables the local control plane, and starts
+   both WSL services. It does not download a model or write either generated key
+   to disk.
 
 3. To select a repeatable route, restart with the exact installed model name:
 
@@ -61,9 +64,10 @@ chat and does not replace the Cloudflare Worker, Access, and Tunnel checks.
 6. Find the same request ID in the WSL gateway metadata event. Require the app ID
    to be `local-flow-lab`, the resolved route to match, and the provider attempt
    and status to match the browser result.
-7. Confirm the synthetic prompt is absent from gateway metadata. Content can be
-   present only in the private traffic file when both capture controls are enabled.
-8. Press Ctrl+C in the launcher terminal and require both services to stop cleanly.
+7. Open the printed console URL, enter the one-time admin key, and inspect the
+   matching request. Confirm token counts and opted-in input/output are present.
+8. Confirm the synthetic prompt remains absent from stdout metadata and metrics.
+9. Press Ctrl+C in the launcher terminal and require both services to stop cleanly.
 
 ## Success checks
 
@@ -74,7 +78,8 @@ chat and does not replace the Cloudflare Worker, Access, and Tunnel checks.
 | Ephemeral authentication | Browser never receives the gateway key |
 | Automatic route | Response names the selected `ollama:<model>` |
 | Correlation | Browser and metadata event have the same request ID |
-| Metadata privacy | Prompt and completion are absent when capture is disabled |
+| Metadata privacy | Prompt and completion remain absent from stdout metadata and metrics |
+| Control plane | Matching event, usage, input, and output appear in the console |
 | Ollama unavailable or model absent | Safe 502/504 with correlated metadata |
 | Cleanup | Ports 8080 and 8787 are released after Ctrl+C |
 

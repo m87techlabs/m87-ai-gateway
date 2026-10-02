@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>M87 Gateway Console</title>
+  <link rel="stylesheet" href="/admin/assets/styles.css">
+  <script src="/admin/assets/app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <p class="eyebrow">Local control plane</p>
+      <h1>Gateway Console</h1>
+      <p>Enter the admin key printed by the launcher. It stays in this page's memory.</p>
+      <label>Admin key<input id="admin-key" type="password" required autocomplete="off"></label>
+      <button type="submit">Open console</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <div id="console" class="app" hidden>
+    <aside>
+      <div><p class="eyebrow">M87 AI Gateway</p><h1>Console</h1></div>
+      <nav>
+        <button class="nav active" data-view="overview">Overview</button>
+        <button class="nav" data-view="logs">Logs</button>
+        <button class="nav" data-view="apps">Applications</button>
+        <button class="nav" data-view="keys">Provider keys</button>
+        <button class="nav" data-view="destinations">Destinations</button>
+      </nav>
+      <button id="lock" class="secondary">Lock console</button>
+    </aside>
+    <main>
+      <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><button id="refresh" class="secondary">Refresh</button></header>
+
+      <section id="view-overview" class="view">
+        <div class="cards">
+          <article><span>Requests · 24h</span><strong id="requests">—</strong></article>
+          <article><span>Total tokens</span><strong id="tokens">—</strong></article>
+          <article><span>Errors</span><strong id="errors">—</strong></article>
+          <article><span>Average latency</span><strong id="latency">—</strong></article>
+        </div>
+        <div class="panel"><h3>Recent LLM exchanges</h3><div id="recent"></div></div>
+      </section>
+
+      <section id="view-logs" class="view" hidden>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Request logs</h3><p>Token usage, status, latency, and opted-in payloads.</p></div><a class="button" id="export" href="#">Export JSON</a></div>
+          <div id="logs"></div>
+        </div>
+      </section>
+
+      <section id="view-apps" class="view" hidden>
+        <div class="split">
+          <form id="app-form" class="panel form-panel">
+            <h3>Create application key</h3>
+            <label>Application ID<input name="app_id" required pattern="[A-Za-z0-9_.-]+"></label>
+            <label>Allowed models<input name="allowed_models" required value="auto,ollama:gemma3:1b"><small>Comma-separated provider:model values.</small></label>
+            <label class="check"><input name="capture_content" type="checkbox">Store prompt and response content</label>
+            <button type="submit">Create key</button>
+            <div id="new-key" class="secret" hidden></div>
+          </form>
+          <div class="panel"><h3>Managed applications</h3><div id="apps"></div></div>
+        </div>
+      </section>
+
+      <section id="view-keys" class="view" hidden>
+        <div class="split">
+          <form id="provider-form" class="panel form-panel">
+            <h3>Store provider key</h3>
+            <label>Provider<select name="provider"><option value="openai">OpenAI</option></select></label>
+            <label>Alias<input name="alias" value="default" required></label>
+            <label>Secret key<input name="key" type="password" required autocomplete="off"></label>
+            <button type="submit">Store or rotate</button>
+            <p class="muted">The secret is encrypted before SQLite storage and is never returned.</p>
+          </form>
+          <div class="panel"><h3>Configured provider keys</h3><div id="provider-keys"></div></div>
+        </div>
+      </section>
+
+      <section id="view-destinations" class="view" hidden><div class="panel"><h3>Log and metric destinations</h3><div id="destinations"></div></div></section>
+    </main>
+  </div>
+
+  <dialog id="detail"><button id="close-detail" class="close" aria-label="Close">×</button><p class="eyebrow">LLM exchange</p><h2>Request detail</h2><div id="detail-body"></div></dialog>
+  <div id="toast" role="status"></div>
+</body>
+</html>

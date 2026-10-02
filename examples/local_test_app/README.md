@@ -21,7 +21,9 @@ sequenceDiagram
 
 The gateway key is generated when the launcher starts and remains in the WSL
 process environment. It is never placed in HTML, JavaScript, browser storage, or
-the request from the browser to the relay. The application does not persist chats.
+the request from the browser to the relay. The launcher also enables the local
+control plane, persists bounded gateway events under the ignored `var/lib/`
+directory, and prints a one-time admin key for the console.
 
 ## Start
 
@@ -47,8 +49,10 @@ python -m examples.local_test_app.start
 
 The launcher selects the first installed Ollama model and prints the selected
 route. Open `http://localhost:8787` in the Windows browser. Enter only synthetic
-content and run the flow. The result shows the resolved model, gateway-generated
-request ID, latency, and token usage when Ollama reports it.
+content and run the flow. Then open `http://localhost:8080/admin`, enter the
+printed admin key, and inspect the same exchange. The console shows token totals,
+latency, request/response content, application keys, provider keys, and log
+destinations.
 
 Press Ctrl+C in WSL to stop the relay and gateway. The temporary gateway key is
 discarded with the processes.
@@ -98,8 +102,8 @@ launcher stops if either child process exits, so an occupied port fails visibly.
 2. An `auto` request resolves to the selected `ollama:<model>` route.
 3. A successful response includes an `X-Request-ID` shown in the result panel.
 4. The same ID appears in the gateway's JSON metadata event in the WSL terminal.
-5. The prompt and completion remain absent from metadata and metrics when gateway
-   content capture is disabled.
+5. The prompt and completion remain absent from stdout metadata and metrics; the
+   local control store contains them because this synthetic fixture opts in.
 6. Stopping Windows Ollama produces a safe gateway error with a correlated ID.
 
 This application covers non-streaming text chat only. It is a local integration

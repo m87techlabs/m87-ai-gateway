@@ -19,6 +19,8 @@ gates in the lifecycle guide.
 | [Configuration](configuration.md) | Configuration inputs and current limitations |
 | [Security](security.md) | Trust boundaries and security controls |
 | [Observability](observability.md) | Current logging and planned operational signals |
+| [Local control plane](control-plane.md) | Token analytics, exchange inspection, keys, and persistence |
+| [Control-plane runbook](runbooks/control-plane.md) | Operate the local console and key stores |
 | [Windows/WSL flow lab](runbooks/windows-wsl-flow-lab.md) | Browser-to-Windows-Ollama testing without Docker |
 | [Worker/local inference](integrations/worker-local-inference.md) | Reference tunnel integration and acceptance checks |
 | [Runbooks](runbooks/README.md) | Repeatable operational procedures |

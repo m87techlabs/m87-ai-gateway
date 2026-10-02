@@ -174,17 +174,33 @@ class TrafficLogConfig(ConfigModel):
     max_bytes: int = Field(default=10485760, ge=1048576)
     backup_count: int = Field(default=3, ge=1, le=20)
 
-    @model_validator(mode="after")
-    def content_needs_storage(self):
-        if self.capture_content and not self.path:
-            raise ValueError("Content capture requires a dedicated traffic log path")
-        return self
-
 
 class ObservabilityConfig(ConfigModel):
     json_logs: bool = True
     prometheus_metrics: bool = True
     traffic_log: TrafficLogConfig = Field(default_factory=TrafficLogConfig)
+
+
+class ControlPlaneConfig(ConfigModel):
+    enabled: bool = False
+    database_path: str = Field(default="var/lib/m87-gateway/control.db", min_length=1)
+    master_key_path: str = Field(default="var/lib/m87-gateway/master.key", min_length=1)
+    admin_api_key_env: str = "GATEWAY_ADMIN_API_KEY"
+    retention_days: int = Field(default=30, ge=1, le=3650)
+
+    @field_validator("admin_api_key_env")
+    @classmethod
+    def valid_admin_env(cls, value: str) -> str:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
+            raise ValueError("Invalid admin key environment variable name")
+        return value
+
+    @field_validator("database_path", "master_key_path")
+    @classmethod
+    def valid_local_path(cls, value: str) -> str:
+        if "\x00" in value or not value.strip():
+            raise ValueError("Control-plane paths must be non-empty local paths")
+        return value
 
 
 class GatewaySettings(ConfigModel):
@@ -196,6 +212,7 @@ class GatewaySettings(ConfigModel):
     guardrails: GuardrailsConfig = Field(default_factory=GuardrailsConfig)
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
+    control_plane: ControlPlaneConfig = Field(default_factory=ControlPlaneConfig)
 
     @field_validator("apps", mode="before")
     @classmethod
@@ -209,6 +226,9 @@ class GatewaySettings(ConfigModel):
             raise ValueError("App identifiers must be unique")
         if len({app.api_key for app in apps}) != len(apps):
             raise ValueError("App keys must be unique")
+        traffic = self.observability.traffic_log
+        if traffic.capture_content and not traffic.path and not self.control_plane.enabled:
+            raise ValueError("Content capture requires the local database or traffic log path")
         return self
 
     @property
@@ -285,13 +305,17 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
         "SERVER_HOST": ("server", "host"),
         "SERVER_PORT": ("server", "port"),
         "GATEWAY_DEFAULT_MODEL": ("routing", "default_model"),
+        "GATEWAY_CONTROL_PLANE_DATABASE_PATH": ("control_plane", "database_path"),
+        "GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH": ("control_plane", "master_key_path"),
+        "GATEWAY_CONTROL_PLANE_RETENTION_DAYS": ("control_plane", "retention_days"),
     }.items():
         _set_if_present(data, path, environ.get(variable))
 
     app_key = environ.get("GATEWAY_APP_API_KEY") or environ.get("M87_GATEWAY_APP_API_KEY")
     app_id = environ.get("GATEWAY_APP_ID") or environ.get("M87_GATEWAY_APP_ID")
     allowed = environ.get("GATEWAY_ALLOWED_MODELS")
-    if app_key is not None or app_id is not None or allowed is not None:
+    capture_content = environ.get("GATEWAY_APP_CAPTURE_CONTENT")
+    if any(value is not None for value in (app_key, app_id, allowed, capture_content)):
         apps = data.get("apps")
         if apps:
             if not isinstance(apps, list):
@@ -317,6 +341,24 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
             first["allowed_models"] = [
                 value.strip() for value in allowed.split(",") if value.strip()
             ]
+        if capture_content is not None:
+            first["capture_content"] = _parse_bool("GATEWAY_APP_CAPTURE_CONTENT", capture_content)
+
+    for variable, path in {
+        "GATEWAY_CONTROL_PLANE_ENABLED": ("control_plane", "enabled"),
+        "GATEWAY_CAPTURE_CONTENT": ("observability", "traffic_log", "capture_content"),
+    }.items():
+        if variable in environ:
+            _set_if_present(data, path, _parse_bool(variable, environ[variable]))
+
+
+def _parse_bool(name: str, value: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be true or false")
 
 
 def _set_if_present(data: dict[str, Any], path: tuple[str, ...], value: Any) -> None:

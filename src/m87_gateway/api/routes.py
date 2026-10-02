@@ -40,7 +40,12 @@ async def chat_completions(
             400, guardrail["reason"], "Request blocked by gateway policy", "policy_error"
         )
 
-    provider = get_provider(provider_name, settings)
+    control_store = getattr(request.app.state, "control_store", None)
+    provider = (
+        get_provider(provider_name, settings, control_store)
+        if control_store is not None
+        else get_provider(provider_name, settings)
+    )
     capture = settings.observability.traffic_log.capture_content and app_context.capture_content
     if capture:
         request.state.request_content = [message.model_dump() for message in payload.messages]

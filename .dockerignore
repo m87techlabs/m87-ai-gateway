@@ -13,4 +13,5 @@ config.local.yaml
 *.pem
 *.key
 var/log
+var/lib
 *.jsonl

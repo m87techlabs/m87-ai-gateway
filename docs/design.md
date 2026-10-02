@@ -114,16 +114,18 @@ The first supported deployment is one gateway instance behind a trusted network
 boundary or TLS reverse proxy. Applications call it from their backend. Operators
 supply model access, credentials, connectivity, and model availability.
 
-The default runtime should remain stateless where possible. Shared rate limiting,
-durable usage accounting, and multi-replica coordination need explicit storage
-decisions before implementation. SQLite, PostgreSQL, or a shared cache are options,
-not current runtime requirements.
+The data plane remains stateless unless the optional local control plane is
+enabled. That developer-preview feature uses SQLite for single-instance events
+and key metadata. Shared rate limiting, durable multi-replica accounting, and
+coordination require a separate PostgreSQL or shared-cache design.
 
 ## Scope boundaries
 
 The initial releases do not include a model training platform, model registry,
-RAG orchestration system, billing platform, hosted control plane, or administrative
-UI. New features need a demonstrated gateway use case and a place in the roadmap.
+RAG orchestration system, billing platform, hosted control plane, or multi-tenant
+administration. The implemented local console is an operator surface for one
+self-hosted instance. New features need a demonstrated gateway use case and a
+place in the roadmap.
 
 ## Decision records
 

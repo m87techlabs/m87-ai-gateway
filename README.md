@@ -21,7 +21,7 @@ flowchart LR
     Adapter --> OpenAI[OpenAI]
     Adapter --> Ollama[Ollama]
     Adapter -. Planned .-> Cloud[AWS Bedrock, Azure OpenAI, Vertex AI]
-    Gateway -.-> Logs[Audit logs and planned metrics]
+    Gateway -.-> Logs[Audit logs, metrics, and local console]
 ```
 
 ## Current status
@@ -29,8 +29,10 @@ flowchart LR
 Implemented foundations include validated YAML/environment configuration, bearer
 app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
 Ollama adapters, configured request guardrails, safe provider errors, correlated
-JSON outcome events, optional private traffic capture, Prometheus metrics, and a
-health endpoint.
+JSON outcome events, optional private traffic capture, Prometheus metrics, a
+health endpoint, and an optional local control plane. The control plane provides
+token analytics, inspectable opted-in LLM input/output, runtime application keys,
+encrypted OpenAI credentials, log export, and a local operator console.
 
 The native Ollama path is verified with a real local model. The MVP still needs
 container and live OpenAI verification. Streaming, model discovery, embeddings,
@@ -41,6 +43,8 @@ See the [roadmap](docs/roadmap.md) for acceptance criteria.
 For a Docker-free workstation test, run the
 [Windows/WSL flow application](examples/local_test_app/README.md). It starts a
 browser relay and gateway in WSL and calls Ollama running on Windows.
+The launcher also enables the [local control plane](docs/control-plane.md), so the
+same request can be inspected at `http://localhost:8080/admin`.
 
 ## Quickstart
 
@@ -91,6 +95,7 @@ from Docker. See the [full quickstart](docs/quickstart.md) and
 - [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
 - [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
 - [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
+- [Local control plane](docs/control-plane.md) · [Control-plane runbook](docs/runbooks/control-plane.md)
 - [Windows/WSL flow lab](docs/runbooks/windows-wsl-flow-lab.md)
 - [Worker-to-local inference](docs/integrations/worker-local-inference.md)
 - [Operational runbooks](docs/runbooks/README.md) · [Validation status](docs/validation.md)
