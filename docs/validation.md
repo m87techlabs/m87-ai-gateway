@@ -117,6 +117,7 @@ Python 3.12.
 | Private storage permissions | Passed | Database, SQLite sidecars, and master key use owner-only permissions |
 | Package build | Passed | Wheel built; HTML, CSS, and JavaScript console assets were present |
 | Static checks | Passed | Ruff lint/format, Python compilation, JavaScript syntax, Markdown links/fences, YAML parsing, and whitespace |
+| Hosted full suite and package | Passed | 88 tests, Ruff, wheel build, docs, and Worker example for commit `5a62105`; [CI run](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37023101314) |
 | Full local pytest suite | Runner limitation | The current isolated WSL command runner stalls in AnyIO blocking portals and thread workers, including a minimal empty FastAPI application; tests using TestClient could not complete in this runner |
 | Live Ollama control-plane flow | Deferred in this batch | Windows Ollama was not reachable from the isolated command runner; the earlier native completion remains recorded above |
 
