@@ -15,7 +15,7 @@ rejections, and malformed payloads. Only transient error codes are retried.
 
 `async list_models()` is optional. Its default reports that discovery is unavailable;
 users can enter models manually. Built-in discovery uses Ollama `/api/tags` and
-compatible `/models` APIs. The UI reports the text/non-streaming contract and model
+compatible `/models` APIs. The setup API reports the text/non-streaming contract and model
 discovery support. Streaming, tools, embeddings, multimodal input, Anthropic,
 Bedrock, Azure-specific authentication, and Vertex-specific authentication remain
 unsupported. A compatible wire format does not establish live provider compatibility.

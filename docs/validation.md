@@ -148,6 +148,9 @@ Checked on 2026-10-02 with Python 3.12 on Linux/WSL:
 - Ruff lint/format, JavaScript syntax, 41-file Markdown links/fences, wheel build,
   editable installation, CLI help, and Worker example checks passed. Hosted CI
   also builds and smoke-tests the Linux executable. Docker remains deferred.
+- Hosted Python 3.11 checks passed for implementation commit `16892a3`: full
+  tests/lint/wheel, documentation/Worker checks, and Linux bundle build plus
+  setup/restart/request smoke test. [CI evidence](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37040531997).
 
 The bundled inference server is synthetic. This check does not establish live
 vLLM/OpenAI compatibility, a clean workstation without Python, native Windows
