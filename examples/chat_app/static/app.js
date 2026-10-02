@@ -69,4 +69,5 @@ $("chat-form").addEventListener("submit", async (event) => {
 fetch("/api/status").then((response) => response.json()).then((result) => {
   $("status").textContent = result.gateway_reachable ? "Gateway reachable · Ready to chat" : "Gateway unavailable · Start the gateway and check its URL";
   $("model").textContent = `Model: ${result.model}`;
+  $("gateway").textContent = `Gateway: ${result.gateway_url || "Unknown"}`;
 }).catch(() => { $("status").textContent = "Could not check gateway status"; });

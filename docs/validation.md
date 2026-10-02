@@ -13,6 +13,16 @@ controls when to stop Docker Desktop itself.
 
 ## Independent chat sample
 
+Custom-port follow-up, checked on 2026-10-02: 125 Python tests and nine browser DOM
+tests passed. The sample now discovers the live managed gateway using its private
+process identity record, respects an explicit URL/environment override, rejects
+stale or broadly readable records, and displays the selected URL. The HTTP flow
+check exercises automatic detection of an isolated gateway on a nondefault port.
+This prevents defaulting to an older Flow Lab instance on 8080 when the operator's
+configured gateway uses another port. Existing running sample processes require
+a restart to pick up server changes. Credentials and existing gateway processes
+are preserved. Inference in automated checks remains synthetic.
+
 Checked on 2026-10-02 in Linux/WSL: 123 Python tests and nine browser DOM interaction
 tests passed. The new sample's checks cover server-held application credentials,
 conversation forwarding, reported/unknown usage, safe authentication/authorization/

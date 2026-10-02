@@ -19,7 +19,7 @@ async function fixture(t, chatResponse) {
   assert.ok(style.sheet.cssRules.length > 0);
   const requests = [];
   window.fetch = async (url, options) => {
-    if (url === "/api/status") return new Response(JSON.stringify({gateway_reachable: true, model: "auto"}));
+    if (url === "/api/status") return new Response(JSON.stringify({gateway_reachable: true, gateway_url: "http://127.0.0.1:8181", model: "auto"}));
     assert.equal(url, "/api/chat");
     assert.deepEqual(Object.keys(options.headers), ["Content-Type"]);
     const body = JSON.parse(options.body);
@@ -39,6 +39,7 @@ const reply = () => new Response(JSON.stringify({content: "<script>untrusted mod
 
 test("chat renders text safely, forwards history, and clears the conversation", async (t) => {
   const {$, send, requests} = await fixture(t, reply);
+  assert.equal($("gateway").textContent, "Gateway: http://127.0.0.1:8181");
   send("Synthetic question");
   await until(() => !$("send").disabled);
   assert.equal($("total-tokens").textContent, "13");

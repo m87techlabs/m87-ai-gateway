@@ -1,6 +1,7 @@
 """Real app/gateway HTTP boundary with a synthetic inference server and private storage."""
 
 from http.server import ThreadingHTTPServer
+import hashlib
 import os
 from pathlib import Path
 import socket
@@ -47,6 +48,7 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
     log.touch(mode=0o600)
     environment = {**os.environ}
     environment.pop("GATEWAY_ADMIN_API_KEY", None)
+    environment.pop("SAMPLE_GATEWAY_URL", None)
     try:
         with log.open("wb") as output:
             gateway = subprocess.Popen(
@@ -67,6 +69,14 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
             processes.append(gateway)
             with httpx.Client(base_url=f"http://127.0.0.1:{gateway_port}", timeout=5) as operator:
                 wait_ready(operator, "/health", gateway)
+                runtime = tmp_path / "runtime"
+                runtime.mkdir(mode=0o700)
+                process = Path(f"/proc/{gateway.pid}")
+                ticks = (process / "stat").read_text().rsplit(") ", 1)[1].split()[19]
+                digest = hashlib.sha256((process / "cmdline").read_bytes()).hexdigest()
+                state = runtime / "process.state"
+                state.write_text(f"{gateway.pid}\t{ticks}\t{digest}\t{gateway_port}\n")
+                state.chmod(0o600)
                 operator.headers["Authorization"] = (
                     f"Bearer {(data / 'admin.key').read_text().strip()}"
                 )
@@ -99,8 +109,6 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
                 sample = subprocess.Popen(
                     [
                         str(ROOT / "examples/chat_app/start.sh"),
-                        "--gateway-url",
-                        f"http://127.0.0.1:{gateway_port}",
                         "--port",
                         str(sample_port),
                     ],
@@ -109,6 +117,7 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
                         **environment,
                         "SAMPLE_APP_KEY": app_key,
                         "GATEWAY_PYTHON": sys.executable,
+                        "GATEWAY_RUN_DIR": str(runtime),
                     },
                     stdout=output,
                     stderr=output,
@@ -117,6 +126,9 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
                 with httpx.Client(base_url=f"http://127.0.0.1:{sample_port}", timeout=5) as browser:
                     wait_ready(browser, "/api/status", sample)
                     assert browser.get("/api/status").json()["gateway_reachable"]
+                    assert browser.get("/api/status").json()["gateway_url"] == (
+                        f"http://127.0.0.1:{gateway_port}"
+                    )
                     assert app_key not in browser.get("/").text
                     result = browser.post(
                         "/api/chat",

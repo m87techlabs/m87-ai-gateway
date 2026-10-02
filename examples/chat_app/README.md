@@ -66,6 +66,12 @@ include a sample-app runtime.
 ```
 
 `SAMPLE_GATEWAY_URL` and `SAMPLE_MODEL` can also set the gateway URL/model.
+Without an explicit URL, the sample detects a live gateway started by this checkout's
+`./start.sh`, including custom ports. It verifies the private process record against
+the running process; missing or stale records fall back to `http://127.0.0.1:8080`.
+The selected gateway URL appears in the terminal and page. A custom `GATEWAY_RUN_DIR`
+must match the setting used to start the gateway. Explicit `--gateway-url` takes
+precedence over `SAMPLE_GATEWAY_URL`, which takes precedence over detection.
 `SAMPLE_APP_KEY` can supply the app key from an existing private environment instead
 of prompting. Avoid putting real keys in shell command history. `GATEWAY_PYTHON`
 selects another installed Python executable. Revoke the sample key in Applications
@@ -76,6 +82,11 @@ when testing is finished.
 - A question and follow-up succeed, and matching requests appear under the app/project.
 - Tokens reflect provider-reported usage; unavailable values read **Unknown**.
 - Revoking the app key causes a safe authentication error with a request ID.
+  For an unexpected key rejection, compare the sample's displayed gateway URL with
+  the console URL where the key was created. An older Flow Lab may occupy 8080
+  while your managed gateway runs on a different port. Stop the sample with Ctrl+C
+  and restart with `--gateway-url` set to the intended gateway; keep that gateway's
+  application key. Each gateway data directory has its own application keys.
 - A disallowed model causes an authorization error. A low app rate limit produces
   a rate-limit error after repeated requests; wait for the window before retrying.
 - A disconnected gateway produces a clear connectivity error. Gateway health alone

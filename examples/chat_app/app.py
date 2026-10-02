@@ -3,6 +3,7 @@
 import argparse
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -20,6 +21,51 @@ import uvicorn
 
 STATIC = Path(__file__).with_name("static")
 REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+
+
+def managed_gateway_url(run_dir: Path) -> str | None:
+    """Read only a private launcher record matching a live process; ignore stale PIDs."""
+    state = run_dir / "process.state"
+    try:
+        if (
+            not Path("/proc").is_dir()
+            or not run_dir.is_dir()
+            or not state.is_file()
+            or run_dir.is_symlink()
+            or state.is_symlink()
+        ):
+            return None
+        if (
+            run_dir.stat().st_uid != os.getuid()
+            or run_dir.stat().st_mode & 0o777 != 0o700
+            or state.stat().st_uid != os.getuid()
+            or state.stat().st_mode & 0o777 != 0o600
+        ):
+            return None
+        pid, ticks, digest, port = state.read_text().strip().split("\t")
+        if (
+            not pid.isdecimal()
+            or int(pid) <= 1
+            or not port.isdecimal()
+            or not 1 <= int(port) <= 65535
+        ):
+            return None
+        process = Path("/proc") / pid
+        fields = (process / "stat").read_text().rsplit(") ", 1)[1].split()
+        if fields[0] == "Z" or fields[19] != ticks:
+            return None
+        if hashlib.sha256((process / "cmdline").read_bytes()).hexdigest() != digest:
+            return None
+        return f"http://127.0.0.1:{int(port)}"
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def default_gateway_url() -> str:
+    run_dir = Path(os.getenv("GATEWAY_RUN_DIR", str(STATIC.parents[2] / "var/lib/gateway-runner")))
+    return (
+        os.getenv("SAMPLE_GATEWAY_URL") or managed_gateway_url(run_dir) or "http://127.0.0.1:8080"
+    )
 
 
 @dataclass(frozen=True)
@@ -133,7 +179,11 @@ def create_app(settings: Settings, *, transport=None):
             reachable = response.status_code == 200 and response.json().get("status") == "ok"
         except (httpx.HTTPError, ValueError, AttributeError):
             reachable = False
-        return {"gateway_reachable": reachable, "model": settings.model}
+        return {
+            "gateway_reachable": reachable,
+            "gateway_url": settings.gateway_url,
+            "model": settings.model,
+        }
 
     @app.post("/api/chat")
     async def chat(body: Chat):
@@ -158,7 +208,7 @@ def create_app(settings: Settings, *, transport=None):
         if response.status_code != 200:
             messages = {
                 400: "Gateway rejected the request. Check its policies and selected model",
-                401: "Application key rejected. Create or replace it in the gateway console",
+                401: "Application key rejected. Check the gateway URL and use a key from its Applications page",
                 403: "Application is not allowed to use this model",
                 429: "Application rate limit reached. Wait before retrying",
             }
@@ -199,9 +249,7 @@ def create_app(settings: Settings, *, transport=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Chat with an already-running AI gateway")
-    parser.add_argument(
-        "--gateway-url", default=os.getenv("SAMPLE_GATEWAY_URL", "http://127.0.0.1:8080")
-    )
+    parser.add_argument("--gateway-url", default=default_gateway_url())
     parser.add_argument("--model", default=os.getenv("SAMPLE_MODEL", "auto"))
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
@@ -213,4 +261,5 @@ def main():
     except ValueError as exc:
         parser.error(str(exc))
     print(f"Chat sample: http://localhost:{settings.port} (Ctrl+C to stop)", flush=True)
+    print(f"Gateway: {settings.gateway_url}", flush=True)
     uvicorn.run(application, host="127.0.0.1", port=settings.port)

@@ -1,10 +1,14 @@
 import json
+import hashlib
+import os
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 import httpx
 import pytest
 
-from examples.chat_app.app import Settings, create_app
+from examples.chat_app import app as sample
+from examples.chat_app.app import Settings, create_app, default_gateway_url, managed_gateway_url
 
 KEY = "synthetic-sample-application-key"
 
@@ -135,3 +139,39 @@ def test_settings_reject_missing_key_and_credentialed_url():
     with pytest.raises(ValueError):
         Settings(gateway_url="http://secret@gateway.example.invalid", app_key=KEY).validate()
     Settings(app_key=KEY, model="extension:sample").validate()
+
+
+@pytest.mark.skipif(not Path("/proc/self/stat").exists(), reason="Linux process identity")
+def test_managed_port_detection_and_stale_identity(tmp_path):
+    state = tmp_path / "process.state"
+    pid = os.getpid()
+    process = Path(f"/proc/{pid}")
+    ticks = (process / "stat").read_text().rsplit(") ", 1)[1].split()[19]
+    digest = hashlib.sha256((process / "cmdline").read_bytes()).hexdigest()
+    state.write_text(f"{pid}\t{ticks}\t{digest}\t8181\n")
+    state.chmod(0o600)
+    assert managed_gateway_url(tmp_path) == "http://127.0.0.1:8181"
+    state.write_text(f"{pid}\t0\t{digest}\t8181\n")
+    assert managed_gateway_url(tmp_path) is None
+    state.write_text(f"{pid}\t{ticks}\t{'0' * 64}\t8181\n")
+    assert managed_gateway_url(tmp_path) is None
+    state.write_text(f"{pid}\t{ticks}\t{digest}\t8181\n")
+    state.chmod(0o644)
+    assert managed_gateway_url(tmp_path) is None
+
+
+def test_url_environment_overrides_detection_and_default_targets_checkout(monkeypatch):
+    monkeypatch.delenv("GATEWAY_RUN_DIR", raising=False)
+    monkeypatch.delenv("SAMPLE_GATEWAY_URL", raising=False)
+
+    def detect(run_dir):
+        assert run_dir == Path(__file__).resolve().parents[1] / "var/lib/gateway-runner"
+        return "http://127.0.0.1:8181"
+
+    monkeypatch.setattr(sample, "managed_gateway_url", detect)
+    assert default_gateway_url() == "http://127.0.0.1:8181"
+    monkeypatch.setenv("SAMPLE_GATEWAY_URL", "http://127.0.0.1:9000")
+    assert default_gateway_url() == "http://127.0.0.1:9000"
+    monkeypatch.delenv("SAMPLE_GATEWAY_URL")
+    monkeypatch.setattr(sample, "managed_gateway_url", lambda run_dir: None)
+    assert default_gateway_url() == "http://127.0.0.1:8080"
