@@ -56,6 +56,19 @@ your inference service, choose a model, and create an application key. Follow
 Linux standalone build. Native Windows distribution remains planned; Windows
 Ollama can be reached from a WSL gateway.
 
+After installing in `.venv`, everyday operation from this checkout is:
+
+```bash
+./start.sh                 # Background gateway; prints console URL and admin key
+./status.sh                # Show the managed instance
+./stop.sh                  # Graceful shutdown; preserves saved data
+```
+
+No environment activation or Docker is needed. Use `./start.sh --port 8081` if
+8080 is already occupied. These scripts support Linux/WSL and can also use an
+existing `dist/m87-gateway` build. See [guided setup](docs/runbooks/guided-setup.md)
+for private runtime logs and configuration options.
+
 For a Docker-free workstation test, run the
 [Windows/WSL flow application](examples/local_test_app/README.md). It starts a
 browser relay and gateway in WSL and calls Ollama running on Windows.

@@ -28,6 +28,64 @@ directory or port with `--data-dir` and `--port`. The launcher intentionally doe
 not load example/YAML configuration; retain the existing Uvicorn entry point for
 YAML-managed deployments. Do not run multiple processes against this data directory.
 
+## Everyday start, stop, and status
+
+After installing the source package in `.venv`, use these scripts from the checkout:
+
+```bash
+./start.sh
+./status.sh
+./stop.sh
+```
+
+No environment activation is needed. Start runs the gateway in the background,
+waits for health, and prints `http://localhost:8080/admin` and the operator key.
+It prefers `.venv/bin/python`; if absent, it uses the experimental
+`dist/m87-gateway` executable. The scripts also work when invoked by an absolute
+path from another directory. They require Linux/WSL, Bash, curl, flock, and standard
+Linux utilities. They do not install dependencies or start Ollama or Docker.
+
+The default data directory is unchanged, so saved providers, projects, app keys,
+and request logs survive stop/start. The scripts manage one instance per checkout.
+Use a different port if another gateway or the Flow Lab is already running:
+
+```bash
+./start.sh --port 8081
+```
+
+For isolated storage, use `./start.sh --data-dir /path/to/private/gateway-data`.
+Existing data directories must have owner-only permissions. Relative data paths
+are resolved from the checkout. `GATEWAY_PORT` and `GATEWAY_DATA_DIR` provide the
+same defaults; command options override them. For another installed source runtime,
+set `GATEWAY_PYTHON` to its Python executable. Stop and status use the recorded
+instance, so you do not need to repeat the port or data directory.
+
+Private process state and startup output live in the ignored
+`var/lib/gateway-runner/` directory. The startup log contains the operator key;
+keep it private. A new start replaces that startup log. `GATEWAY_RUN_DIR` can
+choose a different private runtime directory; use the same setting for all three
+scripts. Status reports a matching managed process and returns code 3 when stopped;
+it does not prove the inference backend is available.
+
+Repeated start reuses the running managed instance; repeated stop is harmless.
+Stop sends a graceful termination signal and preserves application data. If active
+requests delay shutdown beyond 30 seconds, it reports that work is finishing;
+retry stop after those requests finish. PID identity is checked before signaling.
+Instances started manually, the Flow Lab, and unrelated services are not adopted
+or stopped. Stop manually launched foreground instances with Ctrl+C.
+
+```mermaid
+flowchart LR
+    Start[./start.sh] --> Existing{Managed process running?}
+    Existing -->|Yes| URL[Show console URL]
+    Existing -->|No| Launch[Launch installed gateway]
+    Launch --> Ready[Wait for bind and health]
+    Ready --> URL
+    Stop[./stop.sh] --> Verify[Verify recorded process identity]
+    Verify --> Signal[Request graceful shutdown]
+    Signal --> Preserve[Keep configuration and request logs]
+```
+
 ## Configure the console
 
 1. Open `http://localhost:8080/admin` and enter the printed admin key.
@@ -103,7 +161,8 @@ release gates. No native Windows executable is advertised yet.
 
 ## Recovery
 
-Stop with Ctrl+C. Correct a connection in Setup and retry discovery or inference.
+Use `./stop.sh` for a script-managed instance, or Ctrl+C for a foreground instance.
+Correct a connection in Setup and retry discovery or inference.
 For a lost application key, revoke and recreate it. For a lost operator key, stop
 the gateway and read the private `admin.key`, or supply a new strong
 `GATEWAY_ADMIN_API_KEY` before restarting. Removing `master.key` destroys access to

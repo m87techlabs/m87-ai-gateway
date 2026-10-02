@@ -11,6 +11,24 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Local lifecycle scripts
+
+Checked on 2026-10-02 in Linux/WSL: the full Python suite passed 111 tests,
+including six lifecycle checks. Real temporary gateway processes verified source
+start, health, duplicate-start protection, status, graceful stop, idempotent stop,
+restart preserving the operator key/database, occupied-port isolation, stale PID
+protection, unsafe runtime-file rejection, and standalone executable fallback.
+Every test used isolated private data and cleaned up its managed gateway.
+ShellCheck, Bash syntax, Ruff lint/format, 43-file documentation checks, and
+`git diff --check` passed. Hosted CI checks Bash syntax and exercises the lifecycle
+scripts against both source and a freshly built Linux executable.
+
+No model inference or Docker startup was needed for this change. Native Windows
+lifecycle scripts, OS service installation, and automatic startup after reboot
+remain unverified/unimplemented. The Linux scripts manage their own background
+process; existing manually launched servers and inference services keep their
+separate lifecycle. Follow [guided setup](runbooks/guided-setup.md).
+
 ## Verified baseline
 
 Baseline: commit `88e76a6`, checked on 2026-09-28.
