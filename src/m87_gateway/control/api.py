@@ -88,7 +88,10 @@ class AppModelAccess(BaseModel):
 class AppKeyCreate(AppModelAccess):
     app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
     project_id: ProjectIdentifier = "default"
-    capture_content: bool = False
+    capture_content: bool = Field(
+        default=False,
+        description="Legacy compatibility field; gateway settings control content capture",
+    )
     rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
 
 

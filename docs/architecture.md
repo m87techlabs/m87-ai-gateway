@@ -24,7 +24,7 @@ sequenceDiagram
 ```
 
 Middleware also records auth, validation, body-size, and unexpected failures.
-An allowed app and environment can opt into bounded message/completion capture
+The gateway can enable bounded message/completion capture for all authorized apps
 in a dedicated local store. Metadata stdout and metrics never contain that text.
 
 ## Components

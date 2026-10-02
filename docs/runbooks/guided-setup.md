@@ -105,7 +105,7 @@ flowchart LR
    without a completion. Select a model or enter `provider:model` manually.
    Discovery does not prove permission to run a particular model or its readiness.
 5. Save defaults. Enable global content capture only if prompts/responses should
-   be stored; the application's capture option must also be enabled.
+   be stored. This gateway-wide setting applies to all authorized applications.
 6. In **Applications**, create a key with `auto` and the selected concrete model
    allowed. Set a requests-per-minute limit if needed. Copy the key shown once.
    When changing the default model later, edit the application's Models list and

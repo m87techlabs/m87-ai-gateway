@@ -122,6 +122,15 @@ test("application selector sends an explicit project assignment", async (t) => {
   assert.equal(requests.find((item) => item.method === "PATCH").body.project_id, "default");
 });
 
+test("content capture is configured at gateway level without per-app controls", async (t) => {
+  const {$, submit, requests} = await consoleFixture(t);
+  assert.equal($("app-form").querySelector('[name="capture_content"]'), null);
+  $("setup-form").elements.capture_content.checked = true;
+  submit("setup-form");
+  await until(() => requests.some((item) => item.path.endsWith("/setup") && item.method === "PUT"));
+  assert.equal(requests.find((item) => item.path.endsWith("/setup") && item.method === "PUT").body.capture_content, true);
+});
+
 test("application model permissions save without creating or revoking a key", async (t) => {
   const {$, window, requests} = await consoleFixture(t);
   window.document.querySelector('[data-view="apps"]').click();

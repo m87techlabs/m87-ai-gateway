@@ -103,7 +103,7 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
                         "app_id": "sample-chat",
                         "project_id": "sample-chat",
                         "allowed_models": ["auto", model],
-                        "capture_content": True,
+                        "capture_content": False,
                     },
                 )["api_key"]
                 sample = subprocess.Popen(

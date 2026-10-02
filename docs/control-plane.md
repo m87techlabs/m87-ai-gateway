@@ -8,7 +8,7 @@ API while leaving `POST /v1/chat/completions` as the application data plane.
 
 - 24-hour request, error, latency, and provider-reported token totals.
 - Searchable recent LLM exchange metadata and JSON export.
-- Prompt and completion inspection when both capture permissions are enabled.
+- Prompt and completion inspection when gateway-wide capture is enabled.
 - Runtime application-key creation and revocation.
 - Persistent project grouping, app membership, filtered dashboards/logs/exports,
   hourly UTC request/token charts, and application/model usage breakdowns.
@@ -70,10 +70,11 @@ provider keys. The existing Flow Lab and Uvicorn entry points remain available.
 
 ## Content capture
 
-Full payload storage is off by default. It requires both:
-
-1. `GATEWAY_CAPTURE_CONTENT=true`, the equivalent YAML setting, or the Setup capture option.
-2. `capture_content: true` on the authenticated application.
+Full payload storage is off by default. Enable gateway-wide capture with
+`GATEWAY_CAPTURE_CONTENT=true`, the equivalent YAML setting, or the Setup capture
+option. It applies to all authenticated applications. Legacy app capture fields
+are accepted for compatibility and do not affect logging. Enabling capture records
+future exchanges; previously uncaptured input/output cannot be recovered.
 
 The control plane records only bounded, redacted content after application auth,
 model authorization, and request guardrails pass. Metadata and Prometheus labels

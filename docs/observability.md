@@ -40,7 +40,6 @@ apps:
   - app_id: worker-test
     api_key: replace-with-a-private-app-key
     allowed_models: [auto, "ollama:llama3"]
-    capture_content: true
 
 observability:
   json_logs: true
@@ -53,7 +52,8 @@ observability:
     backup_count: 3
 ```
 
-Both `traffic_log.capture_content` and the app's `capture_content` must be true.
+`traffic_log.capture_content` controls capture for all authenticated applications.
+Legacy app capture fields do not gate logging.
 Content capture also requires a private JSONL path or the enabled local control
 plane. The shipped example leaves it disabled.
 Content is retained only after authentication, final-model authorization, and

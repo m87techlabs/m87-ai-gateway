@@ -37,12 +37,12 @@ def settings(path, global_capture=False, app_capture=False, limit=16384):
     "global_capture,app_capture,expected",
     [
         (False, False, False),
-        (True, False, False),
+        (True, False, True),
         (False, True, False),
         (True, True, True),
     ],
 )
-def test_content_requires_both_switches_and_stays_out_of_stdout(
+def test_gateway_switch_controls_capture_and_content_stays_out_of_stdout(
     tmp_path,
     monkeypatch,
     capsys,

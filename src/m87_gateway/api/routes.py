@@ -55,15 +55,14 @@ async def chat_completions(
         )
 
     control_store = getattr(request.app.state, "control_store", None)
+    capture = settings.observability.traffic_log.capture_content
+    if capture:
+        request.state.request_content = [message.model_dump() for message in payload.messages]
     provider = (
         get_provider(provider_name, settings, control_store)
         if control_store is not None
         else get_provider(provider_name, settings)
     )
-    capture = settings.observability.traffic_log.capture_content and app_context.capture_content
-    if capture:
-        request.state.request_content = [message.model_dump() for message in payload.messages]
-
     cache = request.app.state.response_cache
     cache_key = cache.key(
         app_context.app_id,

@@ -24,8 +24,8 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_APP_API_KEY` / `M87_GATEWAY_APP_API_KEY` | Replace the first configured app key |
 | `GATEWAY_APP_ID` / `M87_GATEWAY_APP_ID` | Override that app's ID |
 | `GATEWAY_ALLOWED_MODELS` | Comma-separated allowlist; an empty value clears access |
-| `GATEWAY_APP_CAPTURE_CONTENT` | Enable or disable content capture for the first configured app |
-| `GATEWAY_CAPTURE_CONTENT` | Global content-capture switch; still requires per-app permission |
+| `GATEWAY_APP_CAPTURE_CONTENT` | Legacy compatibility field; does not control logging |
+| `GATEWAY_CAPTURE_CONTENT` | Gateway-wide content-capture switch for all authenticated applications |
 | `GATEWAY_CONTROL_PLANE_ENABLED` | Enable the local SQLite store, admin API, and console |
 | `GATEWAY_CONTROL_PLANE_DATABASE_PATH` | Local SQLite event and key-metadata path |
 | `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
@@ -99,7 +99,7 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `control_plane.database_path`, `master_key_path` | Private local persistence paths |
 | `control_plane.admin_api_key_env` | Environment variable containing the admin key |
 | `control_plane.retention_days` | Startup event-pruning window; default 30 days |
-| `apps[].capture_content` / `auth.api_keys[].capture_content` | Per-app permission, also requiring the global capture switch |
+| `apps[].capture_content` / `auth.api_keys[].capture_content` | Legacy compatibility fields; ignored by gateway-wide capture |
 | `rate_limit_per_minute` | Enforced rolling 60-second request allowance per app and process |
 | `monthly_budget_usd` | Validated future budget field; not enforced |
 | `cache.enabled`, `ttl_seconds`, `max_entries` | Opt-in in-memory response cache |

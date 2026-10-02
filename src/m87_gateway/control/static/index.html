@@ -88,8 +88,8 @@
           <form id="setup-form" class="panel form-panel">
             <h3>2. Choose the default model</h3>
             <label>Model<input name="default_model" list="model-options" required placeholder="ollama:gemma3:1b"><datalist id="model-options"></datalist><small>Use a discovered model or enter provider:model manually.</small></label>
-            <label class="check"><input name="capture_content" type="checkbox">Allow prompt and response storage</label>
-            <p class="muted">Content is stored only when this option and the application's capture option are both enabled. Keep sensitive data out of test prompts.</p>
+            <label class="check"><input name="capture_content" type="checkbox">Capture LLM input and output for all applications</label>
+            <p class="muted">Gateway-wide logging stores bounded, redacted input/output for authenticated, authorized requests that pass policy checks. Keep sensitive data out of test prompts.</p>
             <button type="submit">Save defaults</button>
             <h3>3. Connect your application</h3>
             <p>Open Applications, create a key with the selected model allowed, and copy the key shown once.</p>
@@ -131,7 +131,6 @@
             <label>Project<select name="project_id" id="app-project"></select></label>
             <label>Allowed models<input name="allowed_models" required value="auto,ollama:gemma3:1b"><small>Comma-separated provider:model values.</small></label>
             <label>Requests per minute<input name="rate_limit_per_minute" type="number" min="1" max="100000" placeholder="Unlimited"></label>
-            <label class="check"><input name="capture_content" type="checkbox">Store prompt and response content</label>
             <button type="submit">Create key</button>
             <div id="new-key" class="secret" hidden></div>
           </form>

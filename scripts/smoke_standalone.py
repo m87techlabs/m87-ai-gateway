@@ -147,7 +147,7 @@ def exercise(executable):
                         "app_id": "bundle-check",
                         "project_id": "bundle-project",
                         "allowed_models": ["auto", "ollama:legacy-model"],
-                        "capture_content": True,
+                        "capture_content": False,
                     },
                     admin,
                 )

@@ -12,8 +12,8 @@ dashboard is required. Use synthetic prompts and a private application key.
 1. In **Projects**, create an ID and display name.
 2. In **Applications**, select the project when creating a key. Existing managed
    applications can be moved using their project selector. IDs remain globally unique.
-3. Allow the intended concrete model and `auto` if needed. Set the app rate/capture
-   options. Copy the generated key once and keep provider secrets in the gateway.
+3. Allow the intended concrete model and `auto` if needed. Set the app rate limit.
+   Copy the generated key once and keep provider secrets in the gateway.
 4. Select the project in the dashboard/log filter, or use **View usage** on its row.
 
 Applications configured through YAML can set `project_id`; their project is added
@@ -37,7 +37,7 @@ unattributed. The managed-app count lists runtime stored keys, excluding YAML ke
 
 The app key is cleared after submission. Prompt/result text is held in page memory;
 locking the console clears the tester, closes exchange detail, and stops pending
-browser test requests. Persistent capture requires both global and app permission.
+browser test requests. Persistent capture is controlled by the gateway-wide switch.
 
 ```mermaid
 sequenceDiagram

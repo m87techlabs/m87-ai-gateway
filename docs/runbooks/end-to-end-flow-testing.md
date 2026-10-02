@@ -165,7 +165,7 @@ Require all of the following:
 - The same `X-Request-ID` appears at the client and in the gateway event.
 - The success and provider counters increase once.
 - The marker is absent from metadata and metrics. It appears in the private
-  traffic file only when both content-capture controls are enabled.
+  traffic file only when gateway-wide content capture is enabled.
 
 ### Phase 6: negative and outage cases
 

@@ -11,6 +11,25 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Gateway-wide LLM input/output logging
+
+Checked on 2026-10-02: 137 Python tests and 11 browser DOM tests passed. Capture is
+controlled by the gateway-wide setting in Setup/YAML/environment. Per-app capture
+controls were removed from the console; legacy fields remain accepted and are
+ignored for compatibility. Tests cover all combinations of gateway/legacy app
+flags, secret redaction, content exclusion from stdout, and real HTTP integration
+with an app whose legacy capture flag is false. The standalone smoke also uses
+that false flag and checks captured input/output after restart.
+
+The running local gateway was restarted while preserving its data, keys, and port;
+gateway-wide capture was enabled in persisted setup. A live sample → gateway →
+Windows Ollama request returned HTTP 200 with 19 reported tokens, and the correlated
+SQLite log contained both input and output despite the app's legacy flag being
+false. Message text and credentials were not printed as validation evidence.
+Older uncaptured records cannot be backfilled. Default capture remains off for
+new installations; turning it on applies to all authorized, policy-approved
+requests in that gateway. Docker and cloud-provider checks remain deferred.
+
 ## Official local port and sample lifecycle
 
 Key-prompt follow-up on 2026-10-02: 12 targeted lifecycle tests passed, covering

@@ -54,8 +54,8 @@ python3 -m venv .venv
    conversation history is sent with each request. The page shows the last request's
    input/output/total tokens, round-trip latency, model, and request ID.
 6. In the gateway console, select the project's dashboard/logs and match that
-   request ID. Enable both global content capture and the app's capture permission
-   to inspect input/output there; metadata and usage do not require content capture.
+   request ID. Enable gateway-wide content capture in Setup to inspect input/output
+   there; metadata and usage do not require content capture.
 7. Run `./examples/chat_app/stop.sh` to stop the sample. The gateway stays running. Use `./stop.sh`
    separately when you want to stop the gateway.
 

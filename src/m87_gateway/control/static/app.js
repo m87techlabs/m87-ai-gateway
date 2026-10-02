@@ -175,7 +175,7 @@ async function showDetail(requestId) {
   body.append(grid);
   [["LLM input", item.request_content], ["LLM output", item.response_content]].forEach(([label, value]) => {
     const title = document.createElement("h3"); title.textContent = label;
-    const pre = document.createElement("pre"); pre.textContent = value == null ? "Content capture was disabled for this exchange." : JSON.stringify(value, null, 2);
+    const pre = document.createElement("pre"); pre.textContent = value == null ? "Content was not recorded for this exchange. Gateway capture applies to new requests." : JSON.stringify(value, null, 2);
     body.append(title, pre);
   });
   $("detail").showModal();
@@ -183,7 +183,7 @@ async function showDetail(requestId) {
 
 async function loadApps() {
   const [response] = await Promise.all([api("/apps"), loadProjectOptions()]);
-  table($("apps"), ["Application", "Project", "Key prefix", "Models", "RPM", "Content", ""], (await response.json()).items, (row, item) => {
+  table($("apps"), ["Application", "Project", "Key prefix", "Models", "RPM", ""], (await response.json()).items, (row, item) => {
     cell(row, item.app_id);
     const projectCell = cell(row, ""); const selection = document.createElement("select"); selection.setAttribute("aria-label", `Project for ${item.app_id}`);
     projects.forEach((project) => { const option = document.createElement("option"); option.value = project.project_id; option.textContent = project.name; selection.append(option); });
@@ -204,7 +204,7 @@ async function loadApps() {
       } catch (error) { notice(error.message); }
       finally { saveModels.disabled = models.disabled = false; }
     });
-    modelCell.append(models, saveModels); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
+    modelCell.append(models, saveModels); cell(row, item.rate_limit_per_minute || "Unlimited");
     const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
     button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
     action.append(button);
@@ -289,7 +289,7 @@ $("close-detail").addEventListener("click", () => $("detail").close());
 
 $("app-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const session = sessionGeneration;
-  const payload = {app_id: form.get("app_id"), project_id: form.get("project_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean), capture_content: form.has("capture_content")};
+  const payload = {app_id: form.get("app_id"), project_id: form.get("project_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean)};
   if (form.get("rate_limit_per_minute")) payload.rate_limit_per_minute = Number(form.get("rate_limit_per_minute"));
   try {
     const response = await api("/apps", {method: "POST", body: JSON.stringify(payload)}); const item = await response.json();

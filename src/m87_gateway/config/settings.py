@@ -56,7 +56,10 @@ class AppConfig(ConfigModel):
     app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
     api_key: str = Field(min_length=1, repr=False, validation_alias=AliasChoices("api_key", "key"))
     allowed_models: list[str] = Field(default_factory=list)
-    capture_content: bool = False
+    capture_content: bool = Field(
+        default=False,
+        description="Legacy compatibility field; gateway settings control content capture",
+    )
     rate_limit_per_minute: int | None = Field(default=None, ge=1)
     monthly_budget_usd: float | None = Field(default=None, ge=0)
 

@@ -4,14 +4,15 @@
 
 Use this procedure to inspect how a test application calls a model and what
 completion the gateway returns. Start with synthetic messages, one gateway
-process, private writable storage, and a specific app selected for capture.
+process, private writable storage, and gateway-wide capture enabled.
 Docker is needed only for the container variant.
 
 ## Configure and verify
 
 1. Follow the [observability configuration](../observability.md). Set a traffic
-   file path and enable capture globally and on the selected app. Keep other apps
-   opted out. Replace example keys in ignored configuration only.
+   file path or enable the local control store, then enable capture in gateway
+   Setup or configuration. This applies to all authorized applications.
+   Replace example keys in ignored configuration only.
 2. For a native process, run from the intended working directory so the relative
    path resolves predictably. For Docker, mount a private directory/volume at the
    configured path before enabling capture. Do not place it under a web/static root.
@@ -33,7 +34,8 @@ Docker is needed only for the container variant.
    PY
    ```
 
-6. Match the request ID to the event. Inspect content only in the private file.
+6. Match the request ID to the event. Inspect content in the private file or the
+   authenticated gateway console's Logs → request detail → LLM input/LLM output.
    Confirm stdout and `/metrics` contain metadata/aggregates without prompt text.
 7. Send a request with an invalid key and a blocklisted synthetic prompt. Confirm
    rejection events exist and contain no request/response content.
@@ -41,7 +43,8 @@ Docker is needed only for the container variant.
 ## Success checks
 
 - The valid exchange has the matching ID, selected model, status, and response.
-- Content appears only for the opted-in app, with truncation flags when needed.
+- Content appears for authorized exchanges while gateway capture is enabled,
+  with truncation flags when needed. Older uncaptured exchanges remain unchanged.
 - Known app/provider keys are redacted; response delivery is unchanged.
 - Rotated files remain private and the sink-error counter stays at zero.
 
@@ -51,7 +54,8 @@ If `traffic_log_write_failed` appears, inspect permissions, free disk space, and
 mount availability locally. Error events deliberately omit file paths and content.
 A runtime sink failure does not block chat; account for the missing audit records.
 
-To stop capturing content, set the global switch to false and restart. Existing
+To stop capturing content, turn off capture in Setup, or set the global switch to
+false in startup configuration and restart. Existing
 files remain until rotated or explicitly removed under your retention policy.
 Before deleting them, decide whether an investigation requires preservation.
 Do not restore broadly readable permissions to make startup succeed.

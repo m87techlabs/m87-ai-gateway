@@ -53,7 +53,7 @@ steps below summarize the integration-specific setup.
 1. Configure the gateway's Ollama endpoint for the network where it runs.
 2. Create a dedicated `worker-test` app with a private key and an allowlist
    containing both `auto` and its concrete model.
-3. Optionally enable traffic capture only for this app using the
+3. Optionally enable gateway-wide traffic capture using the
    [logging runbook](../runbooks/traffic-logging.md).
 4. Arrange an on-demand Docker session. Verify local health/auth/chat first.
 5. Route a separate Access-protected test hostname through the tunnel to the

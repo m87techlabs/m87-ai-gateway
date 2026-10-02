@@ -27,8 +27,8 @@ rotation. A tunnel does not replace gateway authentication.
 - Body bytes, message count, and individual message sizes are bounded.
 - Configured blocklist matches return safe errors without the matched term.
 - Upstream bodies, credentials, and exception details stay out of client errors.
-- Metadata logs omit headers and content. Captured text requires two explicit
-  switches and a private store with known-credential redaction.
+- Metadata logs omit headers and content. Captured text requires the explicit
+  gateway-wide switch and a private store with known-credential redaction.
 - Runtime app keys are stored as keyed digests. Stored provider credentials use
   Fernet encryption with a separate owner-only master-key file.
 - The admin API uses a distinct environment-supplied bearer key. The console does
