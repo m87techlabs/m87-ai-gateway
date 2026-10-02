@@ -45,6 +45,11 @@ python3 -m venv .venv
 
    Paste the application key at the hidden terminal prompt. It stays in the sample
    server's environment for this run; it is not saved to a file or sent to the browser.
+   Input is hidden, including pasted characters. Paste the full key, then press
+   Enter; omit any `Bearer` or `Authorization:` prefix. An empty key or whitespace
+   is rejected before launch. The abbreviated key prefix in the application list
+   cannot be used as the key. If the full key was lost, create another application
+   key and copy its one-time value; do not replace it with the operator/admin key.
 5. Open the sample's printed URL and send a synthetic question. Try a follow-up:
    conversation history is sent with each request. The page shows the last request's
    input/output/total tokens, round-trip latency, model, and request ID.

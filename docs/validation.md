@@ -13,6 +13,14 @@ controls when to stop Docker Desktop itself.
 
 ## Official local port and sample lifecycle
 
+Key-prompt follow-up on 2026-10-02: 12 targeted lifecycle tests passed, covering
+empty/whitespace-containing keys, unavailable stdin, key privacy, duplicate starts,
+source/native launches, fallback ports, and graceful cleanup. Invalid key input is
+now rejected at the prompt before launching a sample process. Startup failures
+show a port-specific hint only when a listener bind actually failed; raw private
+startup logs are not copied to terminal output. Ruff, ShellCheck, documentation,
+and whitespace checks passed. Docker and inference were unnecessary.
+
 Checked on 2026-10-02: 133 Python tests, Ruff, ShellCheck, Bash syntax, 44-file
 documentation checks, whitespace checks, and a rebuilt Linux executable smoke
 passed. The default local gateway listener is reserved on 8087, falling back by

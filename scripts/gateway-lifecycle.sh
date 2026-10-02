@@ -148,8 +148,16 @@ case "$action" in
             launcher=("${launcher[0]}" -m examples.chat_app)
             args=("${extra_args[@]}")
             if [[ -z ${SAMPLE_APP_KEY:-} ]]; then
-                read -r -s -p "Gateway application key (from Applications): " SAMPLE_APP_KEY
+                if ! read -r -s -p "Paste full application key (hidden; no Bearer prefix): " SAMPLE_APP_KEY; then
+                    printf '\n' >&2
+                    echo "Application key input was unavailable. Run interactively or supply SAMPLE_APP_KEY privately." >&2
+                    exit 1
+                fi
                 printf '\n'
+            fi
+            if [[ -z $SAMPLE_APP_KEY || $SAMPLE_APP_KEY == *[[:space:]]* ]]; then
+                echo "Application key is empty or contains whitespace. Paste only the full key from Applications; no Bearer prefix." >&2
+                exit 1
             fi
             export SAMPLE_APP_KEY
         else
@@ -192,7 +200,11 @@ case "$action" in
             sleep 0.2
         done
         echo "$service did not start. Check the private startup log: $log_file" >&2
-        echo "An explicit port must be free. Existing services were left running." >&2
+        if grep -Fq 'Could not bind gateway listener' "$log_file" || grep -Fq 'Sample port is unavailable' "$log_file"; then
+            echo "The requested port is unavailable. Choose another exact port or use automatic selection." >&2
+        elif grep -Fq 'SAMPLE_APP_KEY must contain a gateway application key' "$log_file"; then
+            echo "Paste the full application key from Applications, without a Bearer prefix." >&2
+        fi
         exit 1 ;;
     *) echo "Expected start, stop, or status." >&2; exit 1 ;;
 esac
