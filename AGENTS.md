@@ -9,6 +9,16 @@ Treat it as a product with a documented core, tested provider interfaces, operat
 runbooks, and explicit release gates. Public availability follows readiness; routine
 development does not change repository visibility.
 
+Product vision: make the gateway plug and play for workstation and cloud users.
+Ship one application with an included configuration UI and built-in operational
+visibility. A user connects a supported inference endpoint or configures provider
+credentials in the gateway, creates an application key, and points the calling
+app at the gateway. Provider secrets remain gateway-side; app keys are separate.
+Default local operation must not require Python, Docker, or external databases
+once standalone distribution is implemented. Existing inference services and
+cloud accounts remain user-supplied. Track this planned experience in design and
+roadmap; do not claim packaging or provider support before verification.
+
 The core covers API compatibility, application authentication and authorization,
 deterministic routing, provider adapters, policy checks, safe errors, observability,
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are

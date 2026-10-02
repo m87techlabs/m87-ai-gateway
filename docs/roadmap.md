@@ -5,6 +5,29 @@ and supported provider adapters. Releases follow acceptance criteria rather than
 calendar promises. See [design](design.md) for scope and [lifecycle](lifecycle.md)
 for release gates.
 
+## Next product milestone: guided setup and standalone distribution
+
+Prioritize the first-run experience alongside completion of core controls:
+
+- Add a setup wizard for operator access, provider connection, model selection,
+  connectivity testing, and application-key creation.
+- Add a generic OpenAI-compatible endpoint adapter for vLLM and compatible servers;
+  follow with tested Anthropic and Bedrock adapters.
+- Manage provider connections, models, app policies, retention, and traffic controls
+  through the included UI, with validated updates and clear restart requirements.
+- Show supported capabilities and safe, actionable connection diagnostics.
+- Package the runtime, UI, and embedded persistence as native platform artifacts;
+  keep a container distribution for cloud operators.
+- Define cross-platform credential protection, backup/restore, service startup,
+  upgrade/rollback, and artifact verification before claiming standalone support.
+- Publish short workstation and single-server cloud setup instructions.
+
+**Exit:** on a clean supported workstation without Python or Docker, a user can
+launch the gateway, connect an existing supported model service through the UI,
+create an app key, send a request, and inspect usage and logs. The same application
+can run on a supported cloud host with documented networking and credentials.
+External inference services and cloud accounts are user-supplied prerequisites.
+
 ## Current baseline
 
 The repository contains validated configuration, bearer-key authentication,

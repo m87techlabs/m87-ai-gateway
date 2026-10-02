@@ -11,6 +11,58 @@ The initial product is a deployable HTTP service. Its framework capabilities are
 documented adapter and policy interfaces, reusable configuration, and deployment
 examples. A separately supported embedded SDK is a future decision.
 
+## Plug-and-play product vision
+
+The intended experience is one self-hosted application with an included browser
+UI, usable on a workstation or a cloud server. Users retain control over provider
+connections, credentials, application access, logs, retention, and traffic policies.
+The gateway owns the operational controls for requests routed through it.
+
+The target first-run procedure is:
+
+1. Download and launch the gateway application for the chosen platform.
+2. Open its local setup UI and establish operator access.
+3. Select a provider: enter an inference endpoint for an existing local service,
+   or configure upstream credentials or cloud identity for a hosted service.
+4. Test connectivity, choose a model, and create an application key.
+5. Set the calling application's gateway base URL and application key.
+
+```mermaid
+flowchart LR
+    App[Calling application] -->|Gateway URL and application key| Gateway[AI gateway]
+    UI[Included configuration and operations UI] --> Gateway
+    Gateway -->|Configured inference endpoint| Local[Ollama or vLLM]
+    Gateway -->|Gateway-managed provider credentials| Hosted[OpenAI or Anthropic]
+    Gateway -->|Cloud identity or credentials| Cloud[AWS Bedrock and other cloud providers]
+    Gateway --> Controls[Logs, usage, monitoring, keys, and traffic policies]
+```
+
+Applications hold gateway-issued app credentials; upstream provider secrets stay
+in gateway-controlled storage. Cloud workload identity should be preferred where
+available. Local endpoints may also require credentials. Restrict direct backend
+access when policy enforcement must cover all inference traffic.
+
+Aim for native distributions that bundle the runtime, backend, UI, and embedded
+database. Users should not install Python, Node, Docker, PostgreSQL, or Grafana
+for the default single-instance experience. Produce and test separate artifacts
+for supported operating systems and architectures. A container image is an
+additional deployment option for existing cloud/container environments.
+
+Model servers, model downloads, accelerator drivers, cloud accounts, and network
+access remain prerequisites supplied by the user. Multi-instance deployments
+may need shared storage and platform services. Built-in request logs and usage
+views should be useful without external collectors; remote exporters are optional.
+
+Provider support is delivered through tested adapters and explicit capability
+reporting. Ollama and OpenAI have initial adapters; a generic OpenAI-compatible
+endpoint adapter for vLLM, Anthropic, and Bedrock are planned. Streaming, tools,
+and other provider differences must be declared rather than silently dropped.
+
+The current console covers inspection and basic key operations. A setup wizard,
+provider/model configuration, policy editing, diagnostics, standalone packaging,
+and cross-platform secret storage are planned. This vision defines the product
+direction and does not establish current support.
+
 ## Product principles
 
 1. Make the first successful local request straightforward and reproducible.
