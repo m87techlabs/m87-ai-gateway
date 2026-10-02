@@ -79,6 +79,14 @@ automatically. See the [traffic logging runbook](runbooks/traffic-logging.md).
 - `m87_gateway_guardrail_blocks_total`
 - `m87_gateway_tokens_total`
 - `m87_gateway_log_sink_errors_total`
+- `m87_gateway_cache_requests_total`
+- `m87_gateway_provider_retries_total`
+- `m87_gateway_rate_limit_rejections_total`
+
+Events and console rows include cache status, provider attempts, and retries.
+Cache hits retain original response usage for inspection but do not increment
+provider token metrics or control-plane token totals. Failed retry attempts can
+consume upstream tokens that are unavailable to the gateway.
 
 Labels use configured app IDs, known providers, status codes, fixed guardrail
 reasons, and token kinds. Request IDs, message text, and arbitrary model strings

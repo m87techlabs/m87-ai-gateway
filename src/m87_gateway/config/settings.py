@@ -203,6 +203,17 @@ class ControlPlaneConfig(ConfigModel):
         return value
 
 
+class CacheConfig(ConfigModel):
+    enabled: bool = False
+    ttl_seconds: int = Field(default=300, ge=1, le=86400)
+    max_entries: int = Field(default=1000, ge=1, le=100000)
+
+
+class RetryConfig(ConfigModel):
+    max_attempts: int = Field(default=1, ge=1, le=5)
+    backoff_ms: int = Field(default=100, ge=0, le=10000)
+
+
 class GatewaySettings(ConfigModel):
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -213,6 +224,8 @@ class GatewaySettings(ConfigModel):
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     control_plane: ControlPlaneConfig = Field(default_factory=ControlPlaneConfig)
+    cache: CacheConfig = Field(default_factory=CacheConfig)
+    retry: RetryConfig = Field(default_factory=RetryConfig)
 
     @field_validator("apps", mode="before")
     @classmethod
@@ -308,6 +321,10 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
         "GATEWAY_CONTROL_PLANE_DATABASE_PATH": ("control_plane", "database_path"),
         "GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH": ("control_plane", "master_key_path"),
         "GATEWAY_CONTROL_PLANE_RETENTION_DAYS": ("control_plane", "retention_days"),
+        "GATEWAY_CACHE_TTL_SECONDS": ("cache", "ttl_seconds"),
+        "GATEWAY_CACHE_MAX_ENTRIES": ("cache", "max_entries"),
+        "GATEWAY_PROVIDER_MAX_ATTEMPTS": ("retry", "max_attempts"),
+        "GATEWAY_PROVIDER_RETRY_BACKOFF_MS": ("retry", "backoff_ms"),
     }.items():
         _set_if_present(data, path, environ.get(variable))
 
@@ -347,6 +364,7 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
     for variable, path in {
         "GATEWAY_CONTROL_PLANE_ENABLED": ("control_plane", "enabled"),
         "GATEWAY_CAPTURE_CONTENT": ("observability", "traffic_log", "capture_content"),
+        "GATEWAY_CACHE_ENABLED": ("cache", "enabled"),
     }.items():
         if variable in environ:
             _set_if_present(data, path, _parse_bool(variable, environ[variable]))

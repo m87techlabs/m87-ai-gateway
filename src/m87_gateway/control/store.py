@@ -50,6 +50,9 @@ class LocalControlStore:
                     prompt_tokens INTEGER, completion_tokens INTEGER, total_tokens INTEGER,
                     estimated_cost_usd REAL, error_type TEXT,
                     provider_attempted INTEGER NOT NULL DEFAULT 0,
+                    provider_attempts INTEGER NOT NULL DEFAULT 0,
+                    provider_retries INTEGER NOT NULL DEFAULT 0,
+                    cache_status TEXT NOT NULL DEFAULT 'disabled',
                     request_content TEXT, request_content_truncated INTEGER NOT NULL DEFAULT 0,
                     response_content TEXT, response_content_truncated INTEGER NOT NULL DEFAULT 0
                 );
@@ -59,6 +62,7 @@ class LocalControlStore:
                     app_id TEXT PRIMARY KEY, key_digest TEXT NOT NULL UNIQUE,
                     key_prefix TEXT NOT NULL, allowed_models TEXT NOT NULL,
                     capture_content INTEGER NOT NULL DEFAULT 0,
+                    rate_limit_per_minute INTEGER,
                     enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS provider_keys (
@@ -69,7 +73,24 @@ class LocalControlStore:
                 );
                 """
             )
+            self._ensure_columns(connection)
         _tighten_sqlite_files(self.database_path)
+
+    @staticmethod
+    def _ensure_columns(connection: sqlite3.Connection) -> None:
+        migrations = {
+            "events": {
+                "provider_attempts": "INTEGER NOT NULL DEFAULT 0",
+                "provider_retries": "INTEGER NOT NULL DEFAULT 0",
+                "cache_status": "TEXT NOT NULL DEFAULT 'disabled'",
+            },
+            "app_keys": {"rate_limit_per_minute": "INTEGER"},
+        }
+        for table, additions in migrations.items():
+            existing = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+            for name, definition in additions.items():
+                if name not in existing:
+                    connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
 
     def close(self) -> None:
         return None
@@ -92,12 +113,16 @@ class LocalControlStore:
             "estimated_cost_usd",
             "error_type",
             "provider_attempted",
+            "provider_attempts",
+            "provider_retries",
+            "cache_status",
             "request_content",
             "request_content_truncated",
             "response_content",
             "response_content_truncated",
         )
-        values = [event.get(name) for name in fields]
+        defaults = {"provider_attempts": 0, "provider_retries": 0, "cache_status": "disabled"}
+        values = [event.get(name, defaults.get(name)) for name in fields]
         with self._connect() as connection:
             connection.execute(
                 f"INSERT OR REPLACE INTO events ({','.join(fields)}) "
@@ -119,9 +144,10 @@ class LocalControlStore:
         with self._connect() as connection:
             row = connection.execute(
                 """SELECT COUNT(*) AS requests,
-                          COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens,
-                          COALESCE(SUM(completion_tokens), 0) AS completion_tokens,
-                          COALESCE(SUM(total_tokens), 0) AS total_tokens,
+                          COALESCE(SUM(CASE WHEN cache_status != 'hit' THEN prompt_tokens END), 0) AS prompt_tokens,
+                          COALESCE(SUM(CASE WHEN cache_status != 'hit' THEN completion_tokens END), 0) AS completion_tokens,
+                          COALESCE(SUM(CASE WHEN cache_status != 'hit' THEN total_tokens END), 0) AS total_tokens,
+                          COALESCE(SUM(CASE WHEN cache_status = 'hit' THEN 1 ELSE 0 END), 0) AS cache_hits,
                           COALESCE(SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END), 0) AS errors,
                           COALESCE(AVG(latency_ms), 0) AS average_latency_ms
                    FROM events WHERE created_at >= ?""",
@@ -150,7 +176,8 @@ class LocalControlStore:
             rows = connection.execute(
                 f"""SELECT request_id, created_at, app_id, provider, model, routed_model,
                            status_code, latency_ms, prompt_tokens, completion_tokens,
-                           total_tokens, error_type
+                           total_tokens, error_type, cache_status, provider_attempts,
+                           provider_retries
                     FROM events {where} ORDER BY created_at DESC LIMIT ?""",
                 values,
             ).fetchall()
@@ -180,21 +207,27 @@ class LocalControlStore:
         return hmac.new(self._digest_key, value.encode(), hashlib.sha256).hexdigest()
 
     def create_app_key(
-        self, app_id: str, allowed_models: list[str], capture_content: bool
+        self,
+        app_id: str,
+        allowed_models: list[str],
+        capture_content: bool,
+        rate_limit_per_minute: int | None = None,
     ) -> tuple[dict[str, Any], str]:
         raw_key = f"m87_{secrets.token_urlsafe(32)}"
         created_at = datetime.now(timezone.utc).isoformat()
         with self._connect() as connection:
             connection.execute(
                 """INSERT INTO app_keys
-                   (app_id, key_digest, key_prefix, allowed_models, capture_content, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                   (app_id, key_digest, key_prefix, allowed_models, capture_content,
+                    rate_limit_per_minute, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
                     app_id,
                     self._digest(raw_key),
                     raw_key[:12],
                     json.dumps(allowed_models),
                     capture_content,
+                    rate_limit_per_minute,
                     created_at,
                 ),
             )
@@ -204,6 +237,7 @@ class LocalControlStore:
                 "key_prefix": raw_key[:12],
                 "allowed_models": allowed_models,
                 "capture_content": capture_content,
+                "rate_limit_per_minute": rate_limit_per_minute,
                 "created_at": created_at,
             },
             raw_key,
@@ -222,12 +256,14 @@ class LocalControlStore:
             api_key=raw_key,
             allowed_models=json.loads(row["allowed_models"]),
             capture_content=bool(row["capture_content"]),
+            rate_limit_per_minute=row["rate_limit_per_minute"],
         )
 
     def list_apps(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
-                """SELECT app_id, key_prefix, allowed_models, capture_content, enabled, created_at
+                """SELECT app_id, key_prefix, allowed_models, capture_content,
+                          rate_limit_per_minute, enabled, created_at
                    FROM app_keys ORDER BY created_at DESC"""
             ).fetchall()
         result = []

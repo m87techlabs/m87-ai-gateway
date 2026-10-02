@@ -30,9 +30,9 @@ examples. A separately supported embedded SDK is a future decision.
 | Routing | Deterministic selection, aliases, configuration validation | Implemented for direct models, `auto`, and task rules |
 | Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: non-streaming OpenAI and Ollama text chat; native Ollama flow verified |
 | Policy | Configurable request/response checks with bounded request sizes | Partial: request bounds and configured blocklist; response checks planned |
-| Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: HTTP timeouts only |
+| Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: timeouts and opt-in bounded retries; fallback planned |
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
-| Resource controls | Per-app rate limits and documented budget semantics | Planned: fields exist but are unenforced |
+| Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate enforcement and opt-in response cache; budgets planned |
 | Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: health endpoint, Docker files, and runbooks |
 
 ## Target request path
@@ -105,7 +105,7 @@ usage data when a provider does not supply it.
 - Establish single-instance limit semantics before promising limits across replicas.
 - Report estimated costs separately from provider billing; pricing requires a maintained source.
 
-Final-target authorization and startup validation are enforced. Retries, fallback,
+Final-target authorization and startup validation are enforced. Fallback,
 shared limits, and maintained cost estimation remain acceptance requirements.
 
 ## Deployment assumptions

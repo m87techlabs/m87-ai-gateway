@@ -7,6 +7,8 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+- Single-process per-app rate limits, opt-in exact-response caching, bounded
+  transient provider retries, console outcome fields, and traffic-control runbook.
 - Initial public repository scaffold.
 - Project documentation foundation.
 - GitHub issue templates and CI workflow.

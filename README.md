@@ -30,13 +30,14 @@ Implemented foundations include validated YAML/environment configuration, bearer
 app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
 Ollama adapters, configured request guardrails, safe provider errors, correlated
 JSON outcome events, optional private traffic capture, Prometheus metrics, a
-health endpoint, and an optional local control plane. The control plane provides
+health endpoint, per-app rate limits, opt-in response caching, bounded retries,
+and an optional local control plane. The control plane provides
 token analytics, inspectable opted-in LLM input/output, runtime application keys,
 encrypted OpenAI credentials, log export, and a local operator console.
 
 The native Ollama path is verified with a real local model. The MVP still needs
 container and live OpenAI verification. Streaming, model discovery, embeddings,
-enforced rate limits/budgets, response policies, remote log exporters, and major
+budget enforcement, response policies, remote log exporters, and major
 cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.
 

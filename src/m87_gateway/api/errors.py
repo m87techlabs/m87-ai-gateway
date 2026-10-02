@@ -5,11 +5,19 @@ from fastapi.responses import JSONResponse
 class GatewayError(Exception):
     """A client-safe error. Never put upstream bodies or credentials in its fields."""
 
-    def __init__(self, status: int, code: str, message: str, kind: str = "gateway_error"):
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        kind: str = "gateway_error",
+        headers: dict[str, str] | None = None,
+    ):
         self.status = status
         self.code = code
         self.message = message
         self.kind = kind
+        self.headers = headers or {}
 
 
 def error_response(request: Request, error: GatewayError) -> JSONResponse:
@@ -20,4 +28,5 @@ def error_response(request: Request, error: GatewayError) -> JSONResponse:
             "error": {"message": error.message, "type": error.kind, "code": error.code},
             "request_id": request.state.request_id,
         },
+        headers=error.headers,
     )

@@ -104,3 +104,16 @@ def test_provider_ciphertext_is_not_plaintext_in_sqlite(tmp_path):
     with sqlite3.connect(tmp_path / "control.db") as connection:
         stored = connection.execute("SELECT encrypted_value FROM provider_keys").fetchone()[0]
     assert b"sk-another-secret" not in stored
+
+
+def test_existing_database_upgrades_without_losing_keys(tmp_path):
+    control = store(tmp_path)
+    _, key = control.create_app_key("existing", ["auto"], False)
+    with sqlite3.connect(tmp_path / "control.db") as connection:
+        connection.execute("ALTER TABLE app_keys DROP COLUMN rate_limit_per_minute")
+        for name in ("provider_attempts", "provider_retries", "cache_status"):
+            connection.execute(f"ALTER TABLE events DROP COLUMN {name}")
+    upgraded = store(tmp_path)
+    assert upgraded.authenticate_app_key(key).app_id == "existing"
+    upgraded.emit(event(cache_status="hit", provider_attempts=0))
+    assert upgraded.get_event("request-1")["cache_status"] == "hit"

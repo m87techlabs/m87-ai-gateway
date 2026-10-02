@@ -12,6 +12,7 @@ from m87_gateway.api.routes import router
 from m87_gateway.config import GatewaySettings, get_settings
 from m87_gateway.control import LocalControlStore
 from m87_gateway.control.api import router as control_router
+from m87_gateway.controls import ExactResponseCache, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
 from m87_gateway.metrics import GatewayMetrics
@@ -24,6 +25,10 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             active = settings if settings is not None else get_settings()
             application.state.settings = active
             application.state.metrics = GatewayMetrics()
+            application.state.rate_limiter = SlidingWindowRateLimiter()
+            application.state.response_cache = ExactResponseCache(
+                active.cache.enabled, active.cache.ttl_seconds, active.cache.max_entries
+            )
             application.state.control_store = None
             application.state.admin_api_key = ""
             if active.control_plane.enabled:

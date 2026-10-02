@@ -41,7 +41,7 @@ before collecting other content.
 
 ## Current limits
 
-Rate/concurrency limits, budgets, JWT, response policy checks, distributed
+Concurrency limits, budgets, JWT, response policy checks, distributed
 coordination, and remote log export are not implemented. Preserve existing
 application/origin controls when testing this gateway alongside another service.
 The metrics endpoint has no app-key auth and belongs on a private operator network.

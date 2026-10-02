@@ -262,8 +262,8 @@ def test_unsupported_and_invalid_requests_are_safe(runtime, payload):
         ("timeout", 504, "provider_timeout"),
         ("network", 502, "provider_error"),
         ("throttle", 503, "provider_rate_limited"),
-        ("upstream", 502, "provider_error"),
-        ("malformed", 502, "provider_error"),
+        ("upstream", 502, "provider_rejected"),
+        ("malformed", 502, "provider_invalid_payload"),
         ("shape", 502, "invalid_provider_response"),
     ],
 )

@@ -58,6 +58,7 @@
             <h3>Create application key</h3>
             <label>Application ID<input name="app_id" required pattern="[A-Za-z0-9_.-]+"></label>
             <label>Allowed models<input name="allowed_models" required value="auto,ollama:gemma3:1b"><small>Comma-separated provider:model values.</small></label>
+            <label>Requests per minute<input name="rate_limit_per_minute" type="number" min="1" max="100000" placeholder="Unlimited"></label>
             <label class="check"><input name="capture_content" type="checkbox">Store prompt and response content</label>
             <button type="submit">Create key</button>
             <div id="new-key" class="secret" hidden></div>

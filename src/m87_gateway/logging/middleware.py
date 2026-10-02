@@ -38,6 +38,9 @@ class TrafficMiddleware:
             "estimated_cost_usd": None,
             "error_type": None,
             "provider_attempted": False,
+            "provider_attempts": 0,
+            "provider_retries": 0,
+            "cache_status": "disabled",
         }
         audit = state["audit"]
         started = perf_counter()

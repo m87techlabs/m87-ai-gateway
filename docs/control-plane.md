@@ -27,8 +27,11 @@ flowchart LR
 
 This is a developer-preview, single-instance control plane. It does not provide
 hosted tenancy, SSO, distributed coordination, billing, or a durable remote event
-queue. Rate limiting, caching, retries, fallback, cost estimation, and additional
+queue. Fallback, budget enforcement, cost estimation, and additional
 cloud providers remain roadmap work.
+
+See [traffic controls](runbooks/traffic-controls.md) for implemented per-app rate
+limits, exact-response caching, and bounded retries.
 
 ## Enable it
 

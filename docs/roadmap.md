@@ -67,7 +67,7 @@ from provider failures without accessing full prompts or credentials.
 ## 0.3 — Security and resource controls
 
 - [x] Enforce configured request size and message limits.
-- Enforce per-app rate limits and specify single-instance versus shared behavior.
+- [x] Enforce per-app rate limits within one process; shared enforcement remains planned.
 - Define budget accounting and enforcement before claiming budget support.
 - Add key rotation guidance and configuration validation at startup.
 - Introduce additional identity or policy mechanisms only with a concrete use case.
@@ -95,7 +95,8 @@ deployment has recorded startup, health, request, and rollback evidence.
 - Stabilize the provider extension interface and publish a minimal adapter example.
 - Add configuration validation tooling and JavaScript/Python client examples.
 - Introduce streaming, tools, or multimodal support through explicit capability contracts.
-- Add bounded retry and fallback policies with authorization and cost safeguards.
+- [x] Add opt-in exact-response caching and bounded transient retries.
+- Add authorized fallback routes and shared state.
 - Document migration paths and extension compatibility.
 
 **Exit:** an external developer can implement an adapter and validate it using

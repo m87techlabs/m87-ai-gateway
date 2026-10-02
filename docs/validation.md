@@ -128,6 +128,15 @@ opted-in request/response content. Hosted CI remains the full-suite gate.
 
 ## Deferred checks
 
+Traffic controls were checked on 2026-10-02: the full local suite passed 95 tests
+outside the isolated command runner, including cache TTL/isolation/eviction,
+rate-window enforcement, retry exhaustion, non-retryable failures, and additive
+SQLite migration preserving existing keys. Ruff, JavaScript syntax, 39-file
+documentation checks, and a wheel build passed. Live-model cache/retry exercises
+and distributed enforcement remain unverified; use the
+[traffic-controls runbook](runbooks/traffic-controls.md) during the next local
+provider session. Docker was not needed for these automated checks.
+
 | Check | Why it is unverified | Needed to run | Procedure / expected evidence |
 | --- | --- | --- | --- |
 | Compose validation | Docker CLI integration is unavailable in the current WSL environment | Enable Docker Desktop integration for this WSL distribution; prepare ignored `.env` | `docker compose config --quiet` exits successfully |
@@ -149,7 +158,7 @@ and image checks still require Docker.
 
 Enabling Docker does not complete these roadmap items:
 
-- Enforced rate limits/budgets, response policies, readiness, cost estimates, and
+- Budget enforcement, response policies, readiness, cost estimates, and
   durable/remote event delivery remain incomplete or absent.
 - AWS Bedrock, Azure OpenAI, Google Cloud Vertex AI, and Anthropic adapters are
   planned; cloud contract/live checks depend on those adapters existing.

@@ -48,6 +48,24 @@ class GatewayMetrics:
             "Failed writes to the traffic file",
             registry=self.registry,
         )
+        self.cache_requests = Counter(
+            "m87_gateway_cache_requests_total",
+            "Exact-response cache lookups",
+            ("status",),
+            registry=self.registry,
+        )
+        self.provider_retries = Counter(
+            "m87_gateway_provider_retries_total",
+            "Retried provider adapter attempts",
+            ("provider",),
+            registry=self.registry,
+        )
+        self.rate_limits = Counter(
+            "m87_gateway_rate_limit_rejections_total",
+            "Requests rejected by per-app rate limits",
+            ("app_id",),
+            registry=self.registry,
+        )
 
     def observe(self, event: dict) -> None:
         provider = event.get("provider") or "none"
@@ -57,16 +75,28 @@ class GatewayMetrics:
             str(event["status_code"]),
         ).inc()
         self.latency.labels(provider).observe(event["latency_ms"] / 1000)
-        if event.get("provider_attempted"):
-            self.provider_requests.labels(provider).inc()
-            if event["status_code"] >= 400:
-                self.provider_errors.labels(provider).inc()
+        attempts = event.get("provider_attempts", 0) or (
+            1 if event.get("provider_attempted") else 0
+        )
+        if attempts:
+            self.provider_requests.labels(provider).inc(attempts)
+            retries = event.get("provider_retries", 0)
+            failures = retries + (1 if event["status_code"] >= 400 else 0)
+            if failures:
+                self.provider_errors.labels(provider).inc(failures)
+            if retries:
+                self.provider_retries.labels(provider).inc(retries)
         if event.get("guardrail_action") == "block":
             self.blocks.labels(event["guardrail_reason"]).inc()
         for kind in ("prompt", "completion"):
             value = event.get(f"{kind}_tokens")
-            if value is not None:
+            if value is not None and event.get("cache_status") != "hit":
                 self.tokens.labels(provider, kind).inc(value)
+        cache_status = event.get("cache_status")
+        if cache_status in {"hit", "miss"}:
+            self.cache_requests.labels(cache_status).inc()
+        if event.get("error_type") == "rate_limit_exceeded":
+            self.rate_limits.labels(event.get("app_id") or "anonymous").inc()
 
     def render(self) -> bytes:
         return generate_latest(self.registry)

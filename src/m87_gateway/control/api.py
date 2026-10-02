@@ -51,6 +51,7 @@ class AppKeyCreate(BaseModel):
     app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
     allowed_models: list[str] = Field(min_length=1)
     capture_content: bool = False
+    rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
 
     @field_validator("allowed_models")
     @classmethod
@@ -131,7 +132,10 @@ async def apps(store: AdminStore):
 async def create_app(payload: AppKeyCreate, store: AdminStore):
     try:
         app, raw_key = store.create_app_key(
-            payload.app_id, payload.allowed_models, payload.capture_content
+            payload.app_id,
+            payload.allowed_models,
+            payload.capture_content,
+            payload.rate_limit_per_minute,
         )
     except sqlite3.IntegrityError as exc:
         raise GatewayError(409, "app_exists", "Application identifier already exists") from exc

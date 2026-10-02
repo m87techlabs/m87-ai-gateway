@@ -11,6 +11,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Container deployment](container-deployment.md) | Starting a single gateway container and checking provider connectivity |
 | [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |
 | [Provider troubleshooting](provider-troubleshooting.md) | A chat request fails or returns unexpected behavior |
+| [Traffic controls](traffic-controls.md) | Configure and verify per-app limits, cache, and retries |
 | [Traffic logging](traffic-logging.md) | Enable and inspect bounded private LLM request/response records |
 | [Local control plane](control-plane.md) | Inspect usage and exchanges; manage local application/provider keys |
 | [End-to-end flow testing](end-to-end-flow-testing.md) | Verify Worker, Access, Tunnel, gateway, Ollama, logs, and metrics |

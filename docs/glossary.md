@@ -30,7 +30,7 @@
 | Trace | Related spans describing work across components; a future observability option. |
 | Token usage | Provider-reported input/output token counts. Missing counts must not be fabricated. |
 | Estimated cost | An estimate derived from usage and maintained prices, separate from an invoice. |
-| Rate limit | A policy restricting request volume over a period; currently a configuration field only. |
+| Rate limit | A policy restricting request volume over a period; enforced per app within one gateway process. |
 | Budget | A spending policy whose accounting and enforcement semantics remain to be implemented. |
 | Liveness | Whether the process can respond; the current `/health` endpoint is a basic liveness signal. |
 | Readiness | Whether an instance is ready to receive traffic under a documented policy; planned. |

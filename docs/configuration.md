@@ -31,6 +31,8 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
 | `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | Event retention in days; pruned at startup |
 | `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
+| `GATEWAY_CACHE_ENABLED`, `GATEWAY_CACHE_TTL_SECONDS`, `GATEWAY_CACHE_MAX_ENTRIES` | Cache enablement, expiry, and capacity |
+| `GATEWAY_PROVIDER_MAX_ATTEMPTS`, `GATEWAY_PROVIDER_RETRY_BACKOFF_MS` | Maximum attempts and initial retry delay |
 | `OPENAI_API_KEY` | Default OpenAI credential variable |
 | `OLLAMA_BASE_URL` | Default Ollama endpoint override |
 
@@ -78,7 +80,10 @@ credentials return a safe 503 when that provider is selected.
 | `control_plane.admin_api_key_env` | Environment variable containing the admin key |
 | `control_plane.retention_days` | Startup event-pruning window; default 30 days |
 | `apps[].capture_content` / `auth.api_keys[].capture_content` | Per-app permission, also requiring the global capture switch |
-| `rate_limit_per_minute`, `monthly_budget_usd` | Validated future policy fields; not enforced |
+| `rate_limit_per_minute` | Enforced rolling 60-second request allowance per app and process |
+| `monthly_budget_usd` | Validated future budget field; not enforced |
+| `cache.enabled`, `ttl_seconds`, `max_entries` | Opt-in in-memory response cache |
+| `retry.max_attempts`, `backoff_ms` | Bounded transient provider retries; default one attempt |
 
 The text-chat contract accepts messages, model, temperature, max_tokens, optional
 task, and `stream: false`. Streaming, tools, images, arbitrary extra options,

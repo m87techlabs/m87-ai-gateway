@@ -66,3 +66,13 @@ control_plane:
   master_key_path: "var/lib/m87-gateway/master.key"
   admin_api_key_env: "GATEWAY_ADMIN_API_KEY"
   retention_days: 30
+
+cache:
+  enabled: false
+  ttl_seconds: 300
+  max_entries: 1000
+
+retry:
+  # Additional attempts can duplicate billable work. Enable deliberately.
+  max_attempts: 1
+  backoff_ms: 100

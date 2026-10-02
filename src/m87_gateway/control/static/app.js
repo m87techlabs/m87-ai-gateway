@@ -50,7 +50,7 @@ function notice(message) {
 }
 
 function renderLogs(target, rows, limit) {
-  table(target, ["Time", "App", "Model", "Status", "Tokens", "Latency"], rows.slice(0, limit), (row, item) => {
+  table(target, ["Time", "App", "Model", "Status", "Tokens", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
     row.dataset.id = item.request_id;
     cell(row, new Date(item.created_at).toLocaleString());
     cell(row, item.app_id);
@@ -59,6 +59,8 @@ function renderLogs(target, rows, limit) {
     status.className = `status ${item.status_code >= 400 ? "error" : ""}`;
     cell(row, item.total_tokens);
     cell(row, item.latency_ms == null ? null : `${item.latency_ms} ms`);
+    cell(row, item.cache_status || "disabled");
+    cell(row, item.provider_attempts ?? 0);
     row.addEventListener("click", () => showDetail(item.request_id));
   });
 }
@@ -103,8 +105,8 @@ async function showDetail(requestId) {
 
 async function loadApps() {
   const response = await api("/apps");
-  table($("apps"), ["Application", "Key prefix", "Models", "Content", ""], (await response.json()).items, (row, item) => {
-    cell(row, item.app_id); cell(row, `${item.key_prefix}…`); cell(row, item.allowed_models.join(", ")); cell(row, item.capture_content ? "Enabled" : "Off");
+  table($("apps"), ["Application", "Key prefix", "Models", "RPM", "Content", ""], (await response.json()).items, (row, item) => {
+    cell(row, item.app_id); cell(row, `${item.key_prefix}…`); cell(row, item.allowed_models.join(", ")); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
     const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
     button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
     action.append(button);
@@ -157,6 +159,7 @@ $("close-detail").addEventListener("click", () => $("detail").close());
 $("app-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget);
   const payload = {app_id: form.get("app_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean), capture_content: form.has("capture_content")};
+  if (form.get("rate_limit_per_minute")) payload.rate_limit_per_minute = Number(form.get("rate_limit_per_minute"));
   try {
     const response = await api("/apps", {method: "POST", body: JSON.stringify(payload)}); const item = await response.json();
     $("new-key").hidden = false; $("new-key").textContent = `Copy now — shown once: ${item.api_key}`; notice("Application key created"); await loadApps();

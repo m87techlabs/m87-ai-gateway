@@ -27,14 +27,23 @@ class Provider(ABC):
         except httpx.TimeoutException as exc:
             raise GatewayError(504, "provider_timeout", "Model provider timed out") from exc
         except httpx.HTTPStatusError as exc:
-            code = "provider_rate_limited" if exc.response.status_code == 429 else "provider_error"
-            status = 503 if exc.response.status_code == 429 else 502
+            upstream_status = exc.response.status_code
+            if upstream_status == 429:
+                code, status = "provider_rate_limited", 503
+            elif upstream_status in {408, 409} or upstream_status >= 500:
+                code, status = "provider_error", 502
+            else:
+                code, status = "provider_rejected", 502
             raise GatewayError(
                 status, code, "Model provider could not complete the request"
             ) from exc
-        except (httpx.RequestError, ValueError) as exc:
+        except httpx.RequestError as exc:
             raise GatewayError(
                 502, "provider_error", "Model provider could not complete the request"
+            ) from exc
+        except ValueError as exc:
+            raise GatewayError(
+                502, "provider_invalid_payload", "Model provider could not complete the request"
             ) from exc
 
     @abstractmethod
