@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gateway Chat Sample</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header><p class="eyebrow">M87 AI Gateway · Sample application</p>
+      <h1>A conversation through your gateway.</h1>
+      <p>Your application sends the conversation. The gateway handles the model connection.</p>
+      <p id="status" role="status">Checking gateway…</p>
+    </header>
+    <section class="workspace" aria-label="Chat">
+      <div class="toolbar"><span id="model">Model: auto</span><button id="clear" type="button">New conversation</button></div>
+      <div id="messages" role="log" aria-live="polite"><p id="empty">Ask a question to try the complete application → gateway → model flow.</p></div>
+      <form id="chat-form">
+        <label for="prompt">Your message</label>
+        <textarea id="prompt" rows="3" maxlength="8192" placeholder="Explain how an AI gateway works in three sentences." required></textarea>
+        <div class="form-footer"><span>Use synthetic content while testing.</span><button id="send" type="submit">Send message</button></div>
+      </form>
+    </section>
+    <section class="details" aria-label="Last response details">
+      <h2>Last response</h2>
+      <dl><div><dt>Input tokens</dt><dd id="input-tokens">—</dd></div><div><dt>Output tokens</dt><dd id="output-tokens">—</dd></div><div><dt>Total tokens</dt><dd id="total-tokens">—</dd></div><div><dt>Round trip</dt><dd id="latency">—</dd></div></dl>
+      <p>Model: <span id="response-model">—</span></p>
+      <p>Request ID: <code id="request-id">—</code></p>
+      <p class="hint">Find this request ID in the gateway console’s Logs. Token counts are reported by the inference provider; unavailable counts stay unknown.</p>
+      <p id="error" role="alert" hidden></p>
+    </section>
+  </main>
+</body>
+</html>

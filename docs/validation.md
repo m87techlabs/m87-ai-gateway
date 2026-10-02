@@ -11,6 +11,25 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Independent chat sample
+
+Checked on 2026-10-02 in Linux/WSL: 123 Python tests and nine browser DOM interaction
+tests passed. The new sample's checks cover server-held application credentials,
+conversation forwarding, reported/unknown usage, safe authentication/authorization/
+rate-limit errors, connection failures, timeouts, invalid conversations, cross-origin
+rejection, text-safe browser rendering, follow-up history, failed-turn retry, and
+duplicate-send prevention. Ruff, ShellCheck, Bash/JavaScript syntax, 44-file
+documentation checks, and whitespace checks passed.
+
+A real HTTP test started the sample with its shell launcher, a temporary gateway,
+and a synthetic inference server. A question returned six reported tokens and a
+request ID matching the gateway's captured input/output under the sample project.
+Temporary processes were stopped and existing user configuration was untouched.
+This is an HTTP integration check with synthetic inference, not a live-model check.
+Live Ollama/cloud inference through this sample and visual review in a real browser
+remain operator checks; DOM tests do not establish visual rendering. Docker was
+unnecessary. See the [sample procedure](../examples/chat_app/README.md).
+
 ## Local lifecycle scripts
 
 Checked on 2026-10-02 in Linux/WSL: the full Python suite passed 111 tests,

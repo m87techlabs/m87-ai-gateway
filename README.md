@@ -75,6 +75,12 @@ browser relay and gateway in WSL and calls Ollama running on Windows.
 The launcher also enables the [local control plane](docs/control-plane.md), so the
 same request can be inspected at `http://localhost:8080/admin`.
 
+To use your existing gateway from a separate application, try the
+[chat sample](examples/chat_app/README.md): run `./examples/chat_app/start.sh`,
+enter a gateway application key at the hidden prompt, and open
+`http://localhost:8790`. It supports conversations and shows reported tokens,
+latency, and request IDs for correlation with gateway logs.
+
 ## Quickstart
 
 Prerequisites: Docker with Compose and either a reachable Ollama service with a

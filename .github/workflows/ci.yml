@@ -39,6 +39,7 @@ jobs:
           ruff check src tests scripts examples
           ruff format --check src tests scripts examples
           bash -n start.sh stop.sh status.sh scripts/gateway-lifecycle.sh
+          bash -n examples/chat_app/start.sh
 
       - name: Test
         run: pytest

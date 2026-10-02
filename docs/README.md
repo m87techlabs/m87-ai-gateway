@@ -26,6 +26,7 @@ gates in the lifecycle guide.
 | [Local control plane](control-plane.md) | Token analytics, exchange inspection, keys, and persistence |
 | [Control-plane runbook](runbooks/control-plane.md) | Operate the local console and key stores |
 | [Windows/WSL flow lab](runbooks/windows-wsl-flow-lab.md) | Browser-to-Windows-Ollama testing without Docker |
+| [Chat sample](../examples/chat_app/README.md) | Independent conversation app using an existing gateway and an application key |
 | [Worker/local inference](integrations/worker-local-inference.md) | Reference tunnel integration and acceptance checks |
 | [Runbooks](runbooks/README.md) | Repeatable operational procedures |
 | [Validation status](validation.md) | Verified checks, deferred checks, and on-demand Docker policy |
