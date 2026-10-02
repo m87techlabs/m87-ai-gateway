@@ -12,9 +12,28 @@ class Provider(ABC):
         self.config = config
 
     async def post(self, path: str, body: dict, headers: dict | None = None) -> dict:
+        return await self._request("POST", path, headers, body)
+
+    async def get(self, path: str, headers: dict | None = None) -> dict:
+        return await self._request("GET", path, headers)
+
+    async def list_models(self) -> list[str]:
+        raise GatewayError(400, "discovery_unavailable", "Enter a model identifier manually")
+
+    @staticmethod
+    def model_names(data: dict, collection: str, field: str) -> list[str]:
+        items = data.get(collection)
+        if not isinstance(items, list) or any(
+            not isinstance(item, dict) or not isinstance(item.get(field), str) for item in items
+        ):
+            raise GatewayError(502, "provider_invalid_payload", "Invalid provider model list")
+        return sorted({item[field] for item in items if item[field]})
+
+    async def _request(self, method, path, headers=None, body=None) -> dict:
         try:
             async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
-                response = await client.post(
+                response = await client.request(
+                    method,
                     f"{self.config.base_url}{path}",
                     json=body,
                     headers=headers,

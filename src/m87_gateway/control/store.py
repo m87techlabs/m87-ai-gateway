@@ -8,6 +8,7 @@ import secrets
 import sqlite3
 import stat
 from datetime import datetime, timedelta, timezone
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -30,12 +31,17 @@ class LocalControlStore:
         self._initialize()
         self.prune_events()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self):
         connection = sqlite3.connect(self.database_path, timeout=5)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
-        return connection
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     def _initialize(self) -> None:
         with self._connect() as connection:
@@ -71,6 +77,9 @@ class LocalControlStore:
                     updated_at TEXT NOT NULL, last_used_at TEXT,
                     PRIMARY KEY(provider, alias)
                 );
+                CREATE TABLE IF NOT EXISTS runtime_config (
+                    id INTEGER PRIMARY KEY CHECK (id = 1), value TEXT NOT NULL
+                );
                 """
             )
             self._ensure_columns(connection)
@@ -94,6 +103,32 @@ class LocalControlStore:
 
     def close(self) -> None:
         return None
+
+    def runtime_config(self) -> dict:
+        with self._connect() as connection:
+            row = connection.execute("SELECT value FROM runtime_config WHERE id = 1").fetchone()
+        return json.loads(row["value"]) if row else {}
+
+    def save_runtime_config(self, value: dict, provider=None, key=None, clear_key=False):
+        """Persist configuration and a connection credential in one transaction."""
+        with self._connect() as connection:
+            if provider and clear_key:
+                connection.execute("DELETE FROM provider_keys WHERE provider = ?", (provider,))
+            if provider and key:
+                now = datetime.now(timezone.utc).isoformat()
+                connection.execute(
+                    "INSERT INTO provider_keys(provider, alias, encrypted_value, created_at, "
+                    "updated_at) VALUES (?, 'default', ?, ?, ?) ON CONFLICT(provider, alias) "
+                    "DO UPDATE SET encrypted_value=excluded.encrypted_value, "
+                    "updated_at=excluded.updated_at, last_used_at=NULL",
+                    (provider, self._fernet.encrypt(key.encode()), now, now),
+                )
+            connection.execute(
+                "INSERT INTO runtime_config(id, value) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET value=excluded.value",
+                (json.dumps(value),),
+            )
+        _tighten_sqlite_files(self.database_path)
 
     def emit(self, event: dict[str, Any]) -> None:
         fields = (

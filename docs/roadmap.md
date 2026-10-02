@@ -9,15 +9,15 @@ for release gates.
 
 Prioritize the first-run experience alongside completion of core controls:
 
-- Add a setup wizard for operator access, provider connection, model selection,
-  connectivity testing, and application-key creation.
-- Add a generic OpenAI-compatible endpoint adapter for vLLM and compatible servers;
-  follow with tested Anthropic and Bedrock adapters.
+- [x] Add guided console setup for provider connections, model discovery, default
+  selection, and application-key creation; launcher supplies private operator access.
+- [x] Add a generic OpenAI-compatible text adapter and source adapter registration;
+  live vLLM verification and Anthropic/Bedrock adapters remain follow-up work.
 - Manage provider connections, models, app policies, retention, and traffic controls
   through the included UI, with validated updates and clear restart requirements.
 - Show supported capabilities and safe, actionable connection diagnostics.
-- Package the runtime, UI, and embedded persistence as native platform artifacts;
-  keep a container distribution for cloud operators.
+- Build the runtime, UI, and embedded persistence as native platform artifacts;
+  experimental Linux bundling exists, with clean-host and Windows verification pending.
 - Define cross-platform credential protection, backup/restore, service startup,
   upgrade/rollback, and artifact verification before claiming standalone support.
 - Publish short workstation and single-server cloud setup instructions.
@@ -35,7 +35,7 @@ requested/resolved-model authorization, deterministic rules, non-streaming
 OpenAI/Ollama text chat, configured request guardrails, safe upstream errors,
 request IDs, JSON outcome events, an optional private rotating traffic file,
 Prometheus metrics, and a local SQLite control plane with token analytics,
-opted-in exchange inspection, application keys, encrypted OpenAI keys, and an
+opted-in exchange inspection, application keys, encrypted provider keys, and an
 operator console. The repository also includes Docker files and an expanded test suite. A
 native Windows/WSL flow has also returned a real Ollama completion. Mocked tests
 alone do not establish provider compatibility, and tunnel behavior and container
@@ -142,6 +142,7 @@ may happen earlier when the same gates are satisfied for a smaller declared scop
 | --- | --- | --- |
 | OpenAI | Partial adapter | Live compatibility checks and capability matrix |
 | Ollama | Partial adapter | Live/container/tunnel checks and streaming later |
+| OpenAI-compatible server | Partial text adapter | Live vLLM/server checks; non-streaming only |
 | Anthropic | Planned | Adapter, contract tests, credential and operations guide |
 | AWS Bedrock | Planned | Adapter, cloud credentials, contract and live smoke checks |
 | Azure OpenAI | Planned | Adapter, deployment/model mapping, contract and live smoke checks |

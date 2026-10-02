@@ -8,15 +8,16 @@
 | HTTP service | FastAPI and Uvicorn | Implemented API routing and ASGI runtime |
 | Validation | Pydantic v2 | Request/response and configuration models |
 | Configuration | YAML, PyYAML, environment variables | Implemented loader; some settings are not connected to runtime behavior |
-| Provider HTTP | HTTPX | Async OpenAI and Ollama requests; currently creates a client per request |
+| Provider HTTP | HTTPX | Async registered-provider requests; currently creates a client per request |
 | Logging | JSON stdout and an optional rotating JSONL file | Correlated metadata plus explicitly enabled bounded content capture |
 | Metrics | Prometheus client | Per-process `/metrics` with bounded labels |
 | Local persistence | SQLite WAL | Optional single-instance event and key-metadata store |
 | Credential encryption | `cryptography` Fernet | Encrypts stored provider keys with a separate local master key |
-| Operator UI | Packaged HTML, CSS, and JavaScript | Local request analytics, exchange inspection, and key operations |
+| Operator UI | Packaged HTML, CSS, and JavaScript | Connection/model setup, local analytics, exchange inspection, and key operations |
 | Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Automated core checks plus a verified native Ollama flow; OpenAI/cloud live checks deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
+| Standalone build | Optional PyInstaller build dependency | Experimental Linux executable; cross-platform and clean-host release checks pending |
 | Containers | Docker and Docker Compose | Loopback publishing and host mapping configured; live container validation is pending |
 | Automation | GitHub Actions | Lint and test workflow |
 | Documentation | Markdown and Mermaid | Renderable in repository pages; no separate site required |
@@ -24,6 +25,12 @@
 Dependencies currently use minimum versions. A release needs a reproducible
 dependency/build strategy and recorded validation; broad version ranges alone do
 not establish compatibility with every future dependency release.
+
+PyInstaller bundles the runtime and UI for users without a Python installation.
+It is an optional build dependency and is absent from normal gateway requirements.
+Removing it removes the standalone build path while preserving source/container
+operation. Native builds must be checked on their target OS and architecture;
+see [guided setup](runbooks/guided-setup.md) for current limits.
 
 ## Planned infrastructure
 

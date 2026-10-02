@@ -1,4 +1,5 @@
 import time
+import os
 from uuid import uuid4
 
 from m87_gateway.api.errors import GatewayError
@@ -7,6 +8,17 @@ from m87_gateway.providers.base import Provider
 
 
 class OllamaProvider(Provider):
+    def __init__(self, config, api_key=None):
+        super().__init__(config)
+        self.api_key = api_key
+
+    def headers(self):
+        key = self.api_key or os.getenv(self.config.api_key_env or "")
+        return {"Authorization": f"Bearer {key}"} if key else None
+
+    async def list_models(self) -> list[str]:
+        return self.model_names(await self.get("/api/tags", self.headers()), "models", "name")
+
     async def chat_completions(self, payload: ChatCompletionRequest, model: str) -> dict:
         options = {}
         if payload.temperature is not None:
@@ -21,6 +33,7 @@ class OllamaProvider(Provider):
                 "stream": False,
                 "options": options,
             },
+            self.headers(),
         )
         message = data.get("message")
         if not isinstance(message, dict) or not isinstance(message.get("content"), str):

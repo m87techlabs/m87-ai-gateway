@@ -29,7 +29,7 @@ rotation. A tunnel does not replace gateway authentication.
 - Upstream bodies, credentials, and exception details stay out of client errors.
 - Metadata logs omit headers and content. Captured text requires two explicit
   switches and a private store with known-credential redaction.
-- Runtime app keys are stored as keyed digests. Stored OpenAI credentials use
+- Runtime app keys are stored as keyed digests. Stored provider credentials use
   Fernet encryption with a separate owner-only master-key file.
 - The admin API uses a distinct environment-supplied bearer key. The console does
   not persist it in HTML, browser storage, or SQLite.

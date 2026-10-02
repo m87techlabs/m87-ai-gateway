@@ -7,6 +7,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | Runbook | Use when |
 | --- | --- |
 | [Local development](local-development.md) | Installing, testing, or starting a development instance |
+| [Guided setup](guided-setup.md) | Start the included console, configure inference, or build the experimental Linux executable |
 | [Windows/WSL flow lab](windows-wsl-flow-lab.md) | Exercise browser, relay, gateway, and Windows Ollama without Docker |
 | [Container deployment](container-deployment.md) | Starting a single gateway container and checking provider connectivity |
 | [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |

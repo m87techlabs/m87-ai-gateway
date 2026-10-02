@@ -1,23 +1,22 @@
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.config import GatewaySettings
+from m87_gateway.config.settings import ProviderConfig
 from m87_gateway.providers.base import Provider
-from m87_gateway.providers.ollama import OllamaProvider
-from m87_gateway.providers.openai import OpenAIProvider
+from m87_gateway.adapters import adapters
 
 
 def get_provider(provider_name: str, settings: GatewaySettings, control_store=None) -> Provider:
-    providers = {"ollama": OllamaProvider, "openai": OpenAIProvider}
+    providers = adapters()
     if provider_name not in providers:
         raise GatewayError(400, "unsupported_provider", "Unsupported model provider")
-    config = getattr(settings.providers, provider_name)
+    config = settings.providers.for_adapter(provider_name)
     if not config.enabled:
         raise GatewayError(503, "provider_disabled", "Requested model provider is disabled")
     if config.base_url is None:
-        default = (
-            "http://localhost:11434" if provider_name == "ollama" else "https://api.openai.com/v1"
+        config = ProviderConfig.model_validate(
+            {**config.model_dump(), "base_url": providers[provider_name].default_url}
         )
-        config = config.model_copy(update={"base_url": default})
-    if provider_name == "openai":
-        stored_key = control_store.get_provider_key("openai") if control_store else None
-        return OpenAIProvider(config, api_key=stored_key)
-    return providers[provider_name](config)
+    if not config.base_url:
+        raise GatewayError(503, "provider_not_configured", "Model provider endpoint is unavailable")
+    stored_key = control_store.get_provider_key(provider_name) if control_store else None
+    return providers[provider_name].factory(config, stored_key)

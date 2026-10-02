@@ -54,14 +54,17 @@ may need shared storage and platform services. Built-in request logs and usage
 views should be useful without external collectors; remote exporters are optional.
 
 Provider support is delivered through tested adapters and explicit capability
-reporting. Ollama and OpenAI have initial adapters; a generic OpenAI-compatible
-endpoint adapter for vLLM, Anthropic, and Bedrock are planned. Streaming, tools,
+reporting. Ollama, OpenAI, and generic OpenAI-compatible servers have initial
+adapters. Live vLLM compatibility, Anthropic, and Bedrock remain unverified or
+planned. Streaming, tools,
 and other provider differences must be declared rather than silently dropped.
 
-The current console covers inspection and basic key operations. A setup wizard,
-provider/model configuration, policy editing, diagnostics, standalone packaging,
-and cross-platform secret storage are planned. This vision defines the product
-direction and does not establish current support.
+The console now includes persistent provider connection setup, model discovery,
+default routing and content-capture choices, inspection, and key operations. A
+loopback launcher starts without demo credentials. A Linux standalone build is
+experimental. Complete policy editing, native Windows packaging, cross-platform
+secret protection, and production service management remain planned. See
+[guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
 
 ## Product principles
 

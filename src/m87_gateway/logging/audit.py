@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Protocol
 
 from m87_gateway.config import GatewaySettings
+from m87_gateway.adapters import adapters
 from m87_gateway.metrics import GatewayMetrics
 
 REDACTED = "[REDACTED]"
@@ -85,8 +86,8 @@ class AuditRecorder:
         handler.setFormatter(logging.Formatter("%(message)s"))
         self.logger.addHandler(handler)
         secret_values = [app.api_key for app in settings.configured_apps]
-        for name in ("openai", "ollama"):
-            variable = getattr(settings.providers, name).api_key_env
+        for name in adapters():
+            variable = settings.providers.for_adapter(name).api_key_env
             if variable and os.getenv(variable):
                 secret_values.append(os.environ[variable])
         if control_sink is not None and hasattr(control_sink, "provider_secret_values"):

@@ -1,5 +1,6 @@
 let adminKey = "";
 let activeView = "overview";
+let connections = [];
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -130,7 +131,39 @@ async function loadDestinations() {
   });
 }
 
-const loaders = {overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+function fillConnection() {
+  const item = connections.find((item) => item.provider === $("connection-provider").value);
+  if (!item) return;
+  const form = $("connection-form");
+  form.elements.base_url.value = item.config.base_url || "";
+  form.elements.timeout_seconds.value = item.config.timeout_seconds;
+  form.elements.enabled.checked = item.config.enabled;
+  form.elements.key.value = "";
+  form.elements.clear_key.checked = false;
+  $("discovered-models").textContent = item.has_stored_key ? "Provider key stored. Discover models to test this connection." : "Discover models after saving this connection.";
+}
+
+async function loadSetup() {
+  const data = await (await api("/setup")).json();
+  connections = data.connections;
+  const selected = $("connection-provider").value;
+  for (const id of ["connection-provider", "key-provider"]) {
+    $(id).replaceChildren();
+    connections.forEach((item) => {
+      const option = document.createElement("option"); option.value = item.provider; option.textContent = item.label; $(id).append(option);
+    });
+  }
+  if (connections.some((item) => item.provider === selected)) $("connection-provider").value = selected;
+  else $("connection-provider").value = "ollama";
+  fillConnection();
+  $("setup-form").elements.default_model.value = data.default_model;
+  $("setup-form").elements.capture_content.checked = data.capture_content;
+  $("app-form").elements.allowed_models.value = `auto,${data.default_model}`;
+  $("integration-example").textContent = JSON.stringify({url: `${window.location.origin}/v1/chat/completions`, authorization: "Bearer <application-key>", body: {model: data.default_model, messages: [{role: "user", content: "Hello"}]}}, null, 2);
+  return data;
+}
+
+const loaders = {setup: loadSetup, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -148,11 +181,12 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 $("login-form").addEventListener("submit", async (event) => {
   event.preventDefault(); adminKey = $("admin-key").value;
   try {
-    await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
+    const setup = await loadSetup(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
+    if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { adminKey = ""; $("console").hidden = true; $("login").hidden = false; });
+$("lock").addEventListener("click", () => { adminKey = ""; $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
 $("close-detail").addEventListener("click", () => $("detail").close());
 
@@ -167,9 +201,36 @@ $("app-form").addEventListener("submit", async (event) => {
 });
 
 $("provider-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const element = event.currentTarget; const form = new FormData(element);
+  try {
+    await api("/provider-keys", {method: "PUT", body: JSON.stringify(Object.fromEntries(form))}); element.elements.key.value = ""; notice("Provider key stored"); await loadProviderKeys();
+  } catch (error) { notice(error.message); }
+});
+
+$("connection-provider").addEventListener("change", fillConnection);
+$("connection-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const element = event.currentTarget; const form = new FormData(element);
+  const payload = {config: {base_url: form.get("base_url"), timeout_seconds: Number(form.get("timeout_seconds")), enabled: form.has("enabled")}, clear_key: form.has("clear_key")};
+  if (form.get("key")) payload.key = form.get("key");
+  try {
+    await api(`/connections/${encodeURIComponent(form.get("provider"))}`, {method: "PUT", body: JSON.stringify(payload)});
+    element.elements.key.value = ""; notice("Connection saved"); await loadSetup();
+  } catch (error) { notice(error.message); }
+});
+$("test-connection").addEventListener("click", async () => {
+  try {
+    const data = await (await api(`/connections/${encodeURIComponent($("connection-provider").value)}/models`)).json();
+    $("discovered-models").textContent = data.items.length ? data.items.join("\n") : "Connected. No models reported; enter a model manually.";
+    $("model-options").replaceChildren();
+    data.items.forEach((name) => { const option = document.createElement("option"); option.value = name; $("model-options").append(option); });
+    if (data.items.length) $("setup-form").elements.default_model.value = data.items[0];
+  } catch (error) { $("discovered-models").textContent = error.message; }
+});
+$("setup-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget);
   try {
-    await api("/provider-keys", {method: "PUT", body: JSON.stringify(Object.fromEntries(form))}); event.currentTarget.elements.key.value = ""; notice("Provider key stored"); await loadProviderKeys();
+    await api("/setup", {method: "PUT", body: JSON.stringify({default_model: form.get("default_model"), capture_content: form.has("capture_content")})});
+    notice("Defaults saved. Create an application key next."); await loadSetup();
   } catch (error) { notice(error.message); }
 });
 

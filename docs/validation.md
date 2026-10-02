@@ -128,6 +128,35 @@ opted-in request/response content. Hosted CI remains the full-suite gate.
 
 ## Deferred checks
 
+### Guided setup and adapter framework
+
+Checked on 2026-10-02 with Python 3.12 on Linux/WSL:
+
+- Full automated suite: 99 passed, including source adapter registration,
+  environment endpoint resolution, compatible HTTP discovery/chat, optional auth,
+  setup authorization, encrypted connection credentials, endpoint-change safety,
+  request/token/content events, per-app rate enforcement, and restart persistence.
+- Experimental Linux executable: built with PyInstaller 6.22.3; the bundle smoke
+  procedure starts a real gateway process and synthetic inference HTTP server,
+  verifies console/assets/auth/discovery, restarts, completes a request, and checks
+  six provider-reported tokens plus captured output and encrypted credential storage.
+- Live bundled gateway → Windows Ollama: `ollama:gemma3:1b` completed successfully
+  after configuration through the setup APIs. Discovery, application-key auth,
+  17 prompt plus 4 completion tokens, and matching captured input/output passed.
+  The temporary gateway and test data were cleaned up. Browser interaction itself
+  was not automated.
+- Ruff lint/format, JavaScript syntax, 41-file Markdown links/fences, wheel build,
+  editable installation, CLI help, and Worker example checks passed. Hosted CI
+  also builds and smoke-tests the Linux executable. Docker remains deferred.
+
+The bundled inference server is synthetic. This check does not establish live
+vLLM/OpenAI compatibility, a clean workstation without Python, native Windows
+support, Windows ACL protection, Linux distribution/architecture portability,
+service installation, signed artifacts, upgrade/rollback, or cloud deployment.
+These remain release checks. The live Ollama check covers the WSL gateway boundary;
+it does not establish native Windows gateway support. See
+[guided setup](runbooks/guided-setup.md).
+
 Traffic controls were checked on 2026-10-02: the full local suite passed 95 tests
 outside the isolated command runner, including cache TTL/isolation/eviction,
 rate-window enforcement, retry exhaustion, non-retryable failures, and additive

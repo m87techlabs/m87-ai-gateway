@@ -141,5 +141,5 @@ event detail, bounded JSON export, key operations, and a destination inventory.
 
 The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and
-must be recorded at that layer. Streaming, model discovery, embeddings, traces,
+must be recorded at that layer. Streaming, embeddings, traces,
 cost estimation, and remote exporters remain planned.

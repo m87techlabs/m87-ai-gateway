@@ -24,6 +24,7 @@
     <aside>
       <div><p class="eyebrow">M87 AI Gateway</p><h1>Console</h1></div>
       <nav>
+        <button class="nav" data-view="setup">Setup</button>
         <button class="nav active" data-view="overview">Overview</button>
         <button class="nav" data-view="logs">Logs</button>
         <button class="nav" data-view="apps">Applications</button>
@@ -34,6 +35,37 @@
     </aside>
     <main>
       <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><button id="refresh" class="secondary">Refresh</button></header>
+
+      <section id="view-setup" class="view" hidden>
+        <div class="panel"><h3>Connect → choose a model → create an application key</h3>
+          <p>The calling app uses your gateway URL and its own application key. Provider credentials stay here.</p>
+          <p>Model discovery checks connectivity without sending a paid completion. Send a real request from your app to verify inference, then inspect Logs.</p>
+        </div>
+        <div class="split">
+          <form id="connection-form" class="panel form-panel">
+            <h3>1. Connect an inference service</h3>
+            <label>Adapter<select id="connection-provider" name="provider"></select></label>
+            <label>Endpoint URL<input name="base_url" type="url" required placeholder="http://localhost:11434"></label>
+            <label>Timeout in seconds<input name="timeout_seconds" type="number" min="1" max="600" value="60" required></label>
+            <label>Provider key (optional for local services)<input name="key" type="password" autocomplete="off"><small>Leave blank to keep the stored key at the same endpoint.</small></label>
+            <label class="check"><input name="clear_key" type="checkbox">Remove existing credentials</label>
+            <label class="check"><input name="enabled" type="checkbox" checked>Enable connection</label>
+            <button type="submit">Save connection</button>
+            <button id="test-connection" type="button" class="secondary">Discover models on saved connection</button>
+            <pre id="discovered-models">Connect Ollama, OpenAI, or an OpenAI-compatible server such as vLLM.</pre>
+          </form>
+          <form id="setup-form" class="panel form-panel">
+            <h3>2. Choose the default model</h3>
+            <label>Model<input name="default_model" list="model-options" required placeholder="ollama:gemma3:1b"><datalist id="model-options"></datalist><small>Use a discovered model or enter provider:model manually.</small></label>
+            <label class="check"><input name="capture_content" type="checkbox">Allow prompt and response storage</label>
+            <p class="muted">Content is stored only when this option and the application's capture option are both enabled. Keep sensitive data out of test prompts.</p>
+            <button type="submit">Save defaults</button>
+            <h3>3. Connect your application</h3>
+            <p>Open Applications, create a key with the selected model allowed, and copy the key shown once.</p>
+            <pre id="integration-example"></pre>
+          </form>
+        </div>
+      </section>
 
       <section id="view-overview" class="view">
         <div class="cards">
@@ -71,7 +103,7 @@
         <div class="split">
           <form id="provider-form" class="panel form-panel">
             <h3>Store provider key</h3>
-            <label>Provider<select name="provider"><option value="openai">OpenAI</option></select></label>
+            <label>Provider<select name="provider" id="key-provider"><option value="openai">OpenAI</option></select></label>
             <label>Alias<input name="alias" value="default" required></label>
             <label>Secret key<input name="key" type="password" required autocomplete="off"></label>
             <button type="submit">Store or rotate</button>

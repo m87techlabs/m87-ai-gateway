@@ -28,18 +28,27 @@ flowchart LR
 
 Implemented foundations include validated YAML/environment configuration, bearer
 app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
-Ollama adapters, configured request guardrails, safe provider errors, correlated
+Ollama and generic OpenAI-compatible adapters, configured request guardrails, safe provider errors, correlated
 JSON outcome events, optional private traffic capture, Prometheus metrics, a
 health endpoint, per-app rate limits, opt-in response caching, bounded retries,
 and an optional local control plane. The control plane provides
 token analytics, inspectable opted-in LLM input/output, runtime application keys,
-encrypted OpenAI credentials, log export, and a local operator console.
+encrypted provider credentials, log export, and a local operator console with
+persistent connection setup and model discovery. Source users can register
+[additional adapters](docs/adapters.md).
 
 The native Ollama path is verified with a real local model. The MVP still needs
-container and live OpenAI verification. Streaming, model discovery, embeddings,
+container and live OpenAI verification. Streaming, embeddings,
 budget enforcement, response policies, remote log exporters, and major
 cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.
+
+For the included setup experience, install the source package and run
+`m87-gateway` (or `python -m m87_gateway`). Open the printed console URL, connect
+your inference service, choose a model, and create an application key. Follow
+[guided setup](docs/runbooks/guided-setup.md) for commands and the experimental
+Linux standalone build. Native Windows distribution remains planned; Windows
+Ollama can be reached from a WSL gateway.
 
 For a Docker-free workstation test, run the
 [Windows/WSL flow application](examples/local_test_app/README.md). It starts a

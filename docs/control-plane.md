@@ -10,14 +10,16 @@ API while leaving `POST /v1/chat/completions` as the application data plane.
 - Searchable recent LLM exchange metadata and JSON export.
 - Prompt and completion inspection when both capture permissions are enabled.
 - Runtime application-key creation and revocation.
-- Encrypted OpenAI provider-key storage and rotation.
+- Encrypted registered-provider key storage and rotation.
+- Persistent provider connections, model discovery, default model selection,
+  and global content-capture configuration through Setup.
 - A destination inventory for SQLite, JSON stdout, private JSONL, and `/metrics`.
 
 ```mermaid
 flowchart LR
     App[Application] -->|Application key| Data[Chat data plane]
     Data --> Policy[Auth, route, guardrails]
-    Policy --> Provider[Ollama or OpenAI]
+    Policy --> Provider[Registered provider adapter]
     Policy --> Event[Sanitized exchange event]
     Event --> DB[(Local SQLite)]
     Operator[Operator browser] -->|Admin key| Console[Local console and admin API]
@@ -52,11 +54,16 @@ storage, or the database.
 The Windows/WSL Flow Lab enables this configuration automatically. Its launcher
 prints the console URL and a new admin key at startup.
 
+For normal local use, `m87-gateway` creates private operator access and starts the
+console without demo app keys or enabled providers. See [guided setup](runbooks/guided-setup.md).
+Its operator key is a private local file, distinct from app-key digests and encrypted
+provider keys. The existing Flow Lab and Uvicorn entry points remain available.
+
 ## Content capture
 
 Full payload storage is off by default. It requires both:
 
-1. `GATEWAY_CAPTURE_CONTENT=true`, or the equivalent YAML traffic-log setting.
+1. `GATEWAY_CAPTURE_CONTENT=true`, the equivalent YAML setting, or the Setup capture option.
 2. `capture_content: true` on the authenticated application.
 
 The control plane records only bounded, redacted content after application auth,
@@ -83,6 +90,11 @@ The default database retains events for 30 days. Set
 `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` from 1 through 3650. Expired events are
 pruned at gateway startup. The implementation uses SQLite WAL mode and targets
 one gateway instance. PostgreSQL and multi-instance migrations are planned.
+
+UI-managed provider connections and the selected default/capture settings are
+stored alongside events and keys. They override the corresponding startup values
+while that database is in use. Other YAML and environment settings remain startup
+configuration. Updates clear the response cache and apply to new requests.
 
 See the [control-plane runbook](runbooks/control-plane.md) for startup, rotation,
 export, and recovery procedures.

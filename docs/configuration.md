@@ -65,6 +65,20 @@ variable. Ollama defaults to `http://localhost:11434` and calls
 `/api/chat`. A disabled provider is rejected before invocation. Missing OpenAI
 credentials return a safe 503 when that provider is selected.
 
+`providers.openai_compatible` supports the current non-streaming text contract at
+an explicitly configured base URL, typically ending in `/v1`. Its key is optional;
+Ollama can also use a gateway-stored or environment bearer key for protected endpoints.
+Registered source extensions use `providers.custom.<adapter-name>`; see
+[adapters](adapters.md). Model discovery is an operator check, not an enforcement
+catalog: model authorization still uses each app's allowlist.
+
+The normal `m87-gateway` launcher starts with its own private defaults rather than
+loading YAML/demo configuration. The existing Uvicorn entry point retains YAML
+and environment loading. With the control plane enabled, saved UI connections,
+default model, and capture setting override corresponding startup values on
+restart. Endpoint changes require new credentials or explicit removal if a key
+was previously configured. See [guided setup](runbooks/guided-setup.md).
+
 ## Policy and observability
 
 | Setting | Behavior |

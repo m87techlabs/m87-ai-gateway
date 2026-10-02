@@ -12,6 +12,7 @@ from m87_gateway.api.routes import router
 from m87_gateway.config import GatewaySettings, get_settings
 from m87_gateway.control import LocalControlStore
 from m87_gateway.control.api import router as control_router
+from m87_gateway.control.setup import apply_overrides
 from m87_gateway.controls import ExactResponseCache, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
@@ -37,6 +38,8 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
                     raise ValueError("Control plane requires a strong admin key")
                 application.state.admin_api_key = admin_key
                 application.state.control_store = LocalControlStore(active.control_plane)
+                active = apply_overrides(active, application.state.control_store.runtime_config())
+                application.state.settings = active
             application.state.recorder = AuditRecorder(
                 active, application.state.metrics, application.state.control_store
             )
@@ -46,7 +49,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             ) from None
 
         async def active_settings() -> GatewaySettings:
-            return active
+            return application.state.settings
 
         application.dependency_overrides[get_settings] = active_settings
         try:

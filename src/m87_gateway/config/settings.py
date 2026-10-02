@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 import yaml
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-SUPPORTED_PROVIDERS = {"openai", "ollama"}
+from m87_gateway.adapters import adapters
 
 
 def validate_model(value: str, allow_auto: bool = True) -> str:
@@ -18,7 +18,7 @@ def validate_model(value: str, allow_auto: bool = True) -> str:
     provider, separator, model = value.partition(":")
     if (
         not separator
-        or provider not in SUPPORTED_PROVIDERS
+        or provider not in adapters()
         or not model
         or len(value) > 200
         or any(character.isspace() for character in value)
@@ -155,6 +155,29 @@ class ProviderConfig(ConfigModel):
 
 
 class ProvidersConfig(ConfigModel):
+    openai_compatible: ProviderConfig = Field(default_factory=ProviderConfig)
+    custom: dict[str, ProviderConfig] = Field(default_factory=dict)
+
+    @field_validator("custom")
+    @classmethod
+    def valid_custom(cls, values):
+        if any(
+            name not in adapters() or name in {"openai", "ollama", "openai_compatible"}
+            for name in values
+        ):
+            raise ValueError("Custom providers need a registered adapter identifier")
+        return values
+
+    def for_adapter(self, name: str) -> ProviderConfig:
+        if name in {"openai", "ollama", "openai_compatible"}:
+            return getattr(self, name)
+        return self.custom.get(name, ProviderConfig(enabled=False))
+
+    def with_adapter(self, name: str, config: ProviderConfig):
+        if name in {"openai", "ollama", "openai_compatible"}:
+            return self.model_copy(update={name: config})
+        return self.model_copy(update={"custom": {**self.custom, name: config}})
+
     openai: ProviderConfig = Field(
         default_factory=lambda: ProviderConfig(
             api_key_env="OPENAI_API_KEY", base_url="https://api.openai.com/v1"
@@ -277,7 +300,15 @@ def load_settings(config_path: str | Path | None = None) -> GatewaySettings:
         provider.setdefault("base_url", default_url)
         if name == "openai":
             provider.setdefault("api_key_env", "OPENAI_API_KEY")
-    return GatewaySettings.model_validate(data)
+    settings = GatewaySettings.model_validate(data)
+    for name in adapters():
+        config = settings.providers.for_adapter(name)
+        if config.base_url_env and config.base_url_env in os.environ:
+            config = ProviderConfig.model_validate(
+                {**config.model_dump(), "base_url": os.environ[config.base_url_env]}
+            )
+            settings.providers = settings.providers.with_adapter(name, config)
+    return settings
 
 
 @lru_cache

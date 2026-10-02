@@ -10,6 +10,8 @@ gates in the lifecycle guide.
 | Page | Purpose |
 | --- | --- |
 | [Quickstart](quickstart.md) | Run the current gateway and send a request |
+| [Guided setup](runbooks/guided-setup.md) | Launch, connect a provider in the console, and create an application key |
+| [Provider adapters](adapters.md) | Extend the reusable core with trusted source adapters |
 | [Roadmap](roadmap.md) | Milestones, acceptance criteria, and provider coverage |
 | [Design](design.md) | Product scope, boundaries, and design decisions |
 | [Architecture](architecture.md) | Components and request flow |
