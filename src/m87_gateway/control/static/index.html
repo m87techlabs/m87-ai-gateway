@@ -26,6 +26,8 @@
       <nav>
         <button class="nav" data-view="setup">Setup</button>
         <button class="nav active" data-view="overview">Overview</button>
+        <button class="nav" data-view="projects">Projects</button>
+        <button class="nav" data-view="tester">API tester</button>
         <button class="nav" data-view="logs">Logs</button>
         <button class="nav" data-view="apps">Applications</button>
         <button class="nav" data-view="keys">Provider keys</button>
@@ -34,7 +36,36 @@
       <button id="lock" class="secondary">Lock console</button>
     </aside>
     <main>
-      <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><button id="refresh" class="secondary">Refresh</button></header>
+      <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><div class="header-actions"><label>Dashboard and logs<select id="project-filter"><option value="">All projects</option></select></label><button id="refresh" class="secondary">Refresh</button></div></header>
+
+      <section id="view-projects" class="view" hidden>
+        <div class="split">
+          <form id="project-form" class="panel form-panel">
+            <h3>Create project</h3>
+            <label>Project ID<input name="project_id" required maxlength="100" pattern="[A-Za-z0-9_.-]+"></label>
+            <label>Display name<input name="name" required maxlength="100"></label>
+            <button type="submit">Create project</button>
+            <p class="muted">Group applications to track requests, tokens and logs. Moving an application affects future requests; historical usage stays with its original project.</p>
+          </form>
+          <div class="panel"><h3>Projects</h3><div id="projects"></div></div>
+        </div>
+      </section>
+
+      <section id="view-tester" class="view" hidden>
+        <div class="split">
+          <form id="tester-form" class="panel form-panel">
+            <h3>Send a test completion</h3>
+            <p>Uses the normal gateway API and its controls. The application key determines the project. Provider calls may consume quota.</p>
+            <label>Application key<input name="app_key" type="password" autocomplete="off" required></label>
+            <label>Model<input name="model" value="auto" required></label>
+            <label>Prompt<textarea name="prompt" rows="5" maxlength="65536" required>Hello, say one short sentence.</textarea></label>
+            <label>Maximum output tokens<input name="max_tokens" type="number" value="128" min="1" max="4096" required></label>
+            <button type="submit">Send through gateway</button>
+            <p class="muted">Input/output storage follows the gateway and app capture settings. The key is cleared after submission.</p>
+          </form>
+          <div class="panel"><h3>Gateway result</h3><p id="tester-status">No request sent.</p><pre id="tester-result"></pre><button id="tester-detail" type="button" class="secondary" hidden>Open matching log</button></div>
+        </div>
+      </section>
 
       <section id="view-setup" class="view" hidden>
         <div class="panel"><h3>Connect → choose a model → create an application key</h3>
@@ -70,10 +101,18 @@
       <section id="view-overview" class="view">
         <div class="cards">
           <article><span>Requests · 24h</span><strong id="requests">—</strong></article>
-          <article><span>Total tokens</span><strong id="tokens">—</strong></article>
+          <article><span>Reported provider tokens</span><strong id="tokens">—</strong></article>
           <article><span>Errors</span><strong id="errors">—</strong></article>
           <article><span>Average latency</span><strong id="latency">—</strong></article>
         </div>
+        <div class="cards">
+          <article><span>Input tokens</span><strong id="input-tokens">—</strong></article>
+          <article><span>Output tokens</span><strong id="output-tokens">—</strong></article>
+          <article><span>Cache hits</span><strong id="cache-hits">—</strong></article>
+          <article><span>Provider requests without usage</span><strong id="usage-unknown">—</strong></article>
+        </div>
+        <div class="panel dashboard-panel"><h3>Last 24 hours · hourly UTC buckets</h3><p class="muted">Cached responses add requests, with no additional provider tokens. Totals include retained, reported usage.</p><div class="charts"><div><h4>Requests</h4><div id="request-chart"></div></div><div><h4>Provider tokens</h4><div id="token-chart"></div></div></div></div>
+        <div class="charts dashboard-panel"><div class="panel"><h3>Usage by application</h3><div id="usage-apps"></div></div><div class="panel"><h3>Usage by model</h3><div id="usage-models"></div></div></div>
         <div class="panel"><h3>Recent LLM exchanges</h3><div id="recent"></div></div>
       </section>
 
@@ -89,6 +128,7 @@
           <form id="app-form" class="panel form-panel">
             <h3>Create application key</h3>
             <label>Application ID<input name="app_id" required pattern="[A-Za-z0-9_.-]+"></label>
+            <label>Project<select name="project_id" id="app-project"></select></label>
             <label>Allowed models<input name="allowed_models" required value="auto,ollama:gemma3:1b"><small>Comma-separated provider:model values.</small></label>
             <label>Requests per minute<input name="rate_limit_per_minute" type="number" min="1" max="100000" placeholder="Unlimited"></label>
             <label class="check"><input name="capture_content" type="checkbox">Store prompt and response content</label>

@@ -85,3 +85,8 @@ jobs:
       - name: Test Worker example
         working-directory: examples/cloudflare-worker
         run: npm test
+
+      - name: Test console interactions
+        run: |
+          npm ci --prefix tests/console
+          npm test --prefix tests/console

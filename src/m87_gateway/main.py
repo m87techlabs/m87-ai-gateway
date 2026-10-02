@@ -40,6 +40,9 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
                 application.state.control_store = LocalControlStore(active.control_plane)
                 active = apply_overrides(active, application.state.control_store.runtime_config())
                 application.state.settings = active
+                application.state.control_store.ensure_projects(
+                    [item.project_id for item in active.configured_apps]
+                )
             application.state.recorder = AuditRecorder(
                 active, application.state.metrics, application.state.control_store
             )

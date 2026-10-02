@@ -4,6 +4,8 @@
 
 Use this procedure to prepare a development checkout. Install Python 3.11+ and
 Git. A provider is needed for a real chat request, but not for the unit tests.
+Console interaction checks additionally use Node 18+ and npm with isolated test
+dependencies; these are not installed by gateway users.
 Docker can stay disabled for this procedure. See [validation status](../validation.md)
 for the separate checks that require a container runtime.
 
@@ -25,6 +27,17 @@ for the separate checks that require a container runtime.
    pytest -q
    python scripts/check_docs.py
    ```
+
+   For console changes, also run:
+
+   ```bash
+   npm ci --prefix tests/console
+   npm test --prefix tests/console
+   ```
+
+   These checks parse console CSS and exercise DOM interactions, project-scoped
+   requests, charts, application credential isolation, and lock cleanup. They do
+   not verify real browser rendering. Hosted CI runs them with the docs checks.
 
 3. Copy `.env.example` to `.env` only if `.env` does not already exist. In that
    ignored file, set a private `GATEWAY_APP_API_KEY` and select a provider:

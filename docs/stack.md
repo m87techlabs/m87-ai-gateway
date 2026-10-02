@@ -14,6 +14,7 @@
 | Local persistence | SQLite WAL | Optional single-instance event and key-metadata store |
 | Credential encryption | `cryptography` Fernet | Encrypts stored provider keys with a separate local master key |
 | Operator UI | Packaged HTML, CSS, and JavaScript | Connection/model setup, local analytics, exchange inspection, and key operations |
+| Console interaction tests | Node test runner and jsdom | Isolated development dependency with a lockfile; tests DOM events, scoped requests, key isolation, charts, and lock cleanup |
 | Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Automated core checks plus a verified native Ollama flow; OpenAI/cloud live checks deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
@@ -31,6 +32,14 @@ It is an optional build dependency and is absent from normal gateway requirement
 Removing it removes the standalone build path while preserving source/container
 operation. Native builds must be checked on their target OS and architecture;
 see [guided setup](runbooks/guided-setup.md) for current limits.
+
+The console test dependency provides a DOM without downloading a full browser.
+It is isolated under `tests/console` and absent from gateway requirements and
+standalone artifacts. Removing it removes those interaction checks while leaving
+the console implementation intact. Actual browser rendering and accessibility
+review are separate checks. The planned ecosystem service stack and lifecycle
+adapters are described in [ecosystem design](ecosystem.md); companion services
+are not runtime dependencies today.
 
 ## Planned infrastructure
 

@@ -128,6 +128,36 @@ opted-in request/response content. Hosted CI remains the full-suite gate.
 
 ## Deferred checks
 
+### Projects, dashboard, and ecosystem vision
+
+Checked on 2026-10-02 with Python 3.12 and Node 24 on Linux/WSL:
+
+- Full Python suite: 105 passed, including project creation/membership,
+  preservation of historical attribution on app movement, migration of old keys
+  and events, YAML project discovery, caller-header isolation, scoped usage/log
+  exports, cache accounting, nullable usage, time windows, restart persistence,
+  and stable public project IDs while payload credentials remain redacted.
+- Console DOM interaction tests: six passed for project selection/scoped requests,
+  charts, project/app creation, app movement, application-key API testing, and
+  lock cleanup, including a late exchange response. CSS parsed successfully.
+  Dependencies are isolated under `tests/console` with an npm lockfile.
+- Linux executable and wheel rebuilt. Standalone process checks passed for setup,
+  provider discovery/auth, persisted project/key membership across restart,
+  completion, six reported tokens, scoped usage, and captured exchange output.
+- Live bundled gateway → Windows Ollama `gemma3:1b` passed with 17 prompt and
+  3 completion tokens. The event and selected project's overview agreed on
+  20 tokens, with matching captured input/output. Temporary test processes/data
+  were cleaned up.
+- Ruff, JavaScript syntax, 43-file documentation checks, and whitespace checks
+  passed. Hosted CI includes the console interaction and bundle smoke checks.
+
+Headless browser installation failed because its download repeatedly timed out.
+DOM checks do not establish visual rendering, keyboard accessibility, or browser
+compatibility. Those checks remain unverified. Docker stayed disabled; no Grafana,
+Prometheus, Loki/collector, or Vault containers were started. Container-engine
+startup, managed service profiles, secret-store adapters, and remote exporters are
+planned in [ecosystem design](ecosystem.md), with no service-runtime validation yet.
+
 ### Guided setup and adapter framework
 
 Checked on 2026-10-02 with Python 3.12 on Linux/WSL:

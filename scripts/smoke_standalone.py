@@ -129,6 +129,12 @@ def exercise(executable):
                 ]
                 model = "openai_compatible:synthetic-model"
                 call(
+                    "/admin/api/projects",
+                    "POST",
+                    {"project_id": "bundle-project", "name": "Bundle project"},
+                    admin,
+                )
+                call(
                     "/admin/api/setup",
                     "PUT",
                     {"default_model": model, "capture_content": True},
@@ -139,6 +145,7 @@ def exercise(executable):
                     "POST",
                     {
                         "app_id": "bundle-check",
+                        "project_id": "bundle-project",
                         "allowed_models": ["auto", model],
                         "capture_content": True,
                     },
@@ -167,9 +174,14 @@ def exercise(executable):
                 assert events, "Completion audit event was not persisted"
                 detail = call("/admin/api/logs/" + events[0]["request_id"], key=admin)
                 assert detail["response_content"][0]["message"]["content"] == "synthetic answer"
+                assert detail["project_id"] == "bundle-project"
+                summary = call("/admin/api/overview?project_id=bundle-project", key=admin)
+                assert summary["total_tokens"] == 6
+                usage = call("/admin/api/usage?project_id=bundle-project", key=admin)
+                assert sum(item["requests"] for item in usage["series"]) == 1
                 assert b"synthetic-provider-key" not in (data_dir / "control.db").read_bytes()
                 print(
-                    "Standalone startup, UI, auth, discovery, restart, chat, tokens and logs passed"
+                    "Standalone startup, UI, auth, discovery, restart, chat, project usage and logs passed"
                 )
         finally:
             if process is not None and process.poll() is None:

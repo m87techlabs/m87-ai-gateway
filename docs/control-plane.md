@@ -10,6 +10,9 @@ API while leaving `POST /v1/chat/completions` as the application data plane.
 - Searchable recent LLM exchange metadata and JSON export.
 - Prompt and completion inspection when both capture permissions are enabled.
 - Runtime application-key creation and revocation.
+- Persistent project grouping, app membership, filtered dashboards/logs/exports,
+  hourly UTC request/token charts, and application/model usage breakdowns.
+- An API tester that calls the normal data plane with an application key.
 - Encrypted registered-provider key storage and rotation.
 - Persistent provider connections, model discovery, default model selection,
   and global content-capture configuration through Setup.
@@ -34,6 +37,12 @@ cloud providers remain roadmap work.
 
 See [traffic controls](runbooks/traffic-controls.md) for implemented per-app rate
 limits, exact-response caching, and bounded retries.
+
+See [project operations](runbooks/projects-and-usage.md) for attribution and
+reporting rules. Project identity comes from the authenticated application; moving
+an app does not rewrite past events. The same operator key can view all projects.
+Managed Grafana, logging, and Vault services remain planned in the
+[ecosystem design](ecosystem.md).
 
 ## Enable it
 

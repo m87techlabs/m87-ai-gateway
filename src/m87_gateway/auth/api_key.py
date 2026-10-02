@@ -23,4 +23,6 @@ async def authenticate_app(
             401, "invalid_api_key", "Missing or invalid API key", "authentication_error"
         )
     request.state.audit["app_id"] = app_context.app_id
+    request.state.audit["project_id"] = app_context.project_id
+    request.app.state.recorder.add_secret(app_context.api_key)
     return app_context

@@ -37,6 +37,12 @@ encrypted provider credentials, log export, and a local operator console with
 persistent connection setup and model discovery. Source users can register
 [additional adapters](docs/adapters.md).
 
+The console also provides [projects, filtered usage/logs, hourly charts, and an API
+tester](docs/runbooks/projects-and-usage.md). The end-product vision includes a
+[managed ecosystem](docs/ecosystem.md) for optional Grafana, Prometheus, logging,
+Vault, and other service containers. Service provisioning and Docker startup
+remain planned; the current dashboard works without them.
+
 The native Ollama path is verified with a real local model. The MVP still needs
 container and live OpenAI verification. Streaming, embeddings,
 budget enforcement, response policies, remote log exporters, and major

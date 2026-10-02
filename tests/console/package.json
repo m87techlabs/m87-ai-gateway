@@ -1,0 +1,7 @@
+{
+  "name": "gateway-console-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test console.test.mjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

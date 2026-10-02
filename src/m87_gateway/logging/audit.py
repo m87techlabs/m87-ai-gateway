@@ -103,8 +103,7 @@ class AuditRecorder:
 
     def add_secret(self, value: str) -> None:
         if value not in self.secrets:
-            self.secrets.append(value)
-            self.secrets.sort(key=len, reverse=True)
+            self.secrets = sorted([*self.secrets, value], key=len, reverse=True)
 
     def redact(self, value):
         if isinstance(value, str):
@@ -125,6 +124,14 @@ class AuditRecorder:
 
     def record(self, metadata: dict, request_content=None, response_content=None) -> None:
         event = self.redact(metadata)
+        # These public identities come from server-side app configuration, not request content.
+        # Credential-shaped names must remain stable for project/accounting queries.
+        for name in ("app_id", "project_id"):
+            value = metadata.get(name)
+            if isinstance(value, str):
+                for secret in self.secrets:
+                    value = value.replace(secret, REDACTED)
+                event[name] = value
         if self.settings.observability.json_logs:
             self.logger.info(json.dumps(event))
         if not self.sinks:

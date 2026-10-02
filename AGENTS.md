@@ -19,6 +19,20 @@ once standalone distribution is implemented. Existing inference services and
 cloud accounts remain user-supplied. Track this planned experience in design and
 roadmap; do not claim packaging or provider support before verification.
 
+End-product vision: a full AI gateway ecosystem with an included dashboard for
+projects, applications, API testing, request/response logs, tokens, and usage.
+The application should also offer optional managed service profiles for Grafana,
+Prometheus, log storage/collection, Vault, and future integrations. After users
+choose a profile, setup should configure dependencies, detect or start a supported
+container engine when authorized, start the selected containers, report readiness,
+and provide service links, lifecycle controls, retention, backup, and recovery.
+Keep provider adapters, secret stores, log exporters, and service lifecycle adapters
+extensible. The built-in workstation experience remains useful without Docker;
+additional container profiles require a supported engine and explicit resource
+choices. Container lifecycle management is planned until implemented and tested.
+Do not start Docker or optional services during routine development; retain the
+on-demand Docker policy below. Track this target in `docs/ecosystem.md` and roadmap.
+
 The core covers API compatibility, application authentication and authorization,
 deterministic routing, provider adapters, policy checks, safe errors, observability,
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are

@@ -48,12 +48,38 @@ async def require_admin(
 
 
 AdminStore = Annotated[LocalControlStore, Depends(require_admin)]
+ProjectIdentifier = Annotated[
+    str, Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
+]
+ProjectFilter = Annotated[
+    str | None, Query(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
+]
+
+
+class ProjectCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    project_id: ProjectIdentifier
+    name: str = Field(min_length=1, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value or any(ord(character) < 32 for character in value):
+            raise ValueError("Enter a project name without control characters")
+        return value
+
+
+class ProjectAssignment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: ProjectIdentifier
 
 
 class AppKeyCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
+    project_id: ProjectIdentifier = "default"
     allowed_models: list[str] = Field(min_length=1)
     capture_content: bool = False
     rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
@@ -101,8 +127,34 @@ async def dashboard_asset(request: Request, filename: str):
 
 
 @router.get("/admin/api/overview")
-async def overview(store: AdminStore, hours: int = Query(default=24, ge=1, le=2160)):
-    return store.overview(hours)
+async def overview(
+    store: AdminStore,
+    hours: int = Query(default=24, ge=1, le=2160),
+    project_id: ProjectFilter = None,
+):
+    return store.overview(hours, project_id)
+
+
+@router.get("/admin/api/usage")
+async def usage(
+    store: AdminStore,
+    hours: int = Query(default=24, ge=1, le=2160),
+    project_id: ProjectFilter = None,
+):
+    return store.usage(hours, project_id)
+
+
+@router.get("/admin/api/projects")
+async def projects(store: AdminStore):
+    return {"items": store.list_projects()}
+
+
+@router.post("/admin/api/projects", status_code=201)
+async def create_project(payload: ProjectCreate, store: AdminStore):
+    try:
+        return store.create_project(payload.project_id, payload.name)
+    except sqlite3.IntegrityError as exc:
+        raise GatewayError(409, "project_exists", "Project identifier already exists") from exc
 
 
 @router.get("/admin/api/logs")
@@ -111,13 +163,20 @@ async def logs(
     limit: int = Query(default=100, ge=1, le=1000),
     app_id: str | None = Query(default=None, max_length=100),
     status: str | None = Query(default=None, pattern=r"^(success|error)$"),
+    project_id: ProjectFilter = None,
 ):
-    return {"items": store.list_events(limit=limit, app_id=app_id, status=status)}
+    return {
+        "items": store.list_events(limit=limit, app_id=app_id, status=status, project_id=project_id)
+    }
 
 
 @router.get("/admin/api/logs/export")
-async def export_logs(store: AdminStore, limit: int = Query(default=1000, ge=1, le=10000)):
-    body = json.dumps(store.export_events(limit=limit), indent=2)
+async def export_logs(
+    store: AdminStore,
+    limit: int = Query(default=1000, ge=1, le=10000),
+    project_id: ProjectFilter = None,
+):
+    body = json.dumps(store.export_events(limit=limit, project_id=project_id), indent=2)
     return Response(
         body,
         media_type="application/json",
@@ -148,10 +207,24 @@ async def create_app(payload: AppKeyCreate, store: AdminStore):
             payload.allowed_models,
             payload.capture_content,
             payload.rate_limit_per_minute,
+            payload.project_id,
         )
     except sqlite3.IntegrityError as exc:
         raise GatewayError(409, "app_exists", "Application identifier already exists") from exc
+    except ValueError as exc:
+        raise GatewayError(422, "unknown_project", "Create the selected project first") from exc
     return {**app, "api_key": raw_key}
+
+
+@router.patch("/admin/api/apps/{app_id}/project", status_code=204)
+async def assign_project(app_id: str, payload: ProjectAssignment, store: AdminStore):
+    try:
+        found = store.assign_app_project(app_id, payload.project_id)
+    except ValueError as exc:
+        raise GatewayError(422, "unknown_project", "Create the selected project first") from exc
+    if not found:
+        raise GatewayError(404, "not_found", "Application was not found")
+    return Response(status_code=204)
 
 
 @router.delete("/admin/api/apps/{app_id}", status_code=204)

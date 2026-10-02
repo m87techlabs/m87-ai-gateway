@@ -54,6 +54,12 @@ legacy `model` spelling. Final-target authorization always applies.
 
 ## Providers
 
+Applications can include `project_id` (default `default`). The control plane adds
+configured projects at startup; its Projects page creates groups for runtime keys.
+Project identifiers follow the same letters/digits/underscore/dot/hyphen convention
+as app IDs. Membership affects event attribution and dashboards, not model policies
+or operator authorization. See [project operations](runbooks/projects-and-usage.md).
+
 Each provider accepts `enabled`, `base_url`, `base_url_env`, `api_key_env`,
 and `timeout_seconds`. Endpoints from the configured environment variable take
 precedence over YAML and are validated at startup. HTTP(S) endpoints cannot

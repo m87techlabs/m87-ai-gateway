@@ -50,6 +50,9 @@ class ServerConfig(ConfigModel):
 
 
 class AppConfig(ConfigModel):
+    project_id: str = Field(
+        default="default", min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$"
+    )
     app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
     api_key: str = Field(min_length=1, repr=False, validation_alias=AliasChoices("api_key", "key"))
     allowed_models: list[str] = Field(default_factory=list)

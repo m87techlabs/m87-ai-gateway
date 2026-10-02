@@ -11,6 +11,14 @@ The initial product is a deployable HTTP service. Its framework capabilities are
 documented adapter and policy interfaces, reusable configuration, and deployment
 examples. A separately supported embedded SDK is a future decision.
 
+The end product is a full AI gateway ecosystem: one setup experience for model
+connections, project/application access, API testing, logs, tokens, usage, and
+dashboards. It should also manage optional Grafana, Prometheus, logging, Vault,
+and other service containers, including supported container-engine startup,
+configuration, readiness, start/stop, persistence, and recovery. Users can choose
+the included local capabilities or expand them through managed service profiles.
+See [ecosystem design](ecosystem.md) for the planned lifecycle and extension boundaries.
+
 ## Plug-and-play product vision
 
 The intended experience is one self-hosted application with an included browser
@@ -66,6 +74,13 @@ experimental. Complete policy editing, native Windows packaging, cross-platform
 secret protection, and production service management remain planned. See
 [guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
 
+Projects now group application keys and preserve request-time attribution in
+audit events. The dashboard can filter project usage/logs and show hourly trends
+and application/model breakdowns. An included API tester calls the normal data
+plane. These are single-operator grouping tools; project membership does not
+provide separate operator roles or tenant isolation. See
+[project operations](runbooks/projects-and-usage.md).
+
 ## Product principles
 
 1. Make the first successful local request straightforward and reproducible.
@@ -88,6 +103,8 @@ secret protection, and production service management remain planned. See
 | Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: timeouts and opt-in bounded retries; fallback planned |
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
 | Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate enforcement and opt-in response cache; budgets planned |
+| Projects and dashboard | Project/application usage, logs, API testing and trends | Implemented local grouping; roles, project budgets and billing remain planned |
+| Ecosystem services | Optional managed dashboards, metrics, logging and secrets | Planned lifecycle adapters and service profiles; no automatic Docker startup yet |
 | Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: health endpoint, Docker files, and runbooks |
 
 ## Target request path

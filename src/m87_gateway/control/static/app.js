@@ -1,6 +1,11 @@
 let adminKey = "";
 let activeView = "overview";
 let connections = [];
+let projects = [];
+let activeProject = "";
+let sessionGeneration = 0;
+let testerRequestId = "";
+let testerController = null;
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -51,9 +56,10 @@ function notice(message) {
 }
 
 function renderLogs(target, rows, limit) {
-  table(target, ["Time", "App", "Model", "Status", "Tokens", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
+  table(target, ["Time", "Project", "App", "Model", "Status", "Tokens", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
     row.dataset.id = item.request_id;
     cell(row, new Date(item.created_at).toLocaleString());
+    cell(row, item.project_id);
     cell(row, item.app_id);
     cell(row, item.routed_model || item.model);
     const status = cell(row, item.status_code);
@@ -67,29 +73,100 @@ function renderLogs(target, rows, limit) {
 }
 
 async function loadOverview() {
-  const [summaryResponse, logsResponse] = await Promise.all([api("/overview"), api("/logs?limit=8")]);
+  const scope = activeProject;
+  const [summaryResponse, logsResponse, usageResponse] = await Promise.all([api(scoped("/overview")), api(scoped("/logs", {limit: 8})), api(scoped("/usage"))]);
   const summary = await summaryResponse.json();
   const logs = await logsResponse.json();
+  const usage = await usageResponse.json();
+  if (scope !== activeProject || !adminKey) return;
   $("requests").textContent = summary.requests.toLocaleString();
   $("tokens").textContent = summary.total_tokens.toLocaleString();
   $("errors").textContent = summary.errors.toLocaleString();
   $("latency").textContent = `${summary.average_latency_ms} ms`;
+  $("input-tokens").textContent = summary.prompt_tokens.toLocaleString();
+  $("output-tokens").textContent = summary.completion_tokens.toLocaleString();
+  $("cache-hits").textContent = summary.cache_hits.toLocaleString();
+  $("usage-unknown").textContent = summary.usage_unknown.toLocaleString();
+  renderChart($("request-chart"), usage.series, "requests", "Hourly requests");
+  renderChart($("token-chart"), usage.series, "total_tokens", "Hourly provider tokens");
+  renderUsage($("usage-apps"), usage.by_app, "app_id", "Application");
+  renderUsage($("usage-models"), usage.by_model, "model", "Model");
   renderLogs($("recent"), logs.items, 8);
 }
 
 async function loadLogs() {
-  const response = await api("/logs?limit=250");
-  renderLogs($("logs"), (await response.json()).items, 250);
+  const scope = activeProject;
+  const response = await api(scoped("/logs", {limit: 250}));
+  const data = await response.json();
+  if (scope === activeProject && adminKey) renderLogs($("logs"), data.items, 250);
+}
+
+function scoped(path, values = {}) {
+  const query = new URLSearchParams(values);
+  if (activeProject) query.set("project_id", activeProject);
+  return query.size ? `${path}?${query}` : path;
+}
+
+function renderUsage(target, rows, field, label) {
+  table(target, [label, "Requests", "Input tokens", "Output tokens", "Errors"], rows, (row, item) => {
+    cell(row, item[field] || "Unattributed"); cell(row, item.requests); cell(row, item.prompt_tokens); cell(row, item.completion_tokens); cell(row, item.errors);
+  });
+}
+
+function renderChart(target, series, field, label) {
+  if (!series.some((item) => item[field])) return empty(target, "No activity in this window.");
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.setAttribute("viewBox", "0 0 720 150"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", label);
+  const maximum = Math.max(1, ...series.map((item) => item[field]));
+  const width = 720 / series.length;
+  series.forEach((item, index) => {
+    const rect = document.createElementNS(namespace, "rect");
+    const height = item[field] / maximum * 135;
+    rect.setAttribute("x", index * width + 2); rect.setAttribute("y", 140 - height);
+    rect.setAttribute("width", Math.max(1, width - 4)); rect.setAttribute("height", height);
+    rect.setAttribute("class", field === "requests" ? "requests-bar" : "tokens-bar");
+    const title = document.createElementNS(namespace, "title"); title.textContent = `${item.bucket}: ${item[field]} ${field === "requests" ? "requests" : "reported tokens"}`;
+    rect.append(title); svg.append(rect);
+  });
+  const caption = document.createElement("p"); caption.className = "muted";
+  caption.textContent = `${series[0].bucket} → ${series.at(-1).bucket} · hover for counts`;
+  target.replaceChildren(svg, caption);
+}
+
+async function loadProjectOptions() {
+  projects = (await (await api("/projects")).json()).items;
+  const appProject = $("app-project").value || activeProject || "default";
+  $("project-filter").replaceChildren(); $("app-project").replaceChildren();
+  const all = document.createElement("option"); all.value = ""; all.textContent = "All projects"; $("project-filter").append(all);
+  projects.forEach((item) => {
+    for (const id of ["project-filter", "app-project"]) {
+      const option = document.createElement("option"); option.value = item.project_id; option.textContent = `${item.name} (${item.project_id})`; $(id).append(option);
+    }
+  });
+  $("project-filter").value = activeProject;
+  $("app-project").value = appProject;
+}
+
+async function loadProjects() {
+  await loadProjectOptions();
+  table($("projects"), ["Project", "Name", "Managed apps", ""], projects, (row, item) => {
+    cell(row, item.project_id); cell(row, item.name); cell(row, item.app_count);
+    const action = cell(row, ""); const button = document.createElement("button"); button.textContent = "View usage";
+    button.addEventListener("click", () => { activeProject = item.project_id; $("project-filter").value = activeProject; document.querySelector('[data-view="overview"]').click(); }); action.append(button);
+  });
 }
 
 async function showDetail(requestId) {
+  const session = sessionGeneration;
   const response = await api(`/logs/${encodeURIComponent(requestId)}`);
   const item = await response.json();
+  if (session !== sessionGeneration || !adminKey) return;
   const body = $("detail-body");
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Latency", `${item.latency_ms} ms`]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Latency", `${item.latency_ms} ms`]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";
@@ -105,9 +182,17 @@ async function showDetail(requestId) {
 }
 
 async function loadApps() {
-  const response = await api("/apps");
-  table($("apps"), ["Application", "Key prefix", "Models", "RPM", "Content", ""], (await response.json()).items, (row, item) => {
-    cell(row, item.app_id); cell(row, `${item.key_prefix}…`); cell(row, item.allowed_models.join(", ")); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
+  const [response] = await Promise.all([api("/apps"), loadProjectOptions()]);
+  table($("apps"), ["Application", "Project", "Key prefix", "Models", "RPM", "Content", ""], (await response.json()).items, (row, item) => {
+    cell(row, item.app_id);
+    const projectCell = cell(row, ""); const selection = document.createElement("select"); selection.setAttribute("aria-label", `Project for ${item.app_id}`);
+    projects.forEach((project) => { const option = document.createElement("option"); option.value = project.project_id; option.textContent = project.name; selection.append(option); });
+    selection.value = item.project_id; projectCell.append(selection);
+    selection.addEventListener("change", async () => {
+      try { await api(`/apps/${encodeURIComponent(item.app_id)}/project`, {method: "PATCH", body: JSON.stringify({project_id: selection.value})}); notice("Project changed for future requests"); item.project_id = selection.value; }
+      catch (error) { selection.value = item.project_id; notice(error.message); }
+    });
+    cell(row, `${item.key_prefix}…`); cell(row, item.allowed_models.join(", ")); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
     const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
     button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
     action.append(button);
@@ -163,7 +248,7 @@ async function loadSetup() {
   return data;
 }
 
-const loaders = {setup: loadSetup, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+const loaders = {setup: loadSetup, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -179,23 +264,24 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 }));
 
 $("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); adminKey = $("admin-key").value;
+  event.preventDefault(); sessionGeneration += 1; adminKey = $("admin-key").value;
   try {
-    const setup = await loadSetup(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
+    const setup = await loadSetup(); await loadProjectOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
     if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { adminKey = ""; $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
+$("lock").addEventListener("click", () => { sessionGeneration += 1; adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
 $("close-detail").addEventListener("click", () => $("detail").close());
 
 $("app-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); const form = new FormData(event.currentTarget);
-  const payload = {app_id: form.get("app_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean), capture_content: form.has("capture_content")};
+  event.preventDefault(); const form = new FormData(event.currentTarget); const session = sessionGeneration;
+  const payload = {app_id: form.get("app_id"), project_id: form.get("project_id"), allowed_models: form.get("allowed_models").split(",").map((value) => value.trim()).filter(Boolean), capture_content: form.has("capture_content")};
   if (form.get("rate_limit_per_minute")) payload.rate_limit_per_minute = Number(form.get("rate_limit_per_minute"));
   try {
     const response = await api("/apps", {method: "POST", body: JSON.stringify(payload)}); const item = await response.json();
+    if (session !== sessionGeneration || !adminKey) return;
     $("new-key").hidden = false; $("new-key").textContent = `Copy now — shown once: ${item.api_key}`; notice("Application key created"); await loadApps();
   } catch (error) { notice(error.message); }
 });
@@ -237,6 +323,35 @@ $("setup-form").addEventListener("submit", async (event) => {
 $("export").addEventListener("click", async (event) => {
   event.preventDefault();
   try {
-    const response = await api("/logs/export"); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "gateway-events.json"; link.click(); URL.revokeObjectURL(url);
+    const response = await api(scoped("/logs/export")); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "gateway-events.json"; link.click(); URL.revokeObjectURL(url);
   } catch (error) { notice(error.message); }
+});
+
+$("project-filter").addEventListener("change", () => { activeProject = $("project-filter").value; refresh(); });
+$("project-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const element = event.currentTarget; const form = new FormData(element);
+  try {
+    await api("/projects", {method: "POST", body: JSON.stringify(Object.fromEntries(form))});
+    notice("Project created. Assign an application next."); await loadProjects(); $("app-project").value = form.get("project_id"); element.reset();
+  } catch (error) { notice(error.message); }
+});
+$("tester-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const element = event.currentTarget; const form = new FormData(element); const session = sessionGeneration;
+  element.elements.app_key.value = ""; const button = element.querySelector('button[type="submit"]'); button.disabled = true;
+  $("tester-status").textContent = "Waiting for the gateway…"; $("tester-result").replaceChildren(); $("tester-detail").hidden = true;
+  const controller = new AbortController(); testerController = controller; const timeout = window.setTimeout(() => controller.abort(), 90000);
+  const started = performance.now();
+  try {
+    const response = await fetch("/v1/chat/completions", {method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${form.get("app_key")}`}, cache: "no-store", signal: controller.signal,
+      body: JSON.stringify({model: form.get("model"), messages: [{role: "user", content: form.get("prompt")}], max_tokens: Number(form.get("max_tokens"))})});
+    const data = await response.json();
+    if (session !== sessionGeneration) return;
+    testerRequestId = response.headers.get("X-Request-ID") || "";
+    $("tester-status").textContent = `HTTP ${response.status} · ${Math.round(performance.now() - started)} ms · Request ${testerRequestId || "unavailable"}`;
+    $("tester-result").textContent = JSON.stringify(data, null, 2); $("tester-detail").hidden = !testerRequestId;
+  } catch (error) { if (session === sessionGeneration) $("tester-status").textContent = error.name === "AbortError" ? "Request stopped or timed out. Check logs for the outcome." : "The gateway could not be reached."; }
+  finally { window.clearTimeout(timeout); if (testerController === controller) testerController = null; button.disabled = false; }
+});
+$("tester-detail").addEventListener("click", async () => {
+  try { await showDetail(testerRequestId); } catch (error) { notice(`${error.message}. The audit write may still be finishing; retry shortly.`); }
 });

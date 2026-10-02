@@ -5,6 +5,49 @@ and supported provider adapters. Releases follow acceptance criteria rather than
 calendar promises. See [design](design.md) for scope and [lifecycle](lifecycle.md)
 for release gates.
 
+## End-product vision: full gateway ecosystem
+
+Deliver a full AI gateway ecosystem through one setup and operations experience.
+Users should connect inference, manage projects and application keys, test APIs,
+browse exchanges, inspect tokens/usage, and use dashboards. The application should
+also configure and manage selected Grafana, Prometheus, logging, Vault, and future
+service containers rather than requiring users to assemble the ecosystem manually.
+Detect/start supported container engines through explicit platform integration
+when authorized; keep the built-in local features usable without containers.
+Source users can extend providers, secret stores, exporters, and service lifecycle
+adapters. See [ecosystem design](ecosystem.md).
+
+### Projects and built-in operations
+
+- [x] Add persistent projects and application-key membership.
+- [x] Attribute events from authenticated keys and preserve historical project usage.
+- [x] Filter dashboard, logs, and exports by project; show hourly requests/tokens
+  and per-application/per-model breakdowns without counting cache hits as new tokens.
+- [x] Add a console API tester using the normal authenticated gateway path.
+- Add project policy/budget controls, longer-term accounting, operator roles,
+  and tested access boundaries before promising tenant isolation or billing.
+
+### Managed ecosystem services — planned
+
+- Define extensible service profiles and lifecycle adapters with versioned images,
+  resource/storage plans, credentials, readiness, and upgrade/rollback contracts.
+- Add container-engine detection and approved platform startup, then start/status/
+  stop controls for only the gateway-owned services. Existing engines can be reused.
+- Provision Grafana/Prometheus and log collection/storage, with preconfigured
+  dashboards, request correlation, sanitized events, and tested retention behavior.
+- Add a secret-store adapter for an existing or managed Vault service, including
+  secure initialization/unseal or workload identity, scoped access, and recovery.
+- Add browser service links, health/resource reporting, backups, selective shutdown,
+  and clear recovery for unavailable services without disrupting core inference.
+- Verify workstation/cloud behavior and publish service-specific runbooks before
+  advertising automatic setup. Docker-in-WSL checks remain on demand.
+
+**Exit:** a user can choose a supported service profile in setup, see its resource
+requirements, provision and start it, use configured dashboards/logs/secrets,
+restart without losing data, stop only that profile, and recover or roll back
+through documented procedures. No plaintext secrets or captured prompts appear
+in metrics, process arguments, generated manifests, or default logs.
+
 ## Next product milestone: guided setup and standalone distribution
 
 Prioritize the first-run experience alongside completion of core controls:

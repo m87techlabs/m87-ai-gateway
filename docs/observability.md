@@ -7,10 +7,18 @@ including auth failures, schema errors, policy rejections, provider errors, and
 successful completions. A gateway-generated `X-Request-ID` links the response to
 the event. Incoming IDs are not trusted or reused.
 
-Events include schema version, start timestamp, app ID, requested/resolved model,
+Events include schema version, start timestamp, project/app IDs, requested/resolved model,
 provider, status, duration, guardrail action/reason, provider attempt, token usage,
 and safe error category. Missing usage and unimplemented cost estimates are
 `null`. Auth/validation failures may have no known app or model.
+
+Project attribution comes from the authenticated app key, with a default project
+for existing apps. A client cannot select a project through headers. Request-time
+membership stays in events even if an app moves projects. The console adds project
+filters, hourly UTC charts, and application/model breakdowns; cache hits do not
+add provider-token consumption. Reports cover retained events and known usage,
+with a separate count for provider requests without usage. They are not billing.
+See [projects and usage](runbooks/projects-and-usage.md).
 
 Metadata goes to JSON stdout when `observability.json_logs` is enabled.
 Headers, credentials, client IPs, prompts, completions, and upstream exception
