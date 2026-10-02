@@ -103,6 +103,8 @@ flowchart LR
    be stored; the application's capture option must also be enabled.
 6. In **Applications**, create a key with `auto` and the selected concrete model
    allowed. Set a requests-per-minute limit if needed. Copy the key shown once.
+   When changing the default model later, edit the application's Models list and
+   click **Save models**. Permissions apply to future requests; the key is preserved.
 7. Send an application request to `/v1/chat/completions` using its gateway key.
    The Setup page shows the URL and request shape. Inspect Overview and Logs for
    tokens, outcomes, and opted-in input/output. Unknown provider token counts stay null.

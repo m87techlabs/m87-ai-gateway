@@ -92,6 +92,13 @@ when testing is finished.
 - A disconnected gateway produces a clear connectivity error. Gateway health alone
   does not verify inference connectivity, the app key, or model access.
 
+If the provider is disabled, enable it in **Setup** and save the connection before
+discovering models. Choose an installed model as the gateway default. In
+**Applications**, edit the existing app's **Models** list and click **Save models**;
+include `auto` and the selected concrete route, such as `ollama:gemma3:1b`.
+This changes access for subsequent requests and preserves the existing key.
+An example route such as `ollama:llama3` does not install that model.
+
 Conversation history lives only in the current page's memory; **New conversation**
 clears it. Gateway retention and opted-in capture are separate. Requests are
 non-streaming, have a 512-token output limit, and support up to 31 messages with

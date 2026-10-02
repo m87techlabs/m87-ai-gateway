@@ -11,6 +11,27 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Model access editing and live sample chat
+
+Checked on 2026-10-02: 127 Python tests, ten browser DOM tests, Ruff, JavaScript
+syntax, 44-file documentation checks, and whitespace checks passed. Authenticated
+model-access updates preserve the app key and persist in SQLite. Tests cover
+unauthorized edits, empty lists, unknown applications, newly allowed requests,
+and denial after permission removal. The console can save an existing app's
+Models list; the sample maps known provider error codes to useful messages while
+discarding raw upstream error text. The standalone smoke now checks model-access
+updates followed by restart and inference using the original application key.
+
+A live Windows Ollama session through the running WSL sample and managed gateway
+returned HTTP 200 with `ollama:gemma3:1b`, 15 input tokens, four output tokens,
+and 19 total tokens. The previous failure was an explicitly disabled Ollama
+connection plus a default route for an uninstalled model. Enabling the existing
+local connection, selecting the installed model, and extending the existing app's
+model permissions resolved it without key replacement. Only the managed gateway
+was restarted; other instances and inference processes were preserved. No Docker
+or cloud provider call was needed. This verifies live local sample inference;
+cloud-provider and visual-browser checks remain deferred.
+
 ## Independent chat sample
 
 Custom-port follow-up, checked on 2026-10-02: 125 Python tests and nine browser DOM

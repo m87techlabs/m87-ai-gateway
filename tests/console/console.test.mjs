@@ -61,6 +61,7 @@ async function consoleFixture(t) {
       return response({items: apps});
     }
     if (url.pathname.endsWith("/project")) { apps[0].project_id = body.project_id; return response(null, 204); }
+    if (url.pathname.includes("/apps/") && url.pathname.endsWith("/models")) { apps[0].allowed_models = body.allowed_models; return response(null, 204); }
     if (url.pathname.endsWith("/overview")) return response({requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12});
     if (url.pathname.endsWith("/usage")) return response({series: [{bucket: "2026-10-02T12:00:00Z", requests: 1, total_tokens: 13}], by_app: [{app_id: "sample-app", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}], by_model: [{model: "ollama:small", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}]});
     if (url.pathname.endsWith("/logs")) return response({items: [event]});
@@ -119,6 +120,19 @@ test("application selector sends an explicit project assignment", async (t) => {
   selection.dispatchEvent(new window.Event("change"));
   await until(() => requests.some((item) => item.method === "PATCH"));
   assert.equal(requests.find((item) => item.method === "PATCH").body.project_id, "default");
+});
+
+test("application model permissions save without creating or revoking a key", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="apps"]').click();
+  await until(() => $("apps").querySelector('input[aria-label="Allowed models for sample-app"]'));
+  $("apps").querySelector("input").value = "auto, ollama:gemma3:1b";
+  [...$("apps").querySelectorAll("button")].find((button) => button.textContent === "Save models").click();
+  await until(() => requests.some((item) => item.path.endsWith("/models")));
+  const update = requests.find((item) => item.path.endsWith("/models"));
+  assert.equal(update.method, "PATCH");
+  assert.deepEqual(update.body.allowed_models, ["auto", "ollama:gemma3:1b"]);
+  assert.equal(requests.some((item) => item.method === "DELETE" || item.method === "POST"), false);
 });
 
 test("API tester uses app credentials and shows a correlated result", async (t) => {

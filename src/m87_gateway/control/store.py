@@ -461,6 +461,14 @@ class LocalControlStore:
             cursor = connection.execute("DELETE FROM app_keys WHERE app_id = ?", (app_id,))
         return cursor.rowcount > 0
 
+    def update_app_models(self, app_id: str, allowed_models: list[str]) -> bool:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE app_keys SET allowed_models = ? WHERE app_id = ? AND enabled = 1",
+                (json.dumps(allowed_models), app_id),
+            )
+        return cursor.rowcount > 0
+
     def put_provider_key(self, provider: str, value: str, alias: str = "default") -> None:
         now = datetime.now(timezone.utc).isoformat()
         encrypted = self._fernet.encrypt(value.encode())

@@ -206,6 +206,16 @@ def create_app(settings: Settings, *, transport=None):
         candidate = response.headers.get("x-request-id", "")
         request_id = candidate if REQUEST_ID.fullmatch(candidate) else None
         if response.status_code != 200:
+            provider_messages = {
+                "provider_disabled": "Selected provider is disabled. Enable it in the gateway Setup page",
+                "provider_timeout": "Model provider timed out. Check its readiness and gateway timeout setting",
+                "provider_rejected": "Model provider rejected the request. Check the installed model and provider credentials",
+                "provider_rate_limited": "Model provider rate limit reached. Wait before retrying",
+            }
+            try:
+                code = response.json().get("error", {}).get("code")
+            except (ValueError, AttributeError):
+                code = None
             messages = {
                 400: "Gateway rejected the request. Check its policies and selected model",
                 401: "Application key rejected. Check the gateway URL and use a key from its Applications page",
@@ -213,7 +223,12 @@ def create_app(settings: Settings, *, transport=None):
                 429: "Application rate limit reached. Wait before retrying",
             }
             return error(
-                messages.get(response.status_code, "Gateway could not complete the request"),
+                provider_messages.get(
+                    code,
+                    messages.get(response.status_code, "Gateway could not complete the request"),
+                )
+                if isinstance(code, str)
+                else messages.get(response.status_code, "Gateway could not complete the request"),
                 response.status_code if 400 <= response.status_code < 600 else 502,
                 request_id,
             )

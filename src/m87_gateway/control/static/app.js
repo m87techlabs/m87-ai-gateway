@@ -192,7 +192,19 @@ async function loadApps() {
       try { await api(`/apps/${encodeURIComponent(item.app_id)}/project`, {method: "PATCH", body: JSON.stringify({project_id: selection.value})}); notice("Project changed for future requests"); item.project_id = selection.value; }
       catch (error) { selection.value = item.project_id; notice(error.message); }
     });
-    cell(row, `${item.key_prefix}…`); cell(row, item.allowed_models.join(", ")); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
+    cell(row, `${item.key_prefix}…`);
+    const modelCell = cell(row, ""); const models = document.createElement("input"); models.value = item.allowed_models.join(", "); models.setAttribute("aria-label", `Allowed models for ${item.app_id}`);
+    const saveModels = document.createElement("button"); saveModels.type = "button"; saveModels.textContent = "Save models";
+    saveModels.addEventListener("click", async () => {
+      saveModels.disabled = models.disabled = true;
+      try {
+        const allowed = models.value.split(",").map((value) => value.trim()).filter(Boolean);
+        await api(`/apps/${encodeURIComponent(item.app_id)}/models`, {method: "PATCH", body: JSON.stringify({allowed_models: allowed})});
+        item.allowed_models = allowed; notice("Model permissions saved; application key unchanged");
+      } catch (error) { notice(error.message); }
+      finally { saveModels.disabled = models.disabled = false; }
+    });
+    modelCell.append(models, saveModels); cell(row, item.rate_limit_per_minute || "Unlimited"); cell(row, item.capture_content ? "Enabled" : "Off");
     const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
     button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
     action.append(button);

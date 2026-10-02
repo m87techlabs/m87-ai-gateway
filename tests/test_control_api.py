@@ -2,12 +2,53 @@ import asyncio
 import time
 
 import httpx
+from fastapi.testclient import TestClient
 
 from m87_gateway.api import routes
 from m87_gateway.config import AppConfig, ControlPlaneConfig, GatewaySettings
 from m87_gateway.control.api import STATIC_DIR
 from m87_gateway.logging import middleware
 from m87_gateway.main import create_app
+
+
+def test_model_access_update_preserves_key_and_enforces_new_permissions(tmp_path, monkeypatch):
+    monkeypatch.setenv("GATEWAY_ADMIN_API_KEY", "synthetic-admin-key-long-enough")
+    monkeypatch.setattr(routes, "get_provider", lambda *args: FakeProvider())
+    settings = GatewaySettings(
+        routing={"default_model": "ollama:gemma3:1b"},
+        control_plane={
+            "enabled": True,
+            "database_path": str(tmp_path / "data/control.db"),
+            "master_key_path": str(tmp_path / "data/master.key"),
+        },
+    )
+    with TestClient(create_app(settings)) as client:
+        admin = {"Authorization": "Bearer synthetic-admin-key-long-enough"}
+        app = client.post(
+            "/admin/api/apps",
+            headers=admin,
+            json={"app_id": "sample", "allowed_models": ["auto", "ollama:llama3"]},
+        ).json()
+        key = app["api_key"]
+        body = {"model": "auto", "messages": [{"role": "user", "content": "Synthetic question"}]}
+        headers = {"Authorization": f"Bearer {key}"}
+        assert client.post("/v1/chat/completions", headers=headers, json=body).status_code == 403
+        path = "/admin/api/apps/sample/models"
+        allowed = {"allowed_models": ["auto", "ollama:gemma3:1b"]}
+        assert client.patch(path, json=allowed).status_code == 401
+        assert client.patch(path, headers=admin, json={"allowed_models": []}).status_code == 422
+        assert client.patch(path, headers=admin, json=allowed).status_code == 204
+        assert client.post("/v1/chat/completions", headers=headers, json=body).status_code == 200
+        persisted = client.app.state.control_store.authenticate_app_key(key)
+        assert persisted.allowed_models == allowed["allowed_models"]
+        assert persisted.api_key == key
+        assert (
+            client.patch("/admin/api/apps/missing/models", headers=admin, json=allowed).status_code
+            == 404
+        )
+        denied = {"allowed_models": ["ollama:llama3"]}
+        assert client.patch(path, headers=admin, json=denied).status_code == 204
+        assert client.post("/v1/chat/completions", headers=headers, json=body).status_code == 403
 
 
 class FakeProvider:

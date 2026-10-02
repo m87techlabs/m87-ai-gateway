@@ -75,19 +75,21 @@ class ProjectAssignment(BaseModel):
     project_id: ProjectIdentifier
 
 
-class AppKeyCreate(BaseModel):
+class AppModelAccess(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-    app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
-    project_id: ProjectIdentifier = "default"
     allowed_models: list[str] = Field(min_length=1)
-    capture_content: bool = False
-    rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
 
     @field_validator("allowed_models")
     @classmethod
     def valid_models(cls, values: list[str]) -> list[str]:
         return [validate_model(value) for value in values]
+
+
+class AppKeyCreate(AppModelAccess):
+    app_id: str = Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
+    project_id: ProjectIdentifier = "default"
+    capture_content: bool = False
+    rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
 
 
 class ProviderKeyWrite(BaseModel):
@@ -223,6 +225,13 @@ async def assign_project(app_id: str, payload: ProjectAssignment, store: AdminSt
     except ValueError as exc:
         raise GatewayError(422, "unknown_project", "Create the selected project first") from exc
     if not found:
+        raise GatewayError(404, "not_found", "Application was not found")
+    return Response(status_code=204)
+
+
+@router.patch("/admin/api/apps/{app_id}/models", status_code=204)
+async def update_app_models(app_id: str, payload: AppModelAccess, store: AdminStore):
+    if not store.update_app_models(app_id, payload.allowed_models):
         raise GatewayError(404, "not_found", "Application was not found")
     return Response(status_code=204)
 

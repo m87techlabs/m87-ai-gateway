@@ -146,9 +146,15 @@ def exercise(executable):
                     {
                         "app_id": "bundle-check",
                         "project_id": "bundle-project",
-                        "allowed_models": ["auto", model],
+                        "allowed_models": ["auto", "ollama:legacy-model"],
                         "capture_content": True,
                     },
+                    admin,
+                )
+                call(
+                    "/admin/api/apps/bundle-check/models",
+                    "PATCH",
+                    {"allowed_models": ["auto", model]},
                     admin,
                 )
                 process.terminate()

@@ -141,6 +141,21 @@ def test_settings_reject_missing_key_and_credentialed_url():
     Settings(app_key=KEY, model="extension:sample").validate()
 
 
+def test_disabled_provider_has_actionable_message_without_reflecting_upstream_secrets():
+    with client(
+        lambda request: httpx.Response(
+            503,
+            json={"error": {"code": "provider_disabled", "message": KEY}},
+            headers={"X-Request-ID": "disabled-provider"},
+        )
+    ) as browser:
+        result = browser.post("/api/chat", json={"messages": [{"role": "user", "content": "Hi"}]})
+        assert result.status_code == 503
+        assert "Enable it" in result.json()["error"]
+        assert KEY not in result.text
+        assert result.json()["request_id"] == "disabled-provider"
+
+
 @pytest.mark.skipif(not Path("/proc/self/stat").exists(), reason="Linux process identity")
 def test_managed_port_detection_and_stale_identity(tmp_path):
     state = tmp_path / "process.state"
