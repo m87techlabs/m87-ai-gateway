@@ -21,7 +21,8 @@ m87-gateway
 ```
 
 Alternatively, run `python -m m87_gateway`. The launcher binds to
-`127.0.0.1:8080`, prints the console URL and admin key, and starts without demo
+`127.0.0.1:8087`, trying 8187, 8287, 8387, and subsequent increments of 100 if
+occupied. It prints the selected console URL and admin key and starts without demo
 application keys or enabled providers. It uses `$XDG_DATA_HOME/m87-gateway`, or
 `~/.local/share/m87-gateway` when that variable is absent. Choose another private
 directory or port with `--data-dir` and `--port`. The launcher intentionally does
@@ -39,7 +40,11 @@ After installing the source package in `.venv`, use these scripts from the check
 ```
 
 No environment activation is needed. Start runs the gateway in the background,
-waits for health, and prints `http://localhost:8080/admin` and the operator key.
+waits for health, and prints the selected console URL and the operator key.
+The official workstation port is 8087, with fallback ports 8187, 8287, 8387,
+and so on through 65487. Each listener is reserved before startup; unrelated
+services are left running. An explicit `--port` or `GATEWAY_PORT` uses that exact
+port and fails if it is occupied. Exhausting the default sequence fails clearly.
 It prefers `.venv/bin/python`; if absent, it uses the experimental
 `dist/m87-gateway` executable. The scripts also work when invoked by an absolute
 path from another directory. They require Linux/WSL, Bash, curl, flock, and standard
@@ -47,10 +52,10 @@ Linux utilities. They do not install dependencies or start Ollama or Docker.
 
 The default data directory is unchanged, so saved providers, projects, app keys,
 and request logs survive stop/start. The scripts manage one instance per checkout.
-Use a different port if another gateway or the Flow Lab is already running:
+Choose an exact port when needed:
 
 ```bash
-./start.sh --port 8081
+./start.sh --port 8187
 ```
 
 For isolated storage, use `./start.sh --data-dir /path/to/private/gateway-data`.
@@ -88,7 +93,7 @@ flowchart LR
 
 ## Configure the console
 
-1. Open `http://localhost:8080/admin` and enter the printed admin key.
+1. Open the printed console URL (normally `http://localhost:8087/admin`) and enter the printed admin key.
 2. In **Setup**, select Ollama, OpenAI, or OpenAI-compatible server. Enter the full
    base URL: Ollama typically uses `http://127.0.0.1:11434`; compatible servers
    typically use `http://127.0.0.1:8000/v1`. URLs are from the gateway's network

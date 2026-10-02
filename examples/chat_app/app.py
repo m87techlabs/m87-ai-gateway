@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 import uvicorn
+from m87_gateway.local_server import DEFAULT_GATEWAY_PORT, bind_listener
 
 STATIC = Path(__file__).with_name("static")
 REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
@@ -64,13 +65,15 @@ def managed_gateway_url(run_dir: Path) -> str | None:
 def default_gateway_url() -> str:
     run_dir = Path(os.getenv("GATEWAY_RUN_DIR", str(STATIC.parents[2] / "var/lib/gateway-runner")))
     return (
-        os.getenv("SAMPLE_GATEWAY_URL") or managed_gateway_url(run_dir) or "http://127.0.0.1:8080"
+        os.getenv("SAMPLE_GATEWAY_URL")
+        or managed_gateway_url(run_dir)
+        or f"http://127.0.0.1:{DEFAULT_GATEWAY_PORT}"
     )
 
 
 @dataclass(frozen=True)
 class Settings:
-    gateway_url: str = "http://127.0.0.1:8080"
+    gateway_url: str = "http://127.0.0.1:8087"
     app_key: str = field(default="", repr=False)
     model: str = "auto"
     port: int = 8790
@@ -266,15 +269,26 @@ def main():
     parser = argparse.ArgumentParser(description="Chat with an already-running AI gateway")
     parser.add_argument("--gateway-url", default=default_gateway_url())
     parser.add_argument("--model", default=os.getenv("SAMPLE_MODEL", "auto"))
-    parser.add_argument("--port", type=int, default=8790)
+    parser.add_argument(
+        "--port", type=int, default=0, help="Exact port, or 0 for an available port"
+    )
     args = parser.parse_args()
+    if not 0 <= args.port <= 65535:
+        parser.error("Port must be between 0 and 65535")
     try:
-        settings = Settings(
-            args.gateway_url, os.getenv("SAMPLE_APP_KEY", ""), args.model, args.port
-        )
+        listener = bind_listener("127.0.0.1", args.port)
+        port = listener.getsockname()[1]
+        settings = Settings(args.gateway_url, os.getenv("SAMPLE_APP_KEY", ""), args.model, port)
         application = create_app(settings)
     except ValueError as exc:
+        listener.close()
         parser.error(str(exc))
+    except OSError:
+        parser.error("Sample port is unavailable; use --port 0 for an available port")
+    print(f"Listener: http://127.0.0.1:{settings.port}", flush=True)
     print(f"Chat sample: http://localhost:{settings.port} (Ctrl+C to stop)", flush=True)
     print(f"Gateway: {settings.gateway_url}", flush=True)
-    uvicorn.run(application, host="127.0.0.1", port=settings.port)
+    with listener:
+        uvicorn.Server(uvicorn.Config(application, host="127.0.0.1", port=settings.port)).run(
+            sockets=[listener]
+        )

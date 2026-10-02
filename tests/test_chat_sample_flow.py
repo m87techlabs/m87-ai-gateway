@@ -108,11 +108,13 @@ def test_sample_gateway_inference_and_project_logs(tmp_path):
                 )["api_key"]
                 sample = subprocess.Popen(
                     [
-                        str(ROOT / "examples/chat_app/start.sh"),
+                        sys.executable,
+                        "-m",
+                        "examples.chat_app",
                         "--port",
                         str(sample_port),
                     ],
-                    cwd=tmp_path,
+                    cwd=ROOT,
                     env={
                         **environment,
                         "SAMPLE_APP_KEY": app_key,

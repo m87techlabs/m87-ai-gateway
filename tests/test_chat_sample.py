@@ -189,4 +189,4 @@ def test_url_environment_overrides_detection_and_default_targets_checkout(monkey
     assert default_gateway_url() == "http://127.0.0.1:9000"
     monkeypatch.delenv("SAMPLE_GATEWAY_URL")
     monkeypatch.setattr(sample, "managed_gateway_url", lambda run_dir: None)
-    assert default_gateway_url() == "http://127.0.0.1:8080"
+    assert default_gateway_url() == "http://127.0.0.1:8087"

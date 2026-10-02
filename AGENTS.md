@@ -10,6 +10,10 @@ runbooks, and explicit release gates. Public availability follows readiness; rou
 development does not change repository visibility.
 
 Product vision: make the gateway plug and play for workstation and cloud users.
+The official local gateway port is 8087. Default workstation startup tries 8187,
+8287, 8387, and subsequent increments of 100 if occupied, reports the selected URL,
+and preserves unrelated services. Explicit port overrides remain exact. The sample
+chat application uses an available port and separate start/stop/status scripts.
 Ship one application with an included configuration UI and built-in operational
 visibility. A user connects a supported inference endpoint or configures provider
 credentials in the gateway, creates an application key, and points the calling

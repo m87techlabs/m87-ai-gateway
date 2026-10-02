@@ -64,8 +64,9 @@ After installing in `.venv`, everyday operation from this checkout is:
 ./stop.sh                  # Graceful shutdown; preserves saved data
 ```
 
-No environment activation or Docker is needed. Use `./start.sh --port 8081` if
-8080 is already occupied. These scripts support Linux/WSL and can also use an
+No environment activation or Docker is needed. The local gateway tries **8087**,
+then **8187, 8287, 8387**, adding 100 until it finds an available port. The selected
+console URL is printed. `--port` selects an exact port. These scripts support Linux/WSL and can also use an
 existing `dist/m87-gateway` build. See [guided setup](docs/runbooks/guided-setup.md)
 for private runtime logs and configuration options.
 
@@ -77,8 +78,10 @@ same request can be inspected at `http://localhost:8080/admin`.
 
 To use your existing gateway from a separate application, try the
 [chat sample](examples/chat_app/README.md): run `./examples/chat_app/start.sh`,
-enter a gateway application key at the hidden prompt, and open
-`http://localhost:8790`. It supports conversations and shows reported tokens,
+enter a gateway application key at the hidden prompt, and open the printed URL.
+It selects an available port and runs in the background. Use
+`./examples/chat_app/status.sh` and `./examples/chat_app/stop.sh` to manage it.
+It supports conversations and shows reported tokens,
 latency, and request IDs for correlation with gateway logs.
 
 ## Quickstart

@@ -10,12 +10,13 @@ import uvicorn
 from m87_gateway.config import GatewaySettings
 from m87_gateway.control.store import _prepare_private_file
 from m87_gateway.main import create_app
+from m87_gateway.local_server import DEFAULT_GATEWAY_PORT, bind_listener
 
 
 def local_settings(data_dir: Path) -> GatewaySettings:
     data_dir = data_dir.expanduser().resolve()
     return GatewaySettings(
-        server={"host": "127.0.0.1"},
+        server={"host": "127.0.0.1", "port": DEFAULT_GATEWAY_PORT},
         providers={
             "openai": {"enabled": False, "base_url": "https://api.openai.com/v1"},
             "ollama": {"enabled": False, "base_url": "http://localhost:11434"},
@@ -49,9 +50,9 @@ def main() -> None:
         default=Path(os.getenv("XDG_DATA_HOME", Path.home() / ".local/share")) / "m87-gateway",
     )
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--port", type=int, help="Exact port; default tries 8087, 8187, 8287, ...")
     args = parser.parse_args()
-    if not 1 <= args.port <= 65535:
+    if args.port is not None and not 1 <= args.port <= 65535:
         parser.error("Port must be between 1 and 65535")
     try:
         settings = local_settings(args.data_dir)
@@ -61,9 +62,23 @@ def main() -> None:
     except ValueError:
         parser.error("Private data directory or operator key is invalid")
     os.environ[settings.control_plane.admin_api_key_env] = key
-    print(f"Console: http://{args.host}:{args.port}/admin", flush=True)
+    try:
+        listener = bind_listener(
+            args.host,
+            args.port or DEFAULT_GATEWAY_PORT,
+            fallback_step=100 if args.port is None else None,
+        )
+    except OSError:
+        parser.error("Could not bind gateway listener; requested ports are unavailable")
+    port = listener.getsockname()[1]
+    settings.server.port = port
+    print(f"Listener: http://{args.host}:{port}", flush=True)
+    print(f"Console: http://{args.host}:{port}/admin", flush=True)
     print(f"Admin key: {key}", flush=True)
     print(
         "Connect a provider in Setup, choose a model, then create an application key.", flush=True
     )
-    uvicorn.run(create_app(settings), host=args.host, port=args.port)
+    with listener:
+        uvicorn.Server(uvicorn.Config(create_app(settings), host=args.host, port=port)).run(
+            sockets=[listener]
+        )

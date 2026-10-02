@@ -11,6 +11,31 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Official local port and sample lifecycle
+
+Checked on 2026-10-02: 133 Python tests, Ruff, ShellCheck, Bash syntax, 44-file
+documentation checks, whitespace checks, and a rebuilt Linux executable smoke
+passed. The default local gateway listener is reserved on 8087, falling back by
+increments of 100 through 65487. Tests exercised actual script startup with 8087
+and 8187 occupied, plus listener reservation, exact-port collision, and sequence
+exhaustion. Explicit ports remain exact. Foreground CLI, source scripts, and the
+standalone executable use the same listener selection.
+
+The sample has separate background start/stop/status scripts, an automatically
+allocated local port, private process state/logs, duplicate-start protection,
+idempotent stop, and process identity/type checks. Tests verified starting from
+another working directory, key privacy, selected-port reporting, and cleanup
+without creating a gateway instance. The existing HTTP integration test now runs
+the foreground sample CLI; separate lifecycle tests exercise its scripts. Existing
+foreground processes require Ctrl+C before switching to managed background startup.
+An already-running gateway retains its port until stopped and started again.
+
+No Docker or live-model inference was needed for this lifecycle change. Native
+Windows scripts, service installation, and reboot persistence remain deferred.
+Container/Flow Lab deployments keep their explicitly configured ports; automatic
+fallback is a local launcher feature. See [guided setup](runbooks/guided-setup.md)
+and the [chat sample](../examples/chat_app/README.md).
+
 ## Model access editing and live sample chat
 
 Checked on 2026-10-02: 127 Python tests, ten browser DOM tests, Ruff, JavaScript

@@ -118,6 +118,32 @@ def test_port_validation_and_help(runner):
     assert invoke("start", "--help").returncode == 0
 
 
+def test_default_gateway_sequence_skips_first_two_busy_ports(runner):
+    invoke, env = runner
+    env.pop("GATEWAY_PORT")
+    listeners = []
+    try:
+        for port in (8087, 8187):
+            listener = socket.socket()
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                listener.bind(("127.0.0.1", port))
+                listener.listen()
+            except OSError:
+                listener.close()
+                continue  # An existing service already occupies this candidate.
+            listeners.append(listener)
+        started = invoke("start")
+        assert started.returncode == 0, started.stderr
+        state = Path(env["GATEWAY_RUN_DIR"]) / "process.state"
+        selected = int(state.read_text().strip().split("\t")[-1])
+        assert selected >= 8287 and (selected - 8087) % 100 == 0
+    finally:
+        invoke("stop")
+        for listener in listeners:
+            listener.close()
+
+
 def test_standalone_fallback(runner, tmp_path):
     bundle = ROOT / "dist" / "m87-gateway"
     if not bundle.exists():
