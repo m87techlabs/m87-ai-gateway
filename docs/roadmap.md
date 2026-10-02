@@ -11,9 +11,10 @@ The repository contains validated configuration, bearer-key authentication,
 requested/resolved-model authorization, deterministic rules, non-streaming
 OpenAI/Ollama text chat, configured request guardrails, safe upstream errors,
 request IDs, JSON outcome events, an optional private rotating traffic file,
-Prometheus metrics, Docker files, and an expanded mocked-provider test suite.
-These tests do not establish live provider compatibility, tunnel behavior, or a
-successful container deployment.
+Prometheus metrics, Docker files, and an expanded mocked-provider test suite. A
+native Windows/WSL flow has also returned a real Ollama completion. Mocked tests
+alone do not establish provider compatibility, and tunnel behavior and container
+deployment remain unverified.
 
 The historical `v0.1.0` tag points to the initial scaffold. Preserve published
 tags. The next release must use a new version and document the capabilities it
@@ -36,6 +37,7 @@ flowchart LR
 - [x] Normalize provider errors and define missing-credential behavior.
 - [x] Preserve message semantics and supported generation settings in both initial adapters.
 - [x] Add request IDs, outcome logs, optional traffic capture, and `/metrics`.
+- [x] Verify the native gateway path against a reachable Ollama model.
 - Verify the documented Docker quickstart against a reachable Ollama endpoint and an OpenAI route.
 - Verify a Worker/tunnel/non-streaming Ollama request using the reference integration.
 - [x] Add guardrail, provider, failure, configuration, logging, and packaging checks.

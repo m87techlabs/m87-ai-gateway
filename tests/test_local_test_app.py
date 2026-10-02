@@ -3,6 +3,7 @@ import json
 import httpx
 from fastapi.testclient import TestClient
 
+from examples.local_test_app import start as local_start
 from examples.local_test_app.app import LocalTestSettings, create_app
 
 APP_KEY = "synthetic-local-relay-key"
@@ -14,6 +15,15 @@ def settings() -> LocalTestSettings:
         gateway_url="http://gateway.example.invalid",
         gateway_api_key=APP_KEY,
     )
+
+
+def test_launcher_reports_missing_runtime_dependencies(monkeypatch, capsys):
+    monkeypatch.setattr(local_start, "_missing_runtime_modules", lambda: ["uvicorn"])
+
+    assert local_start.main() == 2
+    error = capsys.readouterr().err
+    assert "Missing local flow dependencies: uvicorn" in error
+    assert "python -m pip install -e '.[dev]'" in error
 
 
 def test_ui_and_status_keep_gateway_key_server_side():

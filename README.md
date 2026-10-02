@@ -32,9 +32,10 @@ Ollama adapters, configured request guardrails, safe provider errors, correlated
 JSON outcome events, optional private traffic capture, Prometheus metrics, and a
 health endpoint.
 
-The MVP still needs live provider and container verification. Streaming, model
-discovery, embeddings, enforced rate limits/budgets, response policies, remote log
-exporters, and major cloud adapters are not implemented.
+The native Ollama path is verified with a real local model. The MVP still needs
+container and live OpenAI verification. Streaming, model discovery, embeddings,
+enforced rate limits/budgets, response policies, remote log exporters, and major
+cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.
 
 For a Docker-free workstation test, run the

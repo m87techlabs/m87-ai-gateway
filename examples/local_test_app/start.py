@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from importlib.util import find_spec
 import os
 from pathlib import Path
 import secrets
@@ -14,6 +15,11 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
+REQUIRED_RUNTIME_MODULES = ("fastapi", "httpx", "m87_gateway", "uvicorn")
+
+
+def _missing_runtime_modules() -> list[str]:
+    return [name for name in REQUIRED_RUNTIME_MODULES if find_spec(name) is None]
 
 
 def _valid_ollama_model(value: str) -> bool:
@@ -72,6 +78,12 @@ def _stop(process: subprocess.Popen | None) -> None:
 
 
 def main() -> int:
+    missing = _missing_runtime_modules()
+    if missing:
+        print(f"Missing local flow dependencies: {', '.join(missing)}.", file=sys.stderr)
+        print("Install them with: python -m pip install -e '.[dev]'", file=sys.stderr)
+        return 2
+
     environment = os.environ.copy()
     ollama_url = environment.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
     models = _ollama_models(ollama_url)

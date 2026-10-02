@@ -53,6 +53,13 @@ request ID, latency, and token usage when Ollama reports it.
 Press Ctrl+C in WSL to stop the relay and gateway. The temporary gateway key is
 discarded with the processes.
 
+If the launcher reports missing runtime dependencies, confirm that the intended
+virtual environment is active and install the project into it:
+
+```bash
+python -m pip install -e '.[dev]'
+```
+
 ## Select an explicit model
 
 Set the model when more than one is installed or when model selection must be

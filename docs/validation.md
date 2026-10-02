@@ -74,20 +74,20 @@ and bounded metrics. It did not verify a successful completion or response-conte
 capture because Ollama had no installed model. Content-capture behavior remains
 covered by automated tests.
 
-The remaining native prerequisite is an installed test model. Docker Desktop WSL
-integration is needed separately for Phase 3 container checks. After Phases 2 and
-3 pass fully, enable the dedicated Tunnel and Worker test route for Phases 4
-through 6. Do not reuse an established application route for the first remote test.
+The native model path is now verified in the flow-lab session below. Docker Desktop
+WSL integration is needed separately for Phase 3 container checks. After Phase 3
+passes, enable the dedicated Tunnel and Worker test route for Phases 4 through 6.
+Do not reuse an established application route for the first remote test.
 
 ### Docker-free Windows/WSL flow lab
 
-The local flow application was checked on 2026-10-01 with Python 3.12. The
-launcher started a WSL relay on loopback port 8787 and a WSL gateway on loopback
-port 8080. The gateway reached the Windows Ollama API on port 11434 without Docker.
+The local flow application was checked on 2026-10-01 and 2026-10-02 with Python
+3.12. The launcher started a WSL relay on loopback port 8787 and a WSL gateway on
+loopback port 8080. The gateway reached Windows Ollama on port 11434 without Docker.
 
 | Check | Result | Sanitized evidence |
 | --- | --- | --- |
-| Relay unit tests | Passed | 5 tests for key isolation, request forwarding, correlation, safe failures, and size limits |
+| Relay unit tests | Passed | 6 tests for dependency preflight, key isolation, request forwarding, correlation, safe failures, and size limits |
 | Windows-to-WSL forwarding | Passed | Windows HTTP client reached the page and status route through `localhost:8787` |
 | Page and static assets | Passed | HTML, JavaScript, and CSS returned HTTP 200 |
 | Browser security headers | Passed | Same-origin CSP, no-store, frame denial, and content-type protection |
@@ -97,12 +97,13 @@ port 8080. The gateway reached the Windows Ollama API on port 11434 without Dock
 | Missing-model behavior | Passed | Browser received a safe HTTP 502 and gateway-generated request ID |
 | Correlation and privacy | Passed | Browser ID matched metadata; synthetic marker was absent from response metadata and event output |
 | Coordinated cleanup | Passed | One Ctrl+C stopped relay and gateway cleanly |
-| Successful completion | Deferred | Windows Ollama returned an empty installed-model list |
+| Successful completion | Passed | `auto` resolved to `ollama:gemma3:1b`; HTTP 200; 33 prompt and 26 completion tokens |
 
 This session verifies the application, relay, gateway, and Windows provider
-boundary through the expected model-missing response. Install a Windows Ollama
-test model to complete the successful chat and response-content checks. Docker
-remains required only for the separate image and Compose acceptance phase.
+boundary for both the expected model-missing error and a real completion. The
+successful request ID matched the metadata event, and synthetic prompt content
+remained absent from metadata and metrics. Docker remains required only for the
+separate image and Compose acceptance phase.
 
 ## Deferred checks
 
@@ -112,7 +113,7 @@ remains required only for the separate image and Compose acceptance phase.
 | Image build and container startup | Docker runtime is unavailable | Working Docker engine and image/dependency download access | Build from the intended commit; container stays running |
 | Container health and local port binding | Requires the running container | Start the Compose service | `/health` returns 200; published gateway port is bound to host loopback |
 | Container environment/config mounts | Requires the running container | Prepared test configuration and app key | Valid auth succeeds, missing/invalid auth fails, intended default route is selected |
-| Host Ollama connectivity | No live container/provider check performed | Docker plus a reachable Ollama listener and installed model | `host.docker.internal` resolves; a synthetic chat returns the intended model |
+| Container-to-host Ollama connectivity | Native provider path passed; container path is unverified | Docker plus the reachable Ollama listener and installed model | `host.docker.internal` resolves; a synthetic chat returns the intended model |
 | OpenAI end-to-end response | No live provider check performed | Provider credentials, accessible model, and an intentional quota-consuming test session | Synthetic authenticated chat succeeds with the configured OpenAI route |
 | Configuration restart and key rotation | Operational path not exercised | Running test instance and synthetic keys | New key works after recreation; retired key fails; safe rollback works |
 | Deployment rollback | No container deployment validated yet | Working current and previous artifacts/configurations | Restore previous version and repeat health/auth/chat checks |

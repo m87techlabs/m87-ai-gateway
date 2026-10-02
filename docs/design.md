@@ -28,7 +28,7 @@ examples. A separately supported embedded SDK is a future decision.
 | API | Documented chat completion contract; explicit handling of unsupported options | Partial: text requests and non-streaming responses |
 | Identity | Per-app authentication and model authorization, including resolved routes | Implemented for bearer app keys and model allowlists |
 | Routing | Deterministic selection, aliases, configuration validation | Implemented for direct models, `auto`, and task rules |
-| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: non-streaming OpenAI and Ollama text chat |
+| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: non-streaming OpenAI and Ollama text chat; native Ollama flow verified |
 | Policy | Configurable request/response checks with bounded request sizes | Partial: request bounds and configured blocklist; response checks planned |
 | Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: HTTP timeouts only |
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
