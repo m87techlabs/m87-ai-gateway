@@ -9,7 +9,7 @@ import time
 import uuid
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from smoke_standalone import Inference
@@ -58,7 +58,7 @@ def exercise(image):
             try:
                 if call("/health")["status"] == "ok":
                     return
-            except (URLError, TimeoutError):
+            except OSError:
                 time.sleep(0.2)
         raise AssertionError("Container did not become healthy")
 

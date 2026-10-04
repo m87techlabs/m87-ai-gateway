@@ -17,7 +17,10 @@ On 2026-10-04 the WSL session has no usable Docker command/integration. No local
 engine or ecosystem services were started. Container checks run on hosted Linux
 CI: image build, Docker run/Compose, non-root private storage, setup, host-gateway
 model discovery and synthetic completion, token/content logging, recreation and
-shutdown. Exact hosted results are recorded after the publication run completes.
+shutdown. The first hosted image build passed; its smoke failed during startup because the
+HTTP poll did not retry a connection reset before the listener became ready. The
+poll now retries transient socket errors within its bounded startup window. That
+run published nothing. Exact successful results follow after the corrected run.
 
 The image and durable preview downloads are development distribution, not stable
 release evidence. Current repository/package visibility remains private. Deferred:
