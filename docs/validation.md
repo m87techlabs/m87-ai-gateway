@@ -20,7 +20,11 @@ model discovery and synthetic completion, token/content logging, recreation and
 shutdown. The first hosted image build passed; its smoke failed during startup because the
 HTTP poll did not retry a connection reset before the listener became ready. The
 poll now retries transient socket errors within its bounded startup window. That
-run published nothing. Exact successful results follow after the corrected run.
+run published nothing. The next run reached setup and a successful synthetic
+completion; its capture assertion selected an earlier authentication-rejection
+event before the completion audit write finished. The poll now waits for the
+successful test application's event. Neither failed run published an image.
+Exact successful results follow after the corrected run.
 
 The image and durable preview downloads are development distribution, not stable
 release evidence. Current repository/package visibility remains private. Deferred:

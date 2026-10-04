@@ -137,7 +137,11 @@ def exercise(image):
             == 6
         )
         for _ in range(50):
-            events = call("/admin/api/logs", key=admin)["items"]
+            events = [
+                event
+                for event in call("/admin/api/logs", key=admin)["items"]
+                if event["app_id"] == "container-check" and event["status_code"] == 200
+            ]
             if events:
                 break
             time.sleep(0.1)
