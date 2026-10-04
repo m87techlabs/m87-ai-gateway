@@ -27,7 +27,11 @@ resume preserving the port/operator key. Its isolated project volume is removed
 afterward. The initial hosted helper check passed build/start/status/stop, then
 caught an unsupported `compose start --wait-timeout` assumption on resume. Resume
 now uses normal Compose start and a bounded Docker health poll. Publication was
-blocked for that run. Corrected hosted results follow once CI completes. Local Docker Desktop
+blocked for that run. Corrected hosted container/helper checks passed for `427dd61`:
+source build/start, health/status, stop, stopped status, and resume with the same
+port/operator key, without printing the key. Test containers/volumes were removed.
+[CI evidence](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37244960525).
+Local Docker Desktop
 and live Windows Ollama checks remain for the operator's next session.
 
 ## Single-container distribution phase
