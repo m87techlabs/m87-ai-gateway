@@ -82,15 +82,15 @@ Version `0.1.1.dev0` identifies this development preview. The historical `v0.1.0
 tag is unchanged; no public release is created by these builds. See
 [workstation runbook](runbooks/workstation-distribution.md) and validation records.
 
-## Phase 3: single-container distribution — implementation
+## Phase 3: single-container distribution — implemented and verified in hosted CI
 
 - [x] Run the gateway, setup UI and embedded persistence in one non-root image.
 - [x] Provide image-based Docker run and Compose startup on localhost:8087.
 - [x] Keep credentials and logs in a private persistent volume; hide operator keys from stdout.
 - [x] Document host/network/remote inference endpoints, lifecycle and recovery.
 - [x] Gate immutable image publication and durable preview downloads on CI checks.
-- Verify hosted Docker run/Compose, host inference, completion/token/capture,
-  recreation and graceful shutdown on the exact publication commit.
+- [x] Verify hosted Docker run/Compose, host inference, completion/token/capture,
+  recreation and graceful shutdown; exact commit recorded in validation.
 - Verify Windows Docker Desktop with live Ollama, container backup/restore,
   clean-host pull and setup, signing, ARM and cloud hosting separately.
 
@@ -133,8 +133,8 @@ Prometheus metrics, and a local SQLite control plane with token analytics,
 opted-in exchange inspection, application keys, encrypted provider keys, and an
 operator console. The repository also includes Docker files and an expanded test suite. A
 native Windows/WSL flow has also returned a real Ollama completion. Mocked tests
-alone do not establish provider compatibility, and tunnel behavior and container
-deployment remain unverified.
+alone do not establish provider compatibility, and live tunnel/container-provider
+behavior remains unverified. Hosted container flow is verified with synthetic inference.
 
 The historical `v0.1.0` tag points to the initial scaffold. Preserve published
 tags. The next release must use a new version and document the capabilities it

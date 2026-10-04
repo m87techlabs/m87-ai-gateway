@@ -44,7 +44,8 @@ Vault, and other service containers. Service provisioning and Docker startup
 remain planned; the current dashboard works without them.
 
 The native Ollama path is verified with a real local model. The MVP still needs
-container and live OpenAI verification. Streaming, embeddings,
+live container-to-Ollama and OpenAI verification. Hosted Docker run/Compose flow
+is verified with synthetic inference. Streaming, embeddings,
 budget enforcement, response policies, remote log exporters, and major
 cloud adapters are not implemented.
 See the [roadmap](docs/roadmap.md) for acceptance criteria.

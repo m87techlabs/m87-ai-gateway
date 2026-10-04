@@ -24,7 +24,22 @@ run published nothing. The next run reached setup and a successful synthetic
 completion; its capture assertion selected an earlier authentication-rejection
 event before the completion audit write finished. The poll now waits for the
 successful test application's event. Neither failed run published an image.
-Exact successful results follow after the corrected run.
+The corrected run passed all jobs, including native bundles and publication.
+
+Hosted Linux container checks passed for `1c811bb`: Docker run and Compose,
+non-root UID 10001/private 0700 storage, loopback publishing, root console redirect,
+initial readiness/auth rejection, host-gateway inference discovery and completion,
+provider-reported tokens, captured input/output, stdout secret/content exclusion,
+healthy Docker probe, graceful stop and saved configuration/key/logs after container
+recreation. Test containers and volumes were removed. See
+[CI evidence](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37242285889).
+
+Source tests (155), docs/console checks, Windows/Linux packaged setup/recovery
+smokes, container smoke and publication all passed for `1c811bb`. CI pushed and
+pulled back the immutable GHCR image, then advanced `:preview`. Durable ZIPs,
+checksums and Compose are available in
+[preview-1c811bbeb4ad](https://github.com/m87techlabs/m87-ai-gateway/releases/tag/preview-1c811bbeb4ad).
+Repository visibility and the historical `v0.1.0` tag were preserved.
 
 The image and durable preview downloads are development distribution, not stable
 release evidence. Current repository/package visibility remains private. Deferred:
@@ -404,14 +419,14 @@ provider session. Docker was not needed for these automated checks.
 
 | Check | Why it is unverified | Needed to run | Procedure / expected evidence |
 | --- | --- | --- | --- |
-| Compose validation | Docker CLI integration is unavailable in the current WSL environment | Use hosted container CI or enable Docker Desktop integration; no `.env` required | `docker compose config --quiet` exits successfully |
-| Image build and container startup | Docker runtime is unavailable | Working Docker engine and image/dependency download access | Build from the intended commit; container stays running |
-| Container health and local port binding | Requires the running container | Start the Compose service | `/health` returns 200; published gateway port is bound to host loopback |
-| Container UI setup and persistent volume | Requires the running container | Configure inference and create an app key in the console | Valid auth succeeds, missing/invalid auth fails, intended default route is selected |
+| Compose validation | Verified in hosted Linux CI; local WSL remains disabled | Running Docker/Compose; no `.env` required | `docker compose config --quiet` exits successfully |
+| Image build and container startup | Verified in hosted Linux CI | Working Docker engine and image/dependency download access | Build from the intended commit; container stays running |
+| Container health and local port binding | Verified in hosted Linux CI | Start the Compose service | `/health` returns 200; published gateway port is bound to host loopback |
+| Container UI setup and persistent volume | Verified in hosted Linux CI, including recreation | Configure inference and create an app key in the console | Valid auth succeeds, missing/invalid auth fails, intended default route is selected |
 | Container-to-host Ollama connectivity | Native provider path passed; container path is unverified | Docker plus the reachable Ollama listener and installed model | `host.docker.internal` resolves; a synthetic chat returns the intended model |
 | OpenAI end-to-end response | No live provider check performed | Provider credentials, accessible model, and an intentional quota-consuming test session | Synthetic authenticated chat succeeds with the configured OpenAI route |
 | Configuration restart and key rotation | Operational path not exercised | Running test instance and synthetic keys | New key works after recreation; retired key fails; safe rollback works |
-| Deployment rollback | No container deployment validated yet | Working current and previous artifacts/configurations | Restore previous version and repeat health/auth/chat checks |
+| Deployment rollback | Rollback across distinct image versions remains unverified | Working current and previous artifacts/configurations | Restore previous version and repeat health/auth/chat checks |
 
 Follow [container deployment](runbooks/container-deployment.md),
 [configuration changes](runbooks/configuration-changes.md), and
