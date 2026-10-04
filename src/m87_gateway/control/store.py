@@ -3,10 +3,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 import secrets
 import sqlite3
-import stat
 from datetime import datetime, timedelta, timezone
 from contextlib import contextmanager
 from pathlib import Path
@@ -15,6 +13,12 @@ from typing import Any
 from cryptography.fernet import Fernet, InvalidToken
 
 from m87_gateway.config import AppConfig, ControlPlaneConfig
+from m87_gateway.private_storage import (
+    prepare_file as _prepare_private_file,
+    protect,
+)
+
+SCHEMA_VERSION = 1
 
 
 class LocalControlStore:
@@ -52,6 +56,8 @@ class LocalControlStore:
 
     def _initialize(self) -> None:
         with self._connect() as connection:
+            if connection.execute("PRAGMA user_version").fetchone()[0] > SCHEMA_VERSION:
+                raise ValueError("Database schema is newer than this gateway")
             connection.execute("PRAGMA journal_mode = WAL")
             connection.executescript(
                 """
@@ -93,6 +99,7 @@ class LocalControlStore:
                 """
             )
             self._ensure_columns(connection)
+            connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(
                 "INSERT OR IGNORE INTO projects VALUES ('default', 'Default project', ?)",
                 (datetime.now(timezone.utc).isoformat(),),
@@ -563,42 +570,13 @@ class LocalControlStore:
         return cursor.rowcount > 0
 
 
-def _prepare_private_directory(path: Path) -> None:
-    if path.exists():
-        if path.is_symlink() or not path.is_dir():
-            raise ValueError(f"Private storage directory is unsafe: {path}")
-        if stat.S_IMODE(path.stat().st_mode) & 0o077:
-            raise ValueError(f"Private storage directory must be owner-only: {path}")
-        return
-    path.mkdir(parents=True, mode=0o700)
-    path.chmod(0o700)
-
-
-def _prepare_private_file(path: Path) -> None:
-    _prepare_private_directory(path.parent)
-    if path.is_symlink():
-        raise ValueError(f"Private storage file cannot be a symlink: {path}")
-    if path.exists():
-        if not path.is_file() or stat.S_IMODE(path.stat().st_mode) & 0o077:
-            raise ValueError(f"Private storage file must be owner-only: {path}")
-        return
-    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    os.close(descriptor)
-
-
 def _load_or_create_key(path: Path) -> bytes:
-    _prepare_private_directory(path.parent)
-    if path.is_symlink():
-        raise ValueError(f"Master key cannot be a symlink: {path}")
-    if not path.exists():
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        try:
-            os.write(descriptor, Fernet.generate_key())
-        finally:
-            os.close(descriptor)
-    if stat.S_IMODE(path.stat().st_mode) & 0o077:
-        raise ValueError("Master key must have owner-only permissions")
+    existed = path.exists()
+    _prepare_private_file(path)
     key = path.read_bytes().strip()
+    if not existed:
+        key = Fernet.generate_key()
+        path.write_bytes(key)
     try:
         Fernet(key)
     except (ValueError, TypeError) as exc:
@@ -609,4 +587,4 @@ def _load_or_create_key(path: Path) -> bytes:
 def _tighten_sqlite_files(path: Path) -> None:
     for candidate in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
         if candidate.exists():
-            candidate.chmod(0o600)
+            protect(candidate)

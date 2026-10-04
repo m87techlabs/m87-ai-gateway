@@ -18,7 +18,7 @@
 | Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Automated core checks plus a verified native Ollama flow; OpenAI/cloud live checks deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
-| Standalone build | Optional PyInstaller build dependency | Experimental Linux executable; cross-platform and clean-host release checks pending |
+| Standalone build | Optional PyInstaller build dependency | Native Windows/Linux preview builders; clean-host and release checks pending |
 | Containers | Docker and Docker Compose | Loopback publishing and host mapping configured; live container validation is pending |
 | Automation | GitHub Actions | Lint and test workflow |
 | Documentation | Markdown and Mermaid | Renderable in repository pages; no separate site required |
@@ -31,7 +31,7 @@ PyInstaller bundles the runtime and UI for users without a Python installation.
 It is an optional build dependency and is absent from normal gateway requirements.
 Removing it removes the standalone build path while preserving source/container
 operation. Native builds must be checked on their target OS and architecture;
-see [guided setup](runbooks/guided-setup.md) for current limits.
+see [workstation distribution](runbooks/workstation-distribution.md) for current limits.
 
 The console test dependency provides a DOM without downloading a full browser.
 It is isolated under `tests/console` and absent from gateway requirements and
@@ -95,3 +95,13 @@ Document the problem, why existing dependencies are insufficient, license and
 maintenance considerations, configuration/secrets impact, and how to remove or
 upgrade it. Keep provider-specific SDKs optional when practical. Update tests,
 support claims, and relevant runbooks together.
+
+## Workstation storage and recovery
+
+Portable data uses POSIX private modes or current-user Windows ACLs through Win32
+APIs. File locks prevent overlapping portable instances/maintenance in one directory.
+The native lifecycle uses instance identity followed by operator-authenticated
+shutdown rather than PID/port-based termination. Offline backup uses SQLite snapshot
+backup, a versioned encrypted envelope and password-derived keys; restore validates
+integrity, configuration, schema and provider ciphertext before writing a fresh
+private destination. See [workstation runbook](runbooks/workstation-distribution.md).

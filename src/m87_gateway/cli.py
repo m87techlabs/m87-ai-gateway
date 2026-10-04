@@ -3,11 +3,19 @@
 import argparse
 import os
 import secrets
+import json
+import getpass
+import threading
+import time
+import webbrowser
 from pathlib import Path
 
 import uvicorn
 
+from m87_gateway import __version__
 from m87_gateway.config import GatewaySettings
+from m87_gateway.workstation import default_data_dir, instance_lock, manage
+from m87_gateway.backup import backup, restore
 from m87_gateway.control.store import _prepare_private_file
 from m87_gateway.main import create_app
 from m87_gateway.local_server import DEFAULT_GATEWAY_PORT, bind_listener
@@ -47,20 +55,69 @@ def main() -> None:
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path(os.getenv("XDG_DATA_HOME", Path.home() / ".local/share")) / "m87-gateway",
+        default=default_data_dir(),
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, help="Exact port; default tries 8087, 8187, 8287, ...")
+    parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument(
+        "--open-browser", action="store_true", help="Open the console after startup"
+    )
+    operations = parser.add_mutually_exclusive_group()
+    operations.add_argument(
+        "--stop", action="store_true", help="Gracefully stop this data directory's instance"
+    )
+    operations.add_argument(
+        "--status", action="store_true", help="Check this data directory's instance"
+    )
+    operations.add_argument("--backup", type=Path, help="Encrypt an offline backup to a new file")
+    operations.add_argument("--restore", type=Path, help="Restore into a fresh data directory")
     args = parser.parse_args()
+    args.data_dir = args.data_dir.expanduser().resolve()
     if args.port is not None and not 1 <= args.port <= 65535:
         parser.error("Port must be between 1 and 65535")
     try:
-        settings = local_settings(args.data_dir)
-        key = os.getenv("GATEWAY_ADMIN_API_KEY") or operator_key(args.data_dir)
-        if len(key) < 24 or any(character.isspace() for character in key):
-            raise ValueError("Invalid operator key")
-    except ValueError:
-        parser.error("Private data directory or operator key is invalid")
+        if args.stop or args.status:
+            running = manage(args.data_dir, args.stop)
+            print(
+                "Shutdown requested"
+                if running and args.stop
+                else "Gateway running"
+                if running
+                else "Gateway stopped"
+            )
+            if not running:
+                raise SystemExit(3)
+            return
+        with instance_lock(args.data_dir):
+            if args.backup or args.restore:
+                password = os.getenv("GATEWAY_BACKUP_PASSWORD") or getpass.getpass(
+                    "Backup password: "
+                )
+                if args.backup and not os.getenv("GATEWAY_BACKUP_PASSWORD"):
+                    if password != getpass.getpass("Confirm password: "):
+                        raise ValueError("Passwords do not match")
+                if args.backup:
+                    backup(args.data_dir, args.backup.expanduser().resolve(), password)
+                    print("Encrypted backup created")
+                else:
+                    restore(args.data_dir, args.restore.expanduser().resolve(), password)
+                    print("Backup restored; start the gateway to verify readiness and a completion")
+                return
+            run_gateway(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+    except OSError:
+        parser.error(
+            "Operation failed. Check private storage, instance state, backup password and compatibility"
+        )
+
+
+def run_gateway(args):
+    settings = local_settings(args.data_dir)
+    key = os.getenv("GATEWAY_ADMIN_API_KEY") or operator_key(args.data_dir)
+    if len(key) < 24 or any(character.isspace() for character in key):
+        raise ValueError("Invalid operator key")
     os.environ[settings.control_plane.admin_api_key_env] = key
     try:
         listener = bind_listener(
@@ -69,16 +126,39 @@ def main() -> None:
             fallback_step=100 if args.port is None else None,
         )
     except OSError:
-        parser.error("Could not bind gateway listener; requested ports are unavailable")
+        raise ValueError(
+            "Could not bind gateway listener; requested ports are unavailable"
+        ) from None
     port = listener.getsockname()[1]
     settings.server.port = port
+    application = create_app(settings)
+    identity = secrets.token_hex(16)
+    server = uvicorn.Server(uvicorn.Config(application, host=args.host, port=port))
+    application.state.instance_id = identity
+    application.state.shutdown = lambda: setattr(server, "should_exit", True)
+    state_file = args.data_dir / "instance.json"
+    _prepare_private_file(state_file)
+    state_file.write_text(json.dumps({"port": port, "instance_id": identity}))
     print(f"Listener: http://{args.host}:{port}", flush=True)
     print(f"Console: http://{args.host}:{port}/admin", flush=True)
     print(f"Admin key: {key}", flush=True)
     print(
         "Connect a provider in Setup, choose a model, then create an application key.", flush=True
     )
-    with listener:
-        uvicorn.Server(uvicorn.Config(create_app(settings), host=args.host, port=port)).run(
-            sockets=[listener]
-        )
+    if args.open_browser:
+
+        def open_console():
+            for _ in range(100):
+                if server.started:
+                    webbrowser.open(f"http://127.0.0.1:{port}/admin")
+                    return
+                if server.should_exit:
+                    return
+                time.sleep(0.1)
+
+        threading.Thread(target=open_console, daemon=True).start()
+    try:
+        with listener:
+            server.run(sockets=[listener])
+    finally:
+        state_file.unlink(missing_ok=True)

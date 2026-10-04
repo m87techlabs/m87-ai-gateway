@@ -7,6 +7,10 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+- Native Windows/Linux portable preview artifacts and checksums, current-user Windows
+  ACLs, instance locks/identity, native lifecycle commands and optional browser launch.
+- Encrypted offline SQLite/key backups, fresh-directory restore, schema compatibility
+  gates, native smoke checks and workstation upgrade/rollback guidance.
 - Persistent console traffic/logging controls, editable application rate/concurrency
   limits, gateway admission caps, readiness diagnostics, scoped log deletion, and
   nine isolated sample HTTP failure/recovery scenarios.

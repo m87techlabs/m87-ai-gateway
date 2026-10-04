@@ -273,6 +273,31 @@ clean-host distribution, multi-replica controls, and cloud adapters/deployments 
 unverified. Docker stayed disabled. See the
 [acceptance runbook](runbooks/gateway-controls-testing.md).
 
+## Phase 2 portable preview and recovery
+
+Checked on 2026-10-04 with Python 3.12 on Linux/WSL:
+
+- Full source regression suite: 155 passed. New tests cover encrypted recovery,
+  app/provider/operator credential preservation, retained logs/configuration,
+  wrong password, tampering, nonempty restore targets, future schemas, duplicate
+  directory locks, broad permissions, symlinks, empty master keys, stale instance
+  identity and operator-authenticated shutdown.
+- Linux standalone executable, portable ZIP, checksum manifest and wheel built.
+  The executable smoke passed setup, controls, readiness, native status/stop,
+  encrypted backup, restore into fresh data and inference with the restored app key.
+- Portable ZIP members, version and binary checksum matched the build manifest.
+- Ruff, script syntax, documentation links/fences and whitespace checks passed.
+- Native Windows build/storage/backup/smoke checks are configured in hosted CI.
+  Results will be recorded after that workflow completes; this local environment
+  cannot validate native Windows ACL/runtime behavior itself.
+
+Docker remained disabled and the checks made no cloud calls. Windows Ollama through
+the native Windows artifact, clean Windows/Linux workstations, graphical browser
+behavior, signed releases and rollback between distinct released versions remain
+unverified. CI runners have development tools installed; native CI smoke alone
+cannot establish clean-workstation support. No tag, public release or visibility
+change was made. See [portable runbook](runbooks/workstation-distribution.md).
+
 ## Deferred checks
 
 ### Projects, dashboard, and ecosystem vision

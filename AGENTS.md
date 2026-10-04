@@ -46,6 +46,14 @@ isolated `python -m examples.chat_app.scenarios` suite exercises the HTTP flow a
 failure/recovery without Docker or changes to a running gateway. Keep limits/cache
 scoped to one process; budget/shared enforcement and remote delivery remain planned.
 
+Phase 2 portable preview uses native Windows/Linux builds, ZIPs and checksums,
+OS-private storage, exclusive data-directory locks, and native status/stop commands.
+Offline backups encrypt SQLite snapshots and local keys; restore accepts only fresh
+private destinations. Schema versions reject newer databases before migration.
+Document clean-host, Windows Ollama/browser, signing and cross-release rollback
+checks separately; CI builders do not establish clean-workstation support.
+Keep documentation synchronized with every implementation and validation change.
+
 The core covers API compatibility, application authentication and authorization,
 deterministic routing, provider adapters, policy checks, safe errors, observability,
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are

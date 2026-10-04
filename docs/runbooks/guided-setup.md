@@ -147,9 +147,9 @@ multiple connections per adapter, and distributed enforcement remain planned.
   HTTPS, or a production service manager. Keep terminal output containing the admin
   key private. Metrics have no separate authentication; restrict network access.
 
-## Experimental standalone Linux build
+## Portable preview build
 
-Build on the target Linux platform from source:
+Build natively on a target Windows or Linux platform from source:
 
 ```bash
 python -m pip install -e '.[bundle]'
@@ -161,10 +161,11 @@ python scripts/smoke_standalone.py dist/m87-gateway
 The executable includes the runtime, adapters, console assets, and SQLite support.
 It extracts runtime files temporarily at startup; the target needs a writable
 temporary directory and compatible OS system libraries. The build inherits the
-host's Linux compatibility requirements. This is an experimental artifact,
-not a signed public release. Clean Linux workstation compatibility, native Windows
-packaging/ACL protection, service installation, and cloud deployment remain
-release gates. No native Windows executable is advertised yet.
+host's OS compatibility requirements. Windows smoke uses `dist/m87-gateway.exe`.
+The build also produces a portable ZIP and checksums. Platform-private storage,
+native lifecycle and encrypted backup/restore are implemented; clean-host, signing,
+OS services and cloud deployment remain gates. Follow the
+[workstation distribution runbook](workstation-distribution.md).
 
 ## Recovery
 

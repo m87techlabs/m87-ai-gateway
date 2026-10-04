@@ -203,8 +203,42 @@ def exercise(executable):
                 usage = call("/admin/api/usage?project_id=bundle-project", key=admin)
                 assert sum(item["requests"] for item in usage["series"]) == 1
                 assert b"synthetic-provider-key" not in (data_dir / "control.db").read_bytes()
+
+                def native(*arguments):
+                    result = subprocess.run(
+                        [str(executable), "--data-dir", str(data_dir), *arguments],
+                        env={**environ, "GATEWAY_BACKUP_PASSWORD": "synthetic-backup-password"},
+                        capture_output=True,
+                        timeout=40,
+                    )
+                    assert result.returncode == 0, "Standalone management operation failed"
+                    assert admin.encode() not in result.stdout
+
+                native("--status")
+                native("--stop")
+                process.wait(timeout=10)
+                archive = Path(temporary) / "backups" / "gateway.backup"
+                native("--backup", str(archive))
+                assert b"synthetic-provider-key" not in archive.read_bytes()
+                data_dir = Path(temporary) / "restored"
+                native("--restore", str(archive))
+                process = launch(output)
+                assert call("/ready")["status"] == "ready"
+                assert call("/admin/api/controls", key=admin) == controls
+                response = call(
+                    "/v1/chat/completions",
+                    "POST",
+                    {
+                        "model": "auto",
+                        "messages": [{"role": "user", "content": "restore check"}],
+                    },
+                    app["api_key"],
+                )
+                assert response["usage"]["total_tokens"] == 6
+                native("--stop")
+                process.wait(timeout=10)
                 print(
-                    "Standalone startup, UI, auth, controls, readiness, restart, chat, usage and logs passed"
+                    "Standalone setup, controls, lifecycle, encrypted backup/restore and restored inference passed"
                 )
         finally:
             if process is not None and process.poll() is None:

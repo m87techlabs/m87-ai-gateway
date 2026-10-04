@@ -69,10 +69,10 @@ and other provider differences must be declared rather than silently dropped.
 
 The console now includes persistent provider connection setup, model discovery,
 default routing and content-capture choices, inspection, and key operations. A
-loopback launcher starts without demo credentials. A Linux standalone build is
-experimental. Rate/concurrency, request bounds, cache/retry, and log-retention editing are included.
-Budget and response-policy editing, native Windows packaging, cross-platform
-secret protection, and production service management remain planned. See
+loopback launcher starts without demo credentials. Portable Windows/Linux builds are development previews, with native lifecycle
+commands and encrypted offline backup/restore. Rate/concurrency, request bounds, cache/retry, and log-retention editing are included.
+Budget and response-policy editing, clean-workstation validation, artifact signing,
+and production service management remain planned. See
 [guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
 
 Projects now group application keys and preserve request-time attribution in

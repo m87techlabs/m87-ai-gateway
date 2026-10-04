@@ -108,5 +108,6 @@ flowchart LR
 Use the [release runbook](runbooks/release.md) for publication and the
 [configuration runbook](runbooks/configuration-changes.md) for runtime changes.
 Local SQLite persistence and additive migrations are implemented for configuration,
-keys, projects, and events. Tested backup/restore and upgrade/rollback procedures
-remain release requirements.
+keys, projects, and events. Encrypted offline backup/restore and native lifecycle commands are implemented.
+Clean-host, cross-release rollback and signed-artifact checks remain release gates.
+The `0.1.1.dev0` portable preview does not change repository visibility or create a tag.

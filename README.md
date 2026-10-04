@@ -53,7 +53,9 @@ For the included setup experience, install the source package and run
 `m87-gateway` (or `python -m m87_gateway`). Open the printed console URL, connect
 your inference service, choose a model, and create an application key. Follow
 [guided setup](docs/runbooks/guided-setup.md) for commands and the experimental
-Linux standalone build. Native Windows distribution remains planned; Windows
+portable Windows/Linux preview build, native lifecycle commands, and encrypted
+backup/restore. See [workstation distribution](docs/runbooks/workstation-distribution.md)
+for artifacts and verification limits. Windows
 Ollama can be reached from a WSL gateway.
 
 After installing in `.venv`, everyday operation from this checkout is:

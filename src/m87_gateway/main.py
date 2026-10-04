@@ -7,6 +7,7 @@ from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST
 from starlette.exceptions import HTTPException
 
+from m87_gateway import __version__
 from m87_gateway.api.errors import GatewayError, error_response
 from m87_gateway.api.routes import router
 from m87_gateway.config import GatewaySettings, get_settings
@@ -67,7 +68,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     application = FastAPI(
         title="M87 AI Gateway",
         description="A lightweight, self-hostable AI gateway.",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
     )
     application.add_middleware(TrafficMiddleware)
@@ -104,6 +105,13 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     @application.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "m87-ai-gateway"}
+
+    @application.get("/instance", include_in_schema=False)
+    async def instance(request: Request):
+        identity = getattr(request.app.state, "instance_id", None)
+        if not identity:
+            raise GatewayError(404, "not_managed", "No managed instance")
+        return {"instance_id": identity}
 
     @application.get("/ready")
     async def ready(request: Request):

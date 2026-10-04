@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Protocol
 
 from m87_gateway.config import GatewaySettings
+from m87_gateway.private_storage import prepare_file
 from m87_gateway.adapters import adapters
 from m87_gateway.metrics import GatewayMetrics
 
@@ -27,13 +28,16 @@ class EventSink(Protocol):
 
 class PrivateRotatingHandler(RotatingFileHandler):
     def _open(self):
+        if Path(self.baseFilename).is_symlink():
+            raise OSError("Traffic log cannot be a symlink")
+        prepare_file(Path(self.baseFilename))
         no_follow = getattr(os, "O_NOFOLLOW", 0)
         descriptor = os.open(
             self.baseFilename,
             os.O_WRONLY | os.O_APPEND | os.O_CREAT | no_follow,
             0o600,
         )
-        if stat.S_IMODE(os.fstat(descriptor).st_mode) & 0o077:
+        if os.name != "nt" and stat.S_IMODE(os.fstat(descriptor).st_mode) & 0o077:
             os.close(descriptor)
             raise ValueError("Traffic log files must have owner-only permissions")
         return os.fdopen(descriptor, "a", encoding="utf-8")

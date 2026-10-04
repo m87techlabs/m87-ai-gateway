@@ -64,6 +64,23 @@ failure/recovery exercises, visual browser checks, Docker and cloud validation
 remain separate evidence requirements. Limits/cache are per process; budgets,
 shared enforcement and remote exporters are follow-up milestones.
 
+## Phase 2: portable workstation preview — implementation and verification
+
+- [x] Build native Linux and Windows preview executables, ZIPs, manifests and checksums.
+- [x] Add portable start/stop/status helpers and optional browser launch.
+- [x] Add private platform storage, a data-directory lock, and verified instance identity.
+- [x] Add encrypted offline backup and restore into a fresh directory.
+- [x] Version the database schema and reject newer schemas before migration.
+- [x] Document upgrade verification and backup-based rollback.
+- [x] Add native executable backup/restore/inference and platform safety CI checks.
+- Verify Windows CI artifacts, clean Windows/Linux workstations, and native Windows
+  Ollama/browser behavior before declaring workstation support.
+- Verify rollback across distinct released artifacts and complete signing/release review.
+
+Version `0.1.1.dev0` identifies this development preview. The historical `v0.1.0`
+tag is unchanged; no public release is created by these builds. See
+[workstation runbook](runbooks/workstation-distribution.md) and validation records.
+
 ## Next product milestone: guided setup and standalone distribution
 
 Prioritize the first-run experience alongside completion of core controls:
@@ -77,9 +94,9 @@ Prioritize the first-run experience alongside completion of core controls:
 - [x] Show the current text/non-streaming contract, configuration readiness, and
   explicit model-discovery connectivity diagnostics.
 - Build the runtime, UI, and embedded persistence as native platform artifacts;
-  experimental Linux bundling exists, with clean-host and Windows verification pending.
-- Define cross-platform credential protection, backup/restore, service startup,
-  upgrade/rollback, and artifact verification before claiming standalone support.
+  native preview builders and CI paths exist, with clean-host verification pending.
+- [x] Implement platform-private credentials, encrypted backup/restore, native lifecycle
+  and artifact checksums. OS services, signing and cross-release rollback remain gates.
 - Publish short workstation and single-server cloud setup instructions.
 
 **Exit:** on a clean supported workstation without Python or Docker, a user can

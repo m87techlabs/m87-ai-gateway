@@ -494,3 +494,17 @@ async def destinations(request: Request, store: AdminStore):
             },
         ]
     }
+
+
+class ShutdownWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    instance_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+
+
+@router.post("/admin/api/shutdown", status_code=204)
+async def shutdown(payload: ShutdownWrite, request: Request, store: AdminStore):
+    callback = getattr(request.app.state, "shutdown", None)
+    if not callback or payload.instance_id != getattr(request.app.state, "instance_id", None):
+        raise GatewayError(409, "not_managed", "Managed instance did not match")
+    callback()
+    return Response(status_code=204)

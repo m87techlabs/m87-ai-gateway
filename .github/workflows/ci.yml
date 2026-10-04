@@ -48,7 +48,11 @@ jobs:
         run: python -m pip wheel --no-deps . --wheel-dir dist
 
   bundle:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     needs: test
     steps:
@@ -62,14 +66,29 @@ jobs:
           python-version: "3.11"
       - name: Install bundle dependencies
         run: python -m pip install -e '.[bundle]'
-      - name: Build experimental Linux executable
+      - name: Check platform storage and backup safety
+        run: |
+          python -m pip install pytest
+          pytest -q tests/test_backup_workstation.py
+      - name: Build portable preview executable
         run: python scripts/build_standalone.py
       - name: Verify bundled setup and request flow
-        run: python scripts/smoke_standalone.py dist/m87-gateway
+        run: python scripts/smoke_standalone.py dist/m87-gateway${{ runner.os == 'Windows' && '.exe' || '' }}
       - name: Verify lifecycle scripts with the standalone executable
+        if: runner.os == 'Linux'
         run: |
           python -m pip install pytest
           pytest -q tests/test_lifecycle_scripts.py -k standalone_fallback
+
+      - name: Upload preview archives and checksums
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gateway-preview-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
 
   docs:
     runs-on: ubuntu-24.04

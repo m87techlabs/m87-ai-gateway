@@ -7,6 +7,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | Runbook | Use when |
 | --- | --- |
 | [Local development](local-development.md) | Installing, testing, or starting a development instance |
+| [Portable workstation preview](workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
 | [Guided setup](guided-setup.md) | Start the included console, configure inference, or build the experimental Linux executable |
 | [Gateway controls acceptance](gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
 | [Projects and usage](projects-and-usage.md) | Create projects, inspect usage, move applications, and use the API tester |
