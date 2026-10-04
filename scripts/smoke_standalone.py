@@ -86,7 +86,14 @@ def exercise(executable):
 
         def launch(output):
             running = subprocess.Popen(
-                [str(executable), "--data-dir", str(data_dir), "--port", str(port)],
+                [
+                    str(executable),
+                    "--data-dir",
+                    str(data_dir),
+                    "--port",
+                    str(port),
+                    "--hide-admin-key",
+                ],
                 env=environ,
                 stdout=output,
                 stderr=output,
@@ -107,6 +114,7 @@ def exercise(executable):
             with (Path(temporary) / "process.log").open("wb") as output:
                 process = launch(output)
                 admin = (data_dir / "admin.key").read_text().strip()
+                assert admin.encode() not in (Path(temporary) / "process.log").read_bytes()
                 assert b"Gateway Console" in call("/admin")
                 assert b"loadSetup" in call("/admin/assets/app.js")
                 try:

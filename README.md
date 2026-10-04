@@ -88,46 +88,41 @@ latency, and request IDs for correlation with gateway logs.
 
 ## Quickstart
 
-Prerequisites: Docker with Compose and either a reachable Ollama service with a
-model installed or an OpenAI account with model access.
+With a running Docker engine, start the prebuilt development preview:
 
-1. Copy the example environment if you do not already have a local file:
+```bash
+docker run -d --name m87-ai-gateway \
+  -p 127.0.0.1:8087:8087 \
+  --add-host=host.docker.internal:host-gateway \
+  --mount source=m87-gateway-data,target=/data \
+  ghcr.io/m87techlabs/m87-ai-gateway:preview
+docker exec m87-ai-gateway cat /data/gateway/admin.key
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+Open **http://localhost:8087** and enter the retrieved operator key. Connect your
+inference endpoint in Setup, select a model, and create an application key.
+Provider credentials stay in the gateway. Enable input/output capture in Setup
+and inspect Logs and usage after sending a request in the included API tester.
 
-2. Edit the ignored `.env` file:
-   - Replace `GATEWAY_APP_API_KEY` with a private app key.
-   - **Ollama:** keep the default route and set `OLLAMA_BASE_URL` to a URL
-     reachable from the gateway container.
-   - **OpenAI:** set `OPENAI_API_KEY` and
-     `GATEWAY_DEFAULT_MODEL=openai:gpt-4.1-mini`. Use another configured and
-     allowed model if needed.
+For Compose, download `docker-compose.yml` from a verified
+[preview release](https://github.com/m87techlabs/m87-ai-gateway/releases), then run:
 
-3. Start and check the gateway:
+```bash
+docker compose up -d
+docker compose exec m87-ai-gateway cat /data/gateway/admin.key
+```
 
-   ```bash
-   docker compose up --build -d
-   curl --fail-with-body http://localhost:8080/health
-   ```
+The source build remains available with
+`docker compose -f docker-compose.yml -f docker-compose.build.yml up --build -d`.
+Private repository/package access currently requires authentication; public access
+follows release review. Images currently target Linux amd64, including Docker
+Desktop using Linux containers. Follow the [container runbook](docs/runbooks/container-deployment.md)
+for registry login, host inference, ports, lifecycle, backups and upgrades.
+The [quickstart](docs/quickstart.md) includes a completion request.
 
-4. Enter the same app key at the prompt and send a synthetic request:
-
-   ```bash
-   read -r -s -p "Gateway app key: " GATEWAY_APP_KEY
-   printf '\n'
-   curl --fail-with-body http://localhost:8080/v1/chat/completions \
-     -H "Authorization: Bearer ${GATEWAY_APP_KEY}" \
-     -H "Content-Type: application/json" \
-     -d '{"model":"auto","messages":[{"role":"user","content":"Explain a network gateway in one sentence."}]}'
-   unset GATEWAY_APP_KEY
-   ```
-
-The Compose port binds to host loopback. For host-based Ollama,
-`host.docker.internal` is mapped, but the service still needs a listener reachable
-from Docker. See the [full quickstart](docs/quickstart.md) and
-[container runbook](docs/runbooks/container-deployment.md).
+Portable Windows/Linux ZIPs, checksums and Compose are also retained in verified
+preview releases. Build scripts and native start/stop helpers are bundled in this
+repository; the ZIPs are portable apps rather than OS installers.
 
 ## Documentation
 

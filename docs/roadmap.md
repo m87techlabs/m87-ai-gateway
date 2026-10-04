@@ -82,6 +82,23 @@ Version `0.1.1.dev0` identifies this development preview. The historical `v0.1.0
 tag is unchanged; no public release is created by these builds. See
 [workstation runbook](runbooks/workstation-distribution.md) and validation records.
 
+## Phase 3: single-container distribution — implementation
+
+- [x] Run the gateway, setup UI and embedded persistence in one non-root image.
+- [x] Provide image-based Docker run and Compose startup on localhost:8087.
+- [x] Keep credentials and logs in a private persistent volume; hide operator keys from stdout.
+- [x] Document host/network/remote inference endpoints, lifecycle and recovery.
+- [x] Gate immutable image publication and durable preview downloads on CI checks.
+- Verify hosted Docker run/Compose, host inference, completion/token/capture,
+  recreation and graceful shutdown on the exact publication commit.
+- Verify Windows Docker Desktop with live Ollama, container backup/restore,
+  clean-host pull and setup, signing, ARM and cloud hosting separately.
+
+This phase is an additional setup option. It does not provision model servers or
+managed Grafana/Vault profiles. See [container runbook](runbooks/container-deployment.md)
+and [validation](validation.md). Current private access is preserved until public
+release review; development preview publication does not establish production readiness.
+
 ## Next product milestone: guided setup and standalone distribution
 
 Prioritize the first-run experience alongside completion of core controls:

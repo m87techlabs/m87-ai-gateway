@@ -54,6 +54,14 @@ Document clean-host, Windows Ollama/browser, signing and cross-release rollback
 checks separately; CI builders do not establish clean-workstation support.
 Keep documentation synchronized with every implementation and validation change.
 
+Container distribution uses a non-root single-app image with the included setup
+UI, port 8087 and private state in a named volume. Default Compose pulls a prebuilt
+image; the source-build override remains available. Hide operator keys in container
+stdout. CI must pass source, docs, native bundles and Docker run/Compose smoke before
+publishing immutable commit/preview tags and durable commit prerelease downloads.
+Keep private access unchanged until public release review. Container desktop/live
+provider, backup/restore and distinct-version checks require separate evidence.
+
 The core covers API compatibility, application authentication and authorization,
 deterministic routing, provider adapters, policy checks, safe errors, observability,
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are

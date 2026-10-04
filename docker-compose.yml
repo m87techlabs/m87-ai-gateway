@@ -1,13 +1,21 @@
 services:
   m87-ai-gateway:
-    build: .
-    container_name: m87-ai-gateway
+    image: ${GATEWAY_IMAGE:-ghcr.io/m87techlabs/m87-ai-gateway:preview}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${GATEWAY_PORT:-8087}:8087"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    env_file:
-      - .env
     volumes:
-      - ./config.example.yaml:/app/config.example.yaml:ro
+      - gateway-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
+    stop_grace_period: 60s
+
+volumes:
+  gateway-data:

@@ -11,6 +11,21 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Single-container distribution phase
+
+On 2026-10-04 the WSL session has no usable Docker command/integration. No local
+engine or ecosystem services were started. Container checks run on hosted Linux
+CI: image build, Docker run/Compose, non-root private storage, setup, host-gateway
+model discovery and synthetic completion, token/content logging, recreation and
+shutdown. Exact hosted results are recorded after the publication run completes.
+
+The image and durable preview downloads are development distribution, not stable
+release evidence. Current repository/package visibility remains private. Deferred:
+Windows Docker Desktop with live Ollama, clean-host pull/setup, container encrypted
+backup/restore, live OpenAI, ARM, cloud hosting, signatures and distinct-version
+rollback. These need a Docker-capable host and deliberate provider credentials
+where relevant. Synthetic checks make no billable cloud requests.
+
 ## Gateway-wide LLM input/output logging
 
 Checked on 2026-10-02: 137 Python tests and 11 browser DOM tests passed. Capture is
@@ -382,10 +397,10 @@ provider session. Docker was not needed for these automated checks.
 
 | Check | Why it is unverified | Needed to run | Procedure / expected evidence |
 | --- | --- | --- | --- |
-| Compose validation | Docker CLI integration is unavailable in the current WSL environment | Enable Docker Desktop integration for this WSL distribution; prepare ignored `.env` | `docker compose config --quiet` exits successfully |
+| Compose validation | Docker CLI integration is unavailable in the current WSL environment | Use hosted container CI or enable Docker Desktop integration; no `.env` required | `docker compose config --quiet` exits successfully |
 | Image build and container startup | Docker runtime is unavailable | Working Docker engine and image/dependency download access | Build from the intended commit; container stays running |
 | Container health and local port binding | Requires the running container | Start the Compose service | `/health` returns 200; published gateway port is bound to host loopback |
-| Container environment/config mounts | Requires the running container | Prepared test configuration and app key | Valid auth succeeds, missing/invalid auth fails, intended default route is selected |
+| Container UI setup and persistent volume | Requires the running container | Configure inference and create an app key in the console | Valid auth succeeds, missing/invalid auth fails, intended default route is selected |
 | Container-to-host Ollama connectivity | Native provider path passed; container path is unverified | Docker plus the reachable Ollama listener and installed model | `host.docker.internal` resolves; a synthetic chat returns the intended model |
 | OpenAI end-to-end response | No live provider check performed | Provider credentials, accessible model, and an intentional quota-consuming test session | Synthetic authenticated chat succeeds with the configured OpenAI route |
 | Configuration restart and key rotation | Operational path not exercised | Running test instance and synthetic keys | New key works after recreation; retired key fails; safe rollback works |

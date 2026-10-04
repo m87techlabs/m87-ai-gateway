@@ -68,5 +68,17 @@ rerun auth, health, and chat checks. Preserve release tags and publish a correct
 patch; do not silently replace released artifacts. If a release is unsafe, mark
 it accordingly and document the supported replacement.
 
-There is no database migration today. Add migration/restore gates before a
-release introduces persistent state.
+SQLite schema versions and additive migration are implemented. Preserve the local
+master key and operator key with the database. Restore a pre-upgrade encrypted
+backup into a fresh directory for rollback; never assume an older binary can read
+a migrated database. Distinct-version rollback remains a release gate.
+
+## Automated development previews
+
+Successful main CI runs publish a tested Linux amd64 image with immutable commit
+and moving preview tags, and retain native ZIPs/checksums and Compose in a commit
+prerelease. These are development previews, distinct from reviewed stable/public
+releases. See [container publication](container-deployment.md). Publication follows
+all source/docs/native/container jobs; failed runs do not advance the preview.
+Repository/package visibility is preserved. Preview downloads last until deletion;
+CI artifact downloads expire independently.

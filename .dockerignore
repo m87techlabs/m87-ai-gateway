@@ -15,3 +15,9 @@ config.local.yaml
 var/log
 var/lib
 *.jsonl
+
+.agents
+.codex
+.aws
+node_modules
+**/node_modules

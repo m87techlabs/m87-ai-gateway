@@ -7,6 +7,13 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+
+- Optional single-app Docker image and prebuilt Compose on localhost:8087,
+  non-root runtime, persistent private storage and included provider setup UI.
+- Real container smoke checks for run/Compose, host inference, tokens/content
+  capture, credential persistence, recreation and graceful shutdown.
+- CI-gated immutable/preview GHCR images and durable native preview release assets.
+- Console redirect at the root URL and an option to hide operator keys from stdout.
 - Native Windows/Linux portable preview artifacts and checksums, current-user Windows
   ACLs, instance locks/identity, native lifecycle commands and optional browser launch.
 - Encrypted offline SQLite/key backups, fresh-directory restore, schema compatibility

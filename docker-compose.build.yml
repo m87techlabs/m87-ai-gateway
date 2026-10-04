@@ -1,0 +1,6 @@
+# Optional source-build override; the default Compose file pulls a prebuilt image.
+services:
+  m87-ai-gateway:
+    image: m87-ai-gateway:local
+    build:
+      context: .

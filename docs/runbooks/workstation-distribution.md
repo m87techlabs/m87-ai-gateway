@@ -3,10 +3,16 @@
 ## Status and prerequisites
 
 The portable preview bundles Python, the gateway, UI and SQLite. Download the ZIP
-for your native OS/architecture and its matching `.sha256` file from the successful
-CI run's artifacts. GitHub downloads an outer artifact ZIP; unpack that first to
-get the versioned gateway ZIP and checksum file. These are development artifacts retained for 14 days, not a
-signed public release. Build natively; the Linux executable is not a Windows app.
+for your native OS/architecture and its matching `.sha256` file from a verified
+[preview release](https://github.com/m87techlabs/m87-ai-gateway/releases).
+These downloads remain attached to their immutable commit preview until explicitly
+deleted. The binaries are portable apps, not OS installers or signed stable releases.
+The repository includes the builder and start/stop/status helper sources; generated
+binaries are release assets rather than tracked source files.
+
+CI run artifacts remain an alternative, retained for 14 days. GitHub downloads an
+outer artifact ZIP; unpack it first to get the gateway ZIP and checksums. Build
+natively; the Linux executable is not a Windows app.
 Current targets are Windows x64 and Ubuntu 24.04 x64. Linux distributions with
 older system libraries, macOS, ARM, clean workstations, browser accessibility and
 public release signing remain separate verification gates.

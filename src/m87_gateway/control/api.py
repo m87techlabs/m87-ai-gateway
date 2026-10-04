@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from m87_gateway.api.errors import GatewayError
@@ -190,6 +190,12 @@ class ProviderKeyWrite(BaseModel):
         if any(character.isspace() for character in value):
             raise ValueError("Provider keys cannot contain whitespace")
         return value
+
+
+@router.get("/", include_in_schema=False)
+async def console_home(request: Request):
+    _store(request)
+    return RedirectResponse("/admin", status_code=302)
 
 
 @router.get("/admin", include_in_schema=False)

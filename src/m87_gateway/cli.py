@@ -58,6 +58,9 @@ def main() -> None:
         default=default_data_dir(),
     )
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--hide-admin-key", action="store_true", help="Keep the operator key out of startup logs"
+    )
     parser.add_argument("--port", type=int, help="Exact port; default tries 8087, 8187, 8287, ...")
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument(
@@ -141,7 +144,10 @@ def run_gateway(args):
     state_file.write_text(json.dumps({"port": port, "instance_id": identity}))
     print(f"Listener: http://{args.host}:{port}", flush=True)
     print(f"Console: http://{args.host}:{port}/admin", flush=True)
-    print(f"Admin key: {key}", flush=True)
+    if getattr(args, "hide_admin_key", False):
+        print("Operator key is stored privately in the data directory.", flush=True)
+    else:
+        print(f"Admin key: {key}", flush=True)
     print(
         "Connect a provider in Setup, choose a model, then create an application key.", flush=True
     )

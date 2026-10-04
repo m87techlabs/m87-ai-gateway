@@ -19,7 +19,7 @@
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
 | Standalone build | Optional PyInstaller build dependency | Native Windows/Linux CI builds and recovery smoke passed; clean-host/release checks pending |
-| Containers | Docker and Docker Compose | Loopback publishing and host mapping configured; live container validation is pending |
+| Containers | Docker and Docker Compose | Non-root single-app image, persistent volume, 8087 and prebuilt Compose; exact validation in validation.md |
 | Automation | GitHub Actions | Lint and test workflow |
 | Documentation | Markdown and Mermaid | Renderable in repository pages; no separate site required |
 
@@ -64,7 +64,7 @@ These are planning assumptions, not supported deployment recipes.
 | AWS | Managed container service, with Kubernetes as an optional path | TLS ingress, managed secrets/identity, outbound provider access, health probes, logs |
 | Azure | Managed container service, with Kubernetes as an optional path | Same requirements, using platform-native identity and secret delivery |
 | Google Cloud | Managed container service, with Kubernetes as an optional path | Same requirements, using platform-native identity and secret delivery |
-| Local / self-hosted | Docker Compose or a Python virtual environment | Reachable provider, private app key, explicit configuration |
+| Local / self-hosted | Docker Compose or a Python virtual environment | Included setup UI, reachable provider and private application key |
 
 Cloud-specific infrastructure files remain placeholders until validated. A
 provider adapter and a hosting target each receive their own support evidence.

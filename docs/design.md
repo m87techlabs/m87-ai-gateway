@@ -106,7 +106,7 @@ provide separate operator roles or tenant isolation. See
 | Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate/concurrency enforcement, UI controls and opt-in response cache; budgets planned |
 | Projects and dashboard | Project/application usage, logs, API testing and trends | Implemented local grouping; roles, project budgets and billing remain planned |
 | Ecosystem services | Optional managed dashboards, metrics, logging and secrets | Planned lifecycle adapters and service profiles; no automatic Docker startup yet |
-| Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Partial: liveness and configuration/storage readiness, Docker files, and runbooks |
+| Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Implemented liveness/configuration readiness, non-root container and Compose; live/cloud scope in validation |
 
 ## Target request path
 
@@ -205,3 +205,15 @@ place in the roadmap.
 Record substantial choices in short documents under `docs/decisions/` when needed.
 Include context, the decision, alternatives, consequences, and acceptance checks.
 Update this page when a decision changes the product contract.
+
+## Container product distribution
+
+The optional image uses the same CLI, console, provider interfaces and SQLite as
+the workstation application. It binds internally on 8087, publishes host loopback,
+and retains private state in a named volume. No YAML/demo-key prerequisite is needed.
+Container startup does not start inference or ecosystem services. The default
+image hides operator keys from logs; the operator retrieves the key with Docker
+exec. Source builds and prebuilt images use the same Dockerfile. CI checks the
+image before publishing immutable commit and preview tags. Native ZIPs and Compose
+are retained as commit preview release downloads; public release gates remain.
+See the [container runbook](runbooks/container-deployment.md).
