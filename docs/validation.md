@@ -288,8 +288,9 @@ Checked on 2026-10-04 with Python 3.12 on Linux/WSL:
 - Portable ZIP members, version and binary checksum matched the build manifest.
 - Ruff, script syntax, documentation links/fences and whitespace checks passed.
 - Native Windows build/storage/backup/smoke checks are configured in hosted CI.
-  Results will be recorded after that workflow completes; this local environment
-  cannot validate native Windows ACL/runtime behavior itself.
+  The first Windows run caught unclosed backup SQLite handles during temporary
+  snapshot cleanup; connections now close explicitly before cleanup. Verification
+  is pending the corrected run. ACL and instance-isolation tests passed initially.
 
 Docker remained disabled and the checks made no cloud calls. Windows Ollama through
 the native Windows artifact, clean Windows/Linux workstations, graphical browser

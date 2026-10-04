@@ -1,6 +1,7 @@
 """Encrypted, versioned backups restored only into an unused data directory."""
 
 import base64
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -30,7 +31,7 @@ def cipher(password: str, salt: bytes) -> Fernet:
 
 def validate_database(path: Path, master: bytes):
     decoder = Fernet(master.strip())
-    with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as connection:
+    with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as connection:
         if connection.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise ValueError("Backup database is invalid")
         if connection.execute("PRAGMA user_version").fetchone()[0] > SCHEMA_VERSION:
@@ -60,8 +61,10 @@ def backup(data_dir: Path, output: Path, password: str):
     with tempfile.TemporaryDirectory(prefix="snapshot-", dir=data_dir) as temporary:
         snapshot = Path(temporary) / "control.db"
         prepare_file(snapshot)
-        with sqlite3.connect((data_dir / "control.db").as_uri() + "?mode=ro", uri=True) as source:
-            with sqlite3.connect(snapshot) as destination:
+        with closing(
+            sqlite3.connect((data_dir / "control.db").as_uri() + "?mode=ro", uri=True)
+        ) as source:
+            with closing(sqlite3.connect(snapshot)) as destination:
                 source.backup(destination)
         master = (data_dir / "master.key").read_bytes()
         validate_database(snapshot, master)

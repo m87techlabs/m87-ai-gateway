@@ -50,6 +50,7 @@ This project follows Semantic Versioning and the Keep a Changelog format.
   preserve Ollama chat semantics, and normalize provider failures.
 
 ### Fixed
+- Close backup SQLite connections before removing temporary snapshots on Windows.
 
 ### Security
 
