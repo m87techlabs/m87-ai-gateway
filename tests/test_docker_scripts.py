@@ -33,6 +33,8 @@ elif args[0] == "inspect":
     template = args[2]
     if "HostPort" in template:
         print("8187")
+    elif "Running" in template and "Health" in template:
+        print("true/healthy")
     elif "Running" in template:
         print("true")
     else:
@@ -117,7 +119,8 @@ def test_resume_preserves_existing_port_and_image(runner):
     result, calls = runner("start", DOCKER_TEST_EXISTING="1")
     assert result.returncode == 0
     assert "http://127.0.0.1:8187" in result.stdout
-    assert any("start" in call and "--wait" in call for call in calls)
+    assert any("start" in call and "--help" not in call for call in calls)
+    assert not any("start" in call and "--wait-timeout" in call for call in calls)
     assert not any("pull" in call or "-d" in call or "build" in call for call in calls)
 
 

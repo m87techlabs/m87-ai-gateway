@@ -66,9 +66,17 @@ case "$action" in
         help_text=$(docker compose up --help)
         [[ $help_text == *--wait-timeout* ]] || fail "Update Docker Compose v2: startup requires support for --wait and --wait-timeout."
         if [[ -n $existing && $build == false && $port_override == false ]]; then
-            start_help=$(docker compose start --help)
-            [[ $start_help == *--wait-timeout* ]] || fail "Update Docker Compose v2: resume requires --wait and --wait-timeout."
-            "${compose[@]}" start --wait --wait-timeout 90 m87-ai-gateway || fail "Existing gateway did not become healthy. Inspect ./docker-status.sh and Docker logs."
+            command -v sleep >/dev/null || fail "Required Unix tool missing: sleep."
+            "${compose[@]}" start m87-ai-gateway || fail "Existing gateway could not start. Check Docker access and container state."
+            deadline=$((SECONDS + 90))
+            healthy=false
+            while ((SECONDS < deadline)); do
+                state=$(docker inspect --format '{{.State.Running}}/{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' "$existing") || fail "Cannot inspect the existing gateway's health."
+                if [[ $state == true/healthy ]]; then healthy=true; break; fi
+                [[ $state != false/* ]] || fail "Existing gateway exited during startup. Inspect ./docker-status.sh and Docker logs."
+                sleep 1
+            done
+            [[ $healthy == true ]] || fail "Existing gateway did not become healthy within 90 seconds. Inspect ./docker-status.sh and Docker logs."
             echo "Gateway is healthy; its existing image, port and configuration were preserved."
             show_url
             exit 0

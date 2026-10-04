@@ -24,7 +24,10 @@ and exits without starting services. Host Python is not required by these helper
 Hosted container CI also exercises the real helpers from outside the checkout:
 source build/start on an explicit port, health/status, stop, stopped status and
 resume preserving the port/operator key. Its isolated project volume is removed
-afterward. Hosted results follow once that run completes. Local Docker Desktop
+afterward. The initial hosted helper check passed build/start/status/stop, then
+caught an unsupported `compose start --wait-timeout` assumption on resume. Resume
+now uses normal Compose start and a bounded Docker health poll. Publication was
+blocked for that run. Corrected hosted results follow once CI completes. Local Docker Desktop
 and live Windows Ollama checks remain for the operator's next session.
 
 ## Single-container distribution phase
