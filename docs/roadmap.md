@@ -73,8 +73,9 @@ shared enforcement and remote exporters are follow-up milestones.
 - [x] Version the database schema and reject newer schemas before migration.
 - [x] Document upgrade verification and backup-based rollback.
 - [x] Add native executable backup/restore/inference and platform safety CI checks.
-- Verify Windows CI artifacts, clean Windows/Linux workstations, and native Windows
-  Ollama/browser behavior before declaring workstation support.
+- [x] Verify native Windows/Linux CI builds, platform safety and packaged recovery smoke.
+- Verify clean Windows/Linux workstations and native Windows Ollama/browser behavior
+  before declaring general workstation support.
 - Verify rollback across distinct released artifacts and complete signing/release review.
 
 Version `0.1.1.dev0` identifies this development preview. The historical `v0.1.0`

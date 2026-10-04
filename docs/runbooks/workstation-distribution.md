@@ -4,7 +4,8 @@
 
 The portable preview bundles Python, the gateway, UI and SQLite. Download the ZIP
 for your native OS/architecture and its matching `.sha256` file from the successful
-CI run's artifacts. These are development artifacts retained for 14 days, not a
+CI run's artifacts. GitHub downloads an outer artifact ZIP; unpack that first to
+get the versioned gateway ZIP and checksum file. These are development artifacts retained for 14 days, not a
 signed public release. Build natively; the Linux executable is not a Windows app.
 Current targets are Windows x64 and Ubuntu 24.04 x64. Linux distributions with
 older system libraries, macOS, ARM, clean workstations, browser accessibility and

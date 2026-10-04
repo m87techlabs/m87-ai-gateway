@@ -287,10 +287,18 @@ Checked on 2026-10-04 with Python 3.12 on Linux/WSL:
   encrypted backup, restore into fresh data and inference with the restored app key.
 - Portable ZIP members, version and binary checksum matched the build manifest.
 - Ruff, script syntax, documentation links/fences and whitespace checks passed.
-- Native Windows build/storage/backup/smoke checks are configured in hosted CI.
-  The first Windows run caught unclosed backup SQLite handles during temporary
-  snapshot cleanup; connections now close explicitly before cleanup. Verification
-  is pending the corrected run. ACL and instance-isolation tests passed initially.
+- Hosted Windows Server 2022 x64/Python 3.11 checks passed: 11 platform safety tests
+  and one privilege-dependent symlink skip; native executable build; setup, private
+  storage, app/provider credentials, status/stop, encrypted backup/restore, readiness
+  and restored inference smoke. The Linux bundle job and source/docs jobs also passed.
+  [CI evidence for `647d930`](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37229755678).
+- The first Windows run caught unclosed backup SQLite handles during temporary
+  snapshot cleanup. The corrected code closes connections explicitly before cleanup;
+  the same Windows recovery tests and packaged smoke now pass.
+- Both native CI jobs uploaded portable ZIPs and checksums with 14-day artifact
+  retention. These are developer-preview artifacts, with no public release tag.
+- The managed source gateway was reloaded on its existing 8087 listener and returned
+  readiness 200. The stopped sample was left stopped; no live inference fault was induced.
 
 Docker remained disabled and the checks made no cloud calls. Windows Ollama through
 the native Windows artifact, clean Windows/Linux workstations, graphical browser

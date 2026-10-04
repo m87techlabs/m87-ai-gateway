@@ -18,7 +18,7 @@
 | Tests | pytest, FastAPI TestClient, HTTPX MockTransport | Automated core checks plus a verified native Ollama flow; OpenAI/cloud live checks deferred |
 | Lint | Ruff | Explicit syntax/error and undefined-name rules in CI |
 | Packaging | Python package from `pyproject.toml` | Build/install checks are required before release |
-| Standalone build | Optional PyInstaller build dependency | Native Windows/Linux preview builders; clean-host and release checks pending |
+| Standalone build | Optional PyInstaller build dependency | Native Windows/Linux CI builds and recovery smoke passed; clean-host/release checks pending |
 | Containers | Docker and Docker Compose | Loopback publishing and host mapping configured; live container validation is pending |
 | Automation | GitHub Actions | Lint and test workflow |
 | Documentation | Markdown and Mermaid | Renderable in repository pages; no separate site required |
