@@ -54,6 +54,10 @@ Document clean-host, Windows Ollama/browser, signing and cross-release rollback
 checks separately; CI builders do not establish clean-workstation support.
 Keep documentation synchronized with every implementation and validation change.
 
+Root `docker-start.sh`, `docker-stop.sh` and `docker-status.sh` manage only the
+fixed gateway Compose project, check Docker/Compose/engine requirements, and
+preserve data on stop. Host Python is unnecessary. Default resume preserves the
+existing image/port; --build and --port are explicit startup overrides.
 Container distribution uses a non-root single-app image with the included setup
 UI, port 8087 and private state in a named volume. Default Compose pulls a prebuilt
 image; the source-build override remains available. Hide operator keys in container

@@ -8,6 +8,9 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Root Docker start/stop/status helpers with prerequisite checks, health waits,
+  local source-build option and port/image-preserving resume.
+
 - Optional single-app Docker image and prebuilt Compose on localhost:8087,
   non-root runtime, persistent private storage and included provider setup UI.
 - Real container smoke checks for run/Compose, host inference, tokens/content

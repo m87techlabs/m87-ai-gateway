@@ -11,6 +11,22 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Docker workstation helper scripts
+
+On 2026-10-04: 163 Python tests, lint/format, Markdown and shell syntax checks
+passed. Prerequisite failure handling and eight isolated
+helper tests cover unavailable engine, invalid port, rejected registry pull,
+health-wait startup, invocation outside the checkout, source builds, preserving
+image/port on resume, scoped stop and missing-service status. The current WSL Docker
+shim is unusable; the actual launcher reports the WSL integration prerequisite
+and exits without starting services. Host Python is not required by these helpers.
+
+Hosted container CI also exercises the real helpers from outside the checkout:
+source build/start on an explicit port, health/status, stop, stopped status and
+resume preserving the port/operator key. Its isolated project volume is removed
+afterward. Hosted results follow once that run completes. Local Docker Desktop
+and live Windows Ollama checks remain for the operator's next session.
+
 ## Single-container distribution phase
 
 On 2026-10-04 the WSL session has no usable Docker command/integration. No local

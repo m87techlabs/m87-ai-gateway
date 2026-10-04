@@ -3,6 +3,8 @@
 import argparse
 import json
 import os
+import socket
+import tempfile
 import subprocess
 import threading
 import time
@@ -213,7 +215,80 @@ def exercise(image):
         worker.join(timeout=5)
 
 
+def exercise_helpers():
+    """Run the workstation helpers on a fresh hosted Docker deployment."""
+    compose = [
+        "docker",
+        "compose",
+        "--project-directory",
+        str(ROOT),
+        "-p",
+        "m87-ai-gateway",
+        "-f",
+        str(ROOT / "docker-compose.yml"),
+    ]
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith(("GATEWAY_", "COMPOSE_"))
+    }
+    existing = subprocess.check_output(
+        [*compose, "ps", "--all", "-q"], env=environment, text=True, timeout=30
+    ).strip()
+    assert not existing, "Helper smoke requires an unused m87-ai-gateway Compose project"
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    with tempfile.TemporaryDirectory(prefix="gateway-docker-helper-") as directory:
+
+        def helper(action, *options, expected=0):
+            result = subprocess.run(
+                ["bash", str(ROOT / f"docker-{action}.sh"), *options],
+                cwd=directory,
+                env=environment,
+                text=True,
+                capture_output=True,
+                timeout=180,
+            )
+            assert result.returncode == expected, result.stdout + result.stderr
+            return result.stdout
+
+        def admin_key():
+            return subprocess.check_output(
+                [*compose, "exec", "-T", "m87-ai-gateway", "cat", "/data/gateway/admin.key"],
+                env=environment,
+                text=True,
+                timeout=30,
+            ).strip()
+
+        try:
+            started = helper("start", "--build", "--port", str(port))
+            key = admin_key()
+            assert f"http://127.0.0.1:{port}" in started
+            assert key not in started
+            assert "healthy" in helper("status")
+            assert key not in helper("stop")
+            helper("status", expected=3)
+            resumed = helper("start")
+            assert f"http://127.0.0.1:{port}" in resumed
+            assert admin_key() == key
+            assert key not in resumed
+            assert "healthy" in helper("status")
+            helper("stop")
+            print(
+                "Docker helper source build, health, stop/status and port/key-preserving resume passed"
+            )
+        finally:
+            subprocess.run(
+                [*compose, "down", "--volumes", "--timeout", "60"],
+                env=environment,
+                timeout=90,
+                check=True,
+            )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("image")
     exercise(parser.parse_args().image)
+    exercise_helpers()

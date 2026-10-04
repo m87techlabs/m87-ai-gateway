@@ -105,6 +105,19 @@ inference endpoint in Setup, select a model, and create an application key.
 Provider credentials stay in the gateway. Enable input/output capture in Setup
 and inspect Logs and usage after sending a request in the included API tester.
 
+From a checkout, use the root Docker helpers:
+
+```bash
+./docker-start.sh           # Check prerequisites, pull image, wait for health
+./docker-status.sh          # Show container health and console URL
+./docker-stop.sh            # Stop; preserve keys, configuration and logs
+./docker-start.sh --build   # Build locally; no private registry login required
+```
+
+Host Python is not required. Start Docker Engine/Desktop yourself first. If 8087
+is occupied, use `./docker-start.sh --port 8187`. Default resume preserves an
+existing deployment's image and port. The native `start.sh`/`stop.sh` remain separate.
+
 For Compose, download `docker-compose.yml` from a verified
 [preview release](https://github.com/m87techlabs/m87-ai-gateway/releases), then run:
 

@@ -17,6 +17,49 @@ password prompt. Avoid putting tokens in command arguments or shared logs.
 Public packages support anonymous pulls when deliberately made public after review.
 See [GitHub registry authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
 
+## Root start, stop and status scripts
+
+From a repository checkout on Linux/WSL (Bash):
+
+```bash
+./docker-start.sh
+./docker-status.sh
+./docker-stop.sh
+```
+
+These helpers work from any directory, check a usable Docker CLI, Compose v2,
+Docker engine access, Linux amd64 platform and Compose configuration. Startup also
+checks health-wait support before building/pulling or starting a container. Host
+Python, curl and a virtual environment are not prerequisites. Docker and the
+Compose plugin must already be installed; start the engine yourself. If WSL
+integration is unavailable, the scripts explain how to enable it and exit.
+
+`docker-start.sh` pulls the private prebuilt preview for a new deployment. If
+registry access is unavailable, run `docker login ghcr.io` or build locally:
+
+```bash
+./docker-start.sh --build
+./docker-start.sh --port 8187
+./docker-start.sh --help
+```
+
+Source builds require a complete checkout and base-image/dependency network access.
+No host Python installation is required. Explicit ports must be free. A new
+deployment defaults to 8087; use 8187/8287/8387 if the native gateway already runs
+on 8087. Without a port/build override, an existing container is resumed with its
+saved image and port, avoiding an unexpected image update or registry requirement.
+To deliberately update or change ports, supply the appropriate override. Startup
+waits up to 90 seconds for container health and reports failures with next steps.
+Configuration readiness can remain 503 until a provider is configured.
+
+Helpers use the fixed Compose project `m87-ai-gateway` and target only its gateway
+service. They manage the checkout's Compose deployment, not containers started
+separately with `docker run` or another Compose project. Stop keeps the named volume
+and never stops Docker Engine/Desktop. Status exits 0 when healthy, 1 on a failed
+check/unhealthy container and 3 when no container is running. The scripts print the
+console URL and a command to retrieve the operator key; they never print the key.
+The existing native workstation scripts remain independent.
+
 ## Start with Docker run
 
 ```bash
