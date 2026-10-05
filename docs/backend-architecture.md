@@ -9,13 +9,15 @@ release candidate needs packaging verification.
 
 Repository separation, explicit backend registration/configuration and independent
 usage accounting are implemented with SQLite. Encrypted provider keys, application-key
-digests, private files and encrypted backups remain available. Expanded key lifecycle,
-configuration revisions, content-table separation and remote implementations are planned.
+digests, private files and encrypted backups remain available. Multiple application keys, optional replacement expiry, individual revocation and
+transactional identity audit are implemented in schema 3. Master-key version
+migration, configuration revisions, content-table separation and remote implementations
+remain planned.
 See [backend adapters](backend-adapters.md) for contracts and testing.
 
 ## Current implementation
 
-`LocalControlStore` now composes configuration, identity, secret, traffic and usage
+`LocalControlStore` now composes configuration, identity, secret, traffic, usage and management-audit
 repositories behind a compatibility facade. SQLite uses WAL,
 private files and a schema version. Provider secrets use Fernet; application keys
 use an HMAC digest derived from the same local master key. Operator access uses a
@@ -117,7 +119,8 @@ Use distinct record types even when stored in the same SQLite database:
 | Management audit | Key/configuration/project changes and actor identity | No raw secrets; defined retention and restricted operator access |
 
 Traffic retains its existing 30-day default; independent usage defaults to 365
-days. Content-specific and management-audit retention are still planned. Add content encryption and content access roles as
+days. Identity management audit also defaults to 365 days; content-specific
+retention is still planned. Add content encryption and content access roles as
 explicit features; current event bodies have filesystem protection and redaction.
 
 Usage records need unique request/attempt identifiers for duplicate prevention.
@@ -164,8 +167,8 @@ with Grafana as an optional visualization surface. See
    Continue separating traffic/content with independent retention and
    idempotent accounting. Show storage/capture failures in the console. Backfill
    only from retained evidence; already deleted history cannot be reconstructed.
-3. Split application metadata from key records; add tested rotation/revocation and
-   management audit events. Define encryption/digest key-version migration.
+3. Application/key separation, rotation/revocation and identity audit are implemented.
+   Continue configuration/secret audit and encryption/digest key-version migration.
 4. Add typed configuration revisions, stable connection IDs and atomic activation.
 5. Add a durable export outbox and one exporter through the existing sink boundary.
 6. Add PostgreSQL or external secret-store adapters only with a demonstrated use case

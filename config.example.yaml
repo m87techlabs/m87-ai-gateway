@@ -65,6 +65,7 @@ control_plane:
   # Only sqlite is bundled. Other identifiers require a trusted registered backend.
   backend_adapter: sqlite
   usage_retention_days: 365
+  management_audit_retention_days: 365
   database_path: "var/lib/m87-gateway/control.db"
   master_key_path: "var/lib/m87-gateway/master.key"
   admin_api_key_env: "GATEWAY_ADMIN_API_KEY"

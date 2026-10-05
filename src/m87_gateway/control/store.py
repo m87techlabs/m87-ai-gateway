@@ -12,6 +12,7 @@ from m87_gateway.config import ControlPlaneConfig
 from .facade import BackendFacade
 from .repositories.base import tighten_sqlite_files as _tighten_sqlite_files
 from .repositories.configuration import SQLiteConfigurationRepository
+from .repositories.management_audit import SQLiteManagementAuditRepository
 from .repositories.identities import SQLiteIdentityRepository
 from .repositories.secrets import SQLiteSecretStore
 from .repositories.traffic import SQLiteTrafficRepository
@@ -21,7 +22,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 class LocalControlStore(BackendFacade):
@@ -32,6 +33,7 @@ class LocalControlStore(BackendFacade):
             raise ValueError("LocalControlStore requires the sqlite backend adapter")
         self.config = config
         self.configuration = SQLiteConfigurationRepository(self)
+        self.management_audit = SQLiteManagementAuditRepository(self)
         self.identities = SQLiteIdentityRepository(self)
         self.secrets = SQLiteSecretStore(self)
         self.traffic = SQLiteTrafficRepository(self)
@@ -52,6 +54,7 @@ class LocalControlStore(BackendFacade):
         )
         self.prune_events()
         self.usage_repository.prune_usage()
+        self.management_audit.prune()
 
     @contextmanager
     def _connect(self):
@@ -111,7 +114,10 @@ class LocalControlStore(BackendFacade):
                 );
                 """
             )
-            self._ensure_columns(connection)
+            if previous_version < 3:
+                self._ensure_columns(connection)
+            self.identities.migrate(connection, previous_version)
+            self.management_audit.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(

@@ -10,6 +10,7 @@ from m87_gateway.config import ControlPlaneConfig
 from .repositories.contracts import (
     ConfigurationRepository,
     IdentityRepository,
+    ManagementAuditRepository,
     SecretStore,
     TrafficRepository,
     UsageRepository,
@@ -23,6 +24,7 @@ class Backend(
     SecretStore,
     TrafficRepository,
     UsageRepository,
+    ManagementAuditRepository,
     Protocol,
 ):
     config: ControlPlaneConfig
@@ -30,6 +32,7 @@ class Backend(
     identities: IdentityRepository
     secrets: SecretStore
     traffic: TrafficRepository
+    management_audit: ManagementAuditRepository
     usage_repository: UsageRepository
 
     def check_storage(self) -> None: ...
@@ -64,6 +67,7 @@ def create_backend(config: ControlPlaneConfig) -> Backend:
         raise ValueError("Selected backend adapter is not registered")
     backend = factory(config)
     contracts = (
+        ("management_audit", ManagementAuditRepository),
         ("configuration", ConfigurationRepository),
         ("identities", IdentityRepository),
         ("secrets", SecretStore),

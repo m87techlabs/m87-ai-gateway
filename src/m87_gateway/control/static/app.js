@@ -3,6 +3,8 @@ let activeView = "overview";
 let connections = [];
 let projects = [];
 let activeProject = "";
+let activeKeyApp = "";
+let appKeysGeneration = 0;
 let sessionGeneration = 0;
 let testerRequestId = "";
 let testerController = null;
@@ -196,7 +198,7 @@ async function loadApps() {
       try { await api(`/apps/${encodeURIComponent(item.app_id)}/project`, {method: "PATCH", body: JSON.stringify({project_id: selection.value})}); notice("Project changed for future requests"); item.project_id = selection.value; }
       catch (error) { selection.value = item.project_id; notice(error.message); }
     });
-    cell(row, `${item.key_prefix}…`);
+    cell(row, `${item.key_prefix || "No active key"}${item.key_prefix ? "…" : ""} (${item.active_key_count ?? 1} active)`);
     const modelCell = cell(row, ""); const models = document.createElement("input"); models.value = item.allowed_models.join(", "); models.setAttribute("aria-label", `Allowed models for ${item.app_id}`);
     const saveModels = document.createElement("button"); saveModels.type = "button"; saveModels.textContent = "Save models";
     saveModels.addEventListener("click", async () => {
@@ -223,9 +225,50 @@ async function loadApps() {
       finally { saveLimits.disabled = false; }
     });
     limitCell.append(rpm, concurrent, saveLimits);
-    const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Revoke";
-    button.addEventListener("click", async () => { await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"}); notice("Application key revoked"); await loadApps(); });
-    action.append(button);
+    const action = cell(row, ""); const button = document.createElement("button"); button.className = "danger"; button.textContent = "Delete application";
+    button.addEventListener("click", async () => {
+      if (!window.confirm(`Delete application ${item.app_id} and revoke all of its keys? Logs and usage remain.`)) return;
+      try {
+        await api(`/apps/${encodeURIComponent(item.app_id)}`, {method: "DELETE"});
+        if (activeKeyApp === item.app_id) { activeKeyApp = ""; appKeysGeneration += 1; $("app-keys-panel").hidden = true; $("replacement-key").replaceChildren(); }
+        notice("Application deleted and keys revoked"); await loadApps();
+      } catch (error) { notice(error.message); }
+    });
+    const manage = document.createElement("button"); manage.type = "button"; manage.textContent = "Manage keys";
+    manage.addEventListener("click", async () => {
+      $("replacement-key").replaceChildren(); $("replacement-key").hidden = true;
+      try { await loadAppKeys(item.app_id); } catch (error) { notice(error.message); }
+    });
+    action.append(manage, button);
+  });
+}
+
+async function loadAppKeys(appId) {
+  const session = sessionGeneration; const generation = ++appKeysGeneration; activeKeyApp = appId;
+  $("app-keys-panel").hidden = true;
+  const response = await api(`/apps/${encodeURIComponent(appId)}/keys`); const data = await response.json();
+  if (session !== sessionGeneration || generation !== appKeysGeneration || !adminKey) return;
+  $("app-keys-title").textContent = `Keys for ${appId}`; $("app-keys-panel").hidden = false;
+  table($("application-keys"), ["Prefix", "Created", "Expires", "Status", ""], data.items, (row, item) => {
+    cell(row, `${item.key_prefix}…`); cell(row, item.created_at); cell(row, item.expires_at || "No expiry");
+    cell(row, item.revoked_at ? "Revoked" : item.active ? "Active" : "Expired");
+    const action = cell(row, ""); const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "danger"; revoke.textContent = "Revoke key"; revoke.disabled = !item.active;
+    revoke.addEventListener("click", async () => {
+      if (!window.confirm(`Revoke key ${item.key_prefix} for ${appId}? Update callers first.`)) return;
+      revoke.disabled = true;
+      try { await api(`/apps/${encodeURIComponent(appId)}/keys/${encodeURIComponent(item.key_id)}`, {method: "DELETE"}); if (session !== sessionGeneration || !adminKey) return; notice("Key revoked"); await loadApps(); await loadAppKeys(appId); }
+      catch (error) { notice(error.message); revoke.disabled = false; }
+    });
+    action.append(revoke);
+  });
+}
+
+async function loadManagementAudit() {
+  const session = sessionGeneration; const scope = activeProject;
+  const response = await api(scoped("/management-events", {limit: 250})); const data = await response.json();
+  if (session !== sessionGeneration || scope !== activeProject || !adminKey) return;
+  table($("management-events"), ["Time", "Actor", "Action", "Project", "Application", "Key ID"], data.items, (row, item) => {
+    for (const field of ["created_at", "actor", "action", "project_id", "app_id", "key_id"]) cell(row, item[field]);
   });
 }
 
@@ -293,7 +336,7 @@ async function loadControls() {
   table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
 }
 
-const loaders = {setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+const loaders = {audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -316,7 +359,7 @@ $("login-form").addEventListener("submit", async (event) => {
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { sessionGeneration += 1; adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
+$("lock").addEventListener("click", () => { sessionGeneration += 1; appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
 $("close-detail").addEventListener("click", () => $("detail").close());
 
@@ -330,6 +373,24 @@ $("app-form").addEventListener("submit", async (event) => {
     if (session !== sessionGeneration || !adminKey) return;
     $("new-key").hidden = false; $("new-key").textContent = `Copy now — shown once: ${item.api_key}`; notice("Application key created"); await loadApps();
   } catch (error) { notice(error.message); }
+});
+
+$("app-key-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const element = event.currentTarget;
+  if (!activeKeyApp || !element.reportValidity()) return;
+  const session = sessionGeneration; const appId = activeKeyApp; const generation = appKeysGeneration;
+  const form = new FormData(element); const payload = {revoke_existing: form.has("revoke_existing")};
+  if (form.get("expires_in_days")) payload.expires_in_days = Number(form.get("expires_in_days"));
+  if (payload.revoke_existing && !window.confirm(`Immediately revoke existing keys for ${appId}? Callers using them will be rejected.`)) return;
+  const button = element.querySelector('button[type="submit"]'); button.disabled = true;
+  $("replacement-key").replaceChildren(); $("replacement-key").hidden = true;
+  try {
+    const response = await api(`/apps/${encodeURIComponent(appId)}/keys`, {method: "POST", body: JSON.stringify(payload)}); const data = await response.json();
+    if (session !== sessionGeneration || generation !== appKeysGeneration || !adminKey || appId !== activeKeyApp) return;
+    $("replacement-key").textContent = `Copy now — shown once: ${data.api_key}`; $("replacement-key").hidden = false;
+    element.elements.revoke_existing.checked = false; notice("Replacement key created"); await loadApps(); await loadAppKeys(appId);
+  } catch (error) { if (session === sessionGeneration) notice(error.message); }
+  finally { button.disabled = false; }
 });
 
 $("provider-form").addEventListener("submit", async (event) => {

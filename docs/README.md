@@ -19,6 +19,7 @@ gates in the lifecycle guide.
 | [Roadmap](roadmap.md) | Milestones, acceptance criteria, and provider coverage |
 | [Design](design.md) | Product scope, boundaries, and design decisions |
 | [Backend adapters](backend-adapters.md) | Storage contracts, extension registration and reusable tests |
+| [Application-key rotation](runbooks/application-key-rotation.md) | Overlap, expiry, revocation and transactional management audit |
 | [Backend storage acceptance](runbooks/backend-storage-testing.md) | Migration, retention, rollback and future adapter gates |
 | [Backend architecture](backend-architecture.md) | Storage/service boundaries, logs, secrets, configuration and usage direction |
 | [Architecture](architecture.md) | Components and request flow |

@@ -87,3 +87,22 @@ class BackendContract:
             assert backend.overview(project_id="default")["total_tokens"] == 10
         finally:
             backend.close()
+
+    def test_key_overlap_revocation_and_management_audit(self, backend_factory):
+        backend = backend_factory()
+        try:
+            initial, old = backend.create_app_key("contract-app", ["auto"], False)
+            replacement, new = backend.issue_app_key("contract-app", expires_in_days=30)
+            assert backend.authenticate_app_key(old) and backend.authenticate_app_key(new)
+            backend.update_app_models("contract-app", ["ollama:small"])
+            assert backend.authenticate_app_key(new).allowed_models == ["ollama:small"]
+            assert backend.revoke_app_key("contract-app", initial["key_id"])
+            assert backend.authenticate_app_key(old) is None
+            assert backend.authenticate_app_key(new)
+            metadata = backend.list_app_keys("contract-app")
+            assert any(row["key_id"] == replacement["key_id"] and row["active"] for row in metadata)
+            events = backend.list_management_events(project_id="default")
+            assert any(row["action"] == "application_key.revoked" for row in events)
+            assert all(old not in str(row) and new not in str(row) for row in events)
+        finally:
+            backend.close()

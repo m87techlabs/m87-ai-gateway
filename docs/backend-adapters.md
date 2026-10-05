@@ -4,7 +4,7 @@
 
 The bundled backend is `sqlite`. One private database stores configuration,
 projects/application-key digests, encrypted provider keys, traffic and independent
-usage records. Five repositories implement the contracts in
+usage records. Six repositories implement the contracts in
 `src/m87_gateway/control/repositories/contracts.py`. `LocalControlStore` preserves
 existing callers through `BackendFacade`.
 
@@ -17,12 +17,14 @@ flowchart TB
     Facade --> Secrets[Secret store]
     Facade --> Traffic[Traffic repository]
     Facade --> Usage[Usage repository]
+    Facade --> Audit[Management audit repository]
     Config --> SQLite[(One private SQLite database)]
     Identity --> SQLite
     Secrets --> SQLite
     Traffic --> Transaction[Atomic traffic and usage write]
     Transaction --> SQLite
     Usage --> SQLite
+    Audit --> SQLite
     Registry -. Future trusted extensions .-> Remote[External backend implementations]
 ```
 
@@ -36,6 +38,7 @@ control_plane:
   master_key_path: var/lib/m87-gateway/master.key
   retention_days: 30
   usage_retention_days: 365
+  management_audit_retention_days: 365
 ```
 
 Set a strong operator key through the existing private bootstrap or
@@ -43,8 +46,8 @@ Set a strong operator key through the existing private bootstrap or
 `GATEWAY_USAGE_RETENTION_DAYS` override these YAML values. Backend selection and
 usage retention are bootstrap settings, outside the current Controls form.
 YAML applies to the YAML-configured server entry point. The native/source local
-launcher uses its private data directory and accepts these two environment
-variables; it does not load the YAML file. No database server, container engine or
+launcher uses its private data directory and accepts these environment
+variables and `GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS`; it does not load the YAML file. No database server, container engine or
 additional storage package is required.
 
 Unknown adapter identifiers fail before creating a SQLite database or master key. The local launcher may already
@@ -62,7 +65,7 @@ exposes `backend_adapters()` for discovery.
 
 A factory accepts `ControlPlaneConfig` and returns a backend with:
 
-- `configuration`, `identities`, `secrets`, `traffic`, and `usage_repository`
+- `configuration`, `identities`, `secrets`, `traffic`, `usage_repository` and `management_audit`
   implementing the corresponding repository protocols;
 - the compatibility methods in those protocols, normally delegated by inheriting
   `BackendFacade`;
@@ -92,7 +95,7 @@ The secret-store protocol does not require enumerating remote secrets. The local
 backend retains an optional `provider_secret_values()` compatibility hook for
 startup redaction. A future remote secret implementation must register resolved
 credentials with redaction before use and test that path, without bulk-reading a
-remote vault. Standalone Vault substitution, secret references, credential-version
+remote vault. Standalone Vault substitution, secret references, master-key version
 migration and outbox exporters are subsequent milestones. Do not mix stores in a
 way that silently breaks the configuration/credential transaction.
 
@@ -106,7 +109,8 @@ namespace/database for each test; never use a live gateway data directory.
 
 The shared suite checks restart persistence, key revocation, safe credential
 metadata, request content retrieval, usage after log deletion, duplicate delivery,
-cache accounting, unknown tokens and project isolation in reporting. SQLite tests
+cache accounting, unknown tokens, project isolation in reporting and key
+overlap/revocation with audit references. SQLite tests
 add migrations, transaction rollback, content-free usage tables, independent
 retention, registry rejection and configuration validation.
 
@@ -118,3 +122,8 @@ keep ordinary local tests independent of remote services and Docker.
 
 See [backend acceptance](runbooks/backend-storage-testing.md) and
 [backend architecture](backend-architecture.md).
+
+Application policies now live in `applications`; digests and independent key
+lifecycle timestamps live in `app_keys`. Backend extensions must implement the
+key lifecycle and management-audit contracts as well. See
+[rotation acceptance](runbooks/application-key-rotation.md).

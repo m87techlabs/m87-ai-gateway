@@ -9,7 +9,8 @@ API while leaving `POST /v1/chat/completions` as the application data plane.
 - 24-hour request, error, latency, and provider-reported token totals.
 - Searchable recent LLM exchange metadata and JSON export.
 - Prompt and completion inspection when gateway-wide capture is enabled.
-- Runtime application-key creation and revocation.
+- Runtime application-key creation, overlapping replacement, optional replacement
+  expiry and individual revocation, with identity management audit.
 - Persistent project grouping, app membership, filtered dashboards/logs/exports,
   hourly UTC request/token charts, and application/model usage breakdowns.
 - An API tester that calls the normal data plane with an application key.
@@ -127,9 +128,9 @@ steps are in the [controls runbook](runbooks/gateway-controls-testing.md).
 
 ## Backend storage lifecycle
 
-The SQLite backend now uses separate configuration, identity, secret, traffic and
-usage repositories. Deleting traffic logs preserves usage; usage has independent
-365-day retention by default. Schema-2 startup migrates retained earlier events
+The SQLite backend now uses separate configuration, identity, secret, traffic, usage and
+management-audit repositories. Deleting traffic logs preserves usage; usage has independent
+365-day retention by default. Schema-3 startup migrates retained earlier events and splits applications/keys
 without changing credential formats. Follow [backend acceptance](runbooks/backend-storage-testing.md)
 before upgrading existing data; see [backend adapters](backend-adapters.md) for
 trusted extensions and future adapter testing requirements.

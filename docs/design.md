@@ -228,7 +228,7 @@ packaging option to verify for the final functional release scope.
 
 ## Implemented backend foundation
 
-SQLite now composes configuration, identity, secret, traffic and usage repositories
+SQLite now composes configuration, identity, secret, traffic, usage and management-audit repositories
 through a compatibility facade and explicit backend registry. Schema 2 keeps
 content-free usage records independently of traffic deletion/retention. Only SQLite
 is bundled. See [backend adapters](backend-adapters.md) for trusted extension

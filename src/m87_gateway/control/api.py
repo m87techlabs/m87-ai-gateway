@@ -19,6 +19,7 @@ from m87_gateway.adapters import adapters
 from m87_gateway.providers.factory import get_provider
 from m87_gateway.control.setup import activate, apply_overrides
 from m87_gateway.control.backends import Backend
+from m87_gateway.control.repositories.identities import KeyLimitError
 
 STATIC_DIR = Path(__file__).with_name("static")
 router = APIRouter()
@@ -95,6 +96,12 @@ class AppKeyCreate(AppModelAccess):
     )
     rate_limit_per_minute: int | None = Field(default=None, ge=1, le=100000)
     max_concurrent_requests: int | None = Field(default=None, ge=1, le=10000)
+
+
+class AppKeyIssue(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    expires_in_days: int | None = Field(default=None, ge=1, le=3650, strict=True)
+    revoke_existing: bool = Field(default=False, strict=True)
 
 
 class AppLimitsWrite(BaseModel):
@@ -287,7 +294,7 @@ async def apps(store: AdminStore):
 
 
 @router.post("/admin/api/apps", status_code=201)
-async def create_app(payload: AppKeyCreate, store: AdminStore):
+async def create_app(payload: AppKeyCreate, request: Request, store: AdminStore):
     try:
         app, raw_key = store.create_app_key(
             payload.app_id,
@@ -301,6 +308,7 @@ async def create_app(payload: AppKeyCreate, store: AdminStore):
         raise GatewayError(409, "app_exists", "Application identifier already exists") from exc
     except ValueError as exc:
         raise GatewayError(422, "unknown_project", "Create the selected project first") from exc
+    request.app.state.recorder.add_secret(raw_key)
     return {**app, "api_key": raw_key}
 
 
@@ -336,6 +344,48 @@ async def delete_app(app_id: str, store: AdminStore):
     if not store.delete_app(app_id):
         raise GatewayError(404, "not_found", "Application was not found")
     return Response(status_code=204)
+
+
+@router.get("/admin/api/apps/{app_id}/keys")
+async def application_keys(app_id: str, store: AdminStore):
+    keys = store.list_app_keys(app_id)
+    if keys is None:
+        raise GatewayError(404, "not_found", "Application was not found")
+    return {"items": keys}
+
+
+@router.post("/admin/api/apps/{app_id}/keys", status_code=201)
+async def issue_application_key(
+    app_id: str, payload: AppKeyIssue, request: Request, store: AdminStore
+):
+    try:
+        metadata, key = store.issue_app_key(
+            app_id, payload.expires_in_days, payload.revoke_existing
+        )
+    except KeyLimitError as exc:
+        raise GatewayError(
+            409, "key_limit", "Revoke a key before adding another; ten active keys are allowed"
+        ) from exc
+    except ValueError as exc:
+        raise GatewayError(404, "not_found", "Application was not found") from exc
+    request.app.state.recorder.add_secret(key)
+    return {**metadata, "api_key": key}
+
+
+@router.delete("/admin/api/apps/{app_id}/keys/{key_id}", status_code=204)
+async def revoke_application_key(app_id: str, key_id: str, store: AdminStore):
+    if not store.revoke_app_key(app_id, key_id):
+        raise GatewayError(404, "not_found", "Application key was not found")
+    return Response(status_code=204)
+
+
+@router.get("/admin/api/management-events")
+async def management_events(
+    store: AdminStore,
+    project_id: ProjectFilter = None,
+    limit: int = Query(default=100, ge=1, le=1000),
+):
+    return {"items": store.list_management_events(limit, project_id)}
 
 
 @router.get("/admin/api/provider-keys")

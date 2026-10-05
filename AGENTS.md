@@ -81,8 +81,13 @@ deployment objective. Cloud capabilities remain planned until tested and documen
 
 The backend direction is documented in docs/backend-architecture.md:
 SQLite stays the embedded default while services/repositories separate configuration,
-identities, secret storage, traffic/content, usage and management audit. Five SQLite
+identities, secret storage, traffic/content, usage and management audit. Six SQLite
 repositories and an explicit trusted backend registry are implemented.
+Schema 2 introduced independent usage; schema 3 separates application metadata
+from multiple credential digests and adds transactional identity management audit.
+Overlap, optional replacement expiry, individual revocation and a ten-active-key
+bound are implemented. Actor is the shared operator role. Configuration/secret
+audit, individual operator identity and master-key version migration remain planned.
 Schema 2 separates content-free usage records from traffic; usage retention defaults
 to 365 days, traffic to 30. Duplicate IDs preserve first usage attribution, and
 traffic deletion leaves accounting intact. Upgrade backfills only retained events.

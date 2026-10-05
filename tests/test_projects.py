@@ -1,3 +1,4 @@
+from legacy_backend import schema_two_identities
 import asyncio
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -131,6 +132,7 @@ def test_legacy_migration_preserves_keys_and_attributes_only_authenticated_event
     store.emit(exchange("legacy-authenticated"))
     store.emit(exchange("legacy-anonymous", app_id=None, project_id=None, status_code=401))
     with sqlite3.connect(tmp_path / "control.db") as connection:
+        schema_two_identities(connection)
         connection.execute("DROP INDEX events_project_created")
         connection.execute("ALTER TABLE events DROP COLUMN project_id")
         connection.execute("ALTER TABLE app_keys DROP COLUMN project_id")

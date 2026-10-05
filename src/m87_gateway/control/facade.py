@@ -5,6 +5,7 @@ from typing import Any
 from .repositories.contracts import (
     ConfigurationRepository,
     IdentityRepository,
+    ManagementAuditRepository,
     SecretStore,
     TrafficRepository,
     UsageRepository,
@@ -20,6 +21,7 @@ class BackendFacade:
     identities: IdentityRepository
     secrets: SecretStore
     traffic: TrafficRepository
+    management_audit: ManagementAuditRepository
     usage_repository: UsageRepository
 
     def runtime_config(self) -> dict:
@@ -126,3 +128,17 @@ class BackendFacade:
 
     def delete_provider_key(self, provider: str, alias: str = "default") -> bool:
         return self.secrets.delete_provider_key(provider, alias)
+
+    def issue_app_key(
+        self, app_id: str, expires_in_days: int | None = None, revoke_existing: bool = False
+    ):
+        return self.identities.issue_app_key(app_id, expires_in_days, revoke_existing)
+
+    def list_app_keys(self, app_id: str):
+        return self.identities.list_app_keys(app_id)
+
+    def revoke_app_key(self, app_id: str, key_id: str) -> bool:
+        return self.identities.revoke_app_key(app_id, key_id)
+
+    def list_management_events(self, limit: int = 100, project_id: str | None = None):
+        return self.management_audit.list_management_events(limit, project_id)

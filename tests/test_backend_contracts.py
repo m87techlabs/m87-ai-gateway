@@ -1,6 +1,8 @@
 """SQLite runs the reusable contracts without network services or containers."""
 
 import sqlite3
+
+from legacy_backend import schema_two_identities
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -36,6 +38,7 @@ def test_schema_one_backfills_only_existing_evidence_and_preserves_keys(backend_
     store.put_provider_key("openai", "synthetic-secret")
     store.emit(exchange())
     with sqlite3.connect(backend_config.database_path) as db:
+        schema_two_identities(db)
         db.execute("DROP TABLE usage_records")
         db.execute("PRAGMA user_version = 1")
     upgraded = create_backend(backend_config)
@@ -143,6 +146,7 @@ def test_failed_migration_rolls_back_schema_and_version(backend_config, monkeypa
     _, key = store.create_app_key("existing", ["auto"], False)
     store.emit(exchange())
     with sqlite3.connect(backend_config.database_path) as db:
+        schema_two_identities(db)
         db.execute("DROP TABLE usage_records")
         db.execute("PRAGMA user_version = 1")
     migrate = SQLiteUsageRepository.migrate

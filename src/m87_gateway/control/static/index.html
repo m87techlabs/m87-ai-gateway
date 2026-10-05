@@ -31,6 +31,7 @@
         <button class="nav" data-view="tester">API tester</button>
         <button class="nav" data-view="logs">Logs</button>
         <button class="nav" data-view="apps">Applications</button>
+        <button class="nav" data-view="audit">Management audit</button>
         <button class="nav" data-view="keys">Provider keys</button>
         <button class="nav" data-view="destinations">Destinations</button>
       </nav>
@@ -161,6 +162,20 @@
           </form>
           <div class="panel"><h3>Managed applications</h3><div id="apps"></div></div>
         </div>
+        <div id="app-keys-panel" class="panel" hidden>
+          <h3 id="app-keys-title">Application keys</h3>
+          <p>Issue a replacement, update your calling app, then revoke the old key. Both keys remain valid during the overlap. All keys share application permissions and limits.</p>
+          <form id="app-key-form" class="form-panel">
+            <label>Replacement key expiry in days<input name="expires_in_days" type="number" min="1" max="3650" placeholder="No expiry"></label>
+            <label class="check"><input name="revoke_existing" type="checkbox">Revoke existing keys immediately</label>
+            <button type="submit">Create replacement key</button>
+            <div id="replacement-key" class="secret" role="status" aria-live="polite" hidden></div>
+          </form>
+          <div id="application-keys"></div>
+        </div>
+      </section>
+      <section id="view-audit" class="view" hidden>
+        <div class="panel"><h3>Management audit</h3><p>Recent project, application and key changes. Actor identifies the shared operator role. Credential values are excluded.</p><div id="management-events"></div></div>
       </section>
 
       <section id="view-keys" class="view" hidden>

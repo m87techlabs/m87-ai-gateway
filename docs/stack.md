@@ -108,7 +108,7 @@ private destination. See [workstation runbook](runbooks/workstation-distribution
 
 ## Embedded backend extension boundary
 
-Five repositories share one private SQLite database. Traffic and content-free usage
+Six repositories share one private SQLite database. Traffic and content-free usage
 records are written atomically with separate retention. Backend factories are
 registered explicitly in trusted source; configuration selects an identifier.
 Only SQLite is bundled. External database/secret stores require the shared

@@ -33,6 +33,8 @@ async function consoleFixture(t) {
   const apps = [{app_id: "sample-app", project_id: "alpha", key_prefix: "fixture", allowed_models: ["auto"], capture_content: false, rate_limit_per_minute: null}];
   const event = {request_id: "fixture-request", created_at: "2026-10-02T12:00:00Z", project_id: "alpha", app_id: "sample-app", routed_model: "ollama:small", status_code: 200, total_tokens: 13, latency_ms: 12, cache_status: "disabled", provider_attempts: 1};
   let controls = {cache: {enabled: false, ttl_seconds: 300, max_entries: 1000}, retry: {max_attempts: 1, backoff_ms: 100}, limits: {max_concurrent_requests: 64}, max_request_bytes: 262144, max_message_chars: 65536, retention_days: 30, max_content_chars: 16384};
+  const applicationKeys = [{key_id: "key-old", app_id: "sample-app", key_prefix: "fixture", created_at: "2026-10-05T12:00:00Z", expires_at: null, revoked_at: null, active: true}];
+  let deferredKeyIssue = false; let pendingKeyIssue = null;
   const requests = [];
   let pendingChat = null;
   let deferredChat = false;
@@ -57,6 +59,20 @@ async function consoleFixture(t) {
         ? response({ok: false, message: "Could not connect to the inference service.", latency_ms: 1})
         : response({ok: true, message: "Ollama is reachable. 0 model(s) available.", latency_ms: 2});
     }
+    if (url.pathname.includes("/apps/") && url.pathname.endsWith("/keys")) {
+      if (method === "POST") {
+        const value = {key_id: "key-new", app_id: "sample-app", key_prefix: "replacement-prefix", created_at: "2026-10-05T13:00:00Z", expires_at: "2026-11-04T13:00:00Z", revoked_at: null, active: true};
+        if (body.revoke_existing) applicationKeys.forEach((key) => { key.active = false; key.revoked_at = value.created_at; });
+        applicationKeys.push(value);
+        if (deferredKeyIssue) return new Promise((resolve) => { pendingKeyIssue = () => resolve(response({...value, api_key: "m87_replacement-secret"}, 201)); });
+        return response({...value, api_key: "m87_replacement-secret"}, 201);
+      }
+      return response({items: [...applicationKeys].reverse()});
+    }
+    if (url.pathname.includes("/apps/") && url.pathname.includes("/keys/") && method === "DELETE") {
+      const key = applicationKeys.find((item) => url.pathname.endsWith(item.key_id)); key.active = false; key.revoked_at = "2026-10-05T14:00:00Z"; return response(null, 204);
+    }
+    if (url.pathname.endsWith("/management-events")) return response({items: [{created_at: "2026-10-05", actor: "operator", action: "application_key.issued", project_id: "alpha", app_id: "<img src=x>", key_id: "key-new"}]});
     if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls); }
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
     if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
@@ -89,7 +105,8 @@ async function consoleFixture(t) {
   submit("login-form");
   await until(() => !$("console").hidden);
   return {window, $, submit, requests, deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
-    deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail};
+    deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail,
+    deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue};
 }
 
 test("project selection scopes dashboard, usage, logs and export and renders charts", async (t) => {
@@ -274,4 +291,50 @@ test("connection test probes unsaved fields and leaves routing and credentials i
   $("test-connection").click();
   await until(() => $("connection-test-status").textContent.includes("Connection failed:"));
   assert.equal($("test-connection").disabled, false);
+});
+
+
+test("replacement keys support expiry, overlap and confirmed individual revocation", async (t) => {
+  const {$, window, requests, submit} = await consoleFixture(t);
+  window.document.querySelector('[data-view="apps"]').click();
+  await until(() => $("apps").querySelector("button") !== null);
+  [...$("apps").querySelectorAll("button")].find((button) => button.textContent === "Manage keys").click();
+  await until(() => !$("app-keys-panel").hidden);
+  $("app-key-form").elements.expires_in_days.value = "30";
+  submit("app-key-form");
+  await until(() => $("replacement-key").textContent.includes("m87_replacement-secret"));
+  const issuance = requests.find((request) => request.method === "POST" && request.path.endsWith("/sample-app/keys"));
+  assert.deepEqual(issuance.body, {expires_in_days: 30, revoke_existing: false});
+  await until(() => $("application-keys").textContent.includes("replacement-prefix"));
+  const oldRow = [...$("application-keys").querySelectorAll("tbody tr")].find((row) => row.textContent.includes("fixture"));
+  window.confirm = () => false; oldRow.querySelector("button").click();
+  assert.equal(requests.some((request) => request.path.endsWith("/keys/key-old")), false);
+  window.confirm = () => true; oldRow.querySelector("button").click();
+  await until(() => requests.some((request) => request.method === "DELETE" && request.path.endsWith("/keys/key-old")));
+  await until(() => $("application-keys").textContent.includes("Revoked"));
+  $("lock").click();
+  assert.equal($("replacement-key").textContent, "");
+});
+
+test("replacement key arriving after console lock stays hidden", async (t) => {
+  const {$, window, submit, deferKeyIssue, keyPending} = await consoleFixture(t);
+  window.document.querySelector('[data-view="apps"]').click();
+  await until(() => $("apps").querySelector("button") !== null);
+  [...$("apps").querySelectorAll("button")].find((button) => button.textContent === "Manage keys").click();
+  await until(() => !$("app-keys-panel").hidden);
+  deferKeyIssue(); submit("app-key-form"); await until(() => keyPending() !== null);
+  $("lock").click(); keyPending()(); await delay(30);
+  assert.equal($("replacement-key").textContent, "");
+  assert.equal($("app-keys-panel").hidden, true);
+});
+
+test("management audit follows project filters and renders references safely", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  $("project-filter").value = "alpha"; $("project-filter").dispatchEvent(new window.Event("change"));
+  window.document.querySelector('[data-view="audit"]').click();
+  await until(() => $("management-events").textContent.includes("application_key.issued"));
+  const query = requests.find((request) => request.path.endsWith("/management-events"));
+  assert.equal(query.query.get("project_id"), "alpha");
+  assert.equal($("management-events").querySelector("img"), null);
+  assert.match($("management-events").textContent, /<img src=x>/);
 });

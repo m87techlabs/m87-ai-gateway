@@ -40,7 +40,7 @@ an encrypted backup with its current binary. Follow the
 [workstation backup procedure](workstation-distribution.md). Preserve the matching
 master/operator keys and the compatible binary for rollback.
 
-Startup migrates schema 0/1 to schema 2 and backfills usage from events that still
+Startup migrates schema 0/1/2 to schema 3 and backfills usage from events that still
 exist, before normal retention pruning. It cannot recover already deleted traffic.
 Usage defaults to 365 days and traffic to 30 days. Set
 `control_plane.usage_retention_days` before startup if a different window is needed.
@@ -48,7 +48,7 @@ Pruning runs at startup and event writes; traffic also prunes when Controls is s
 There is no idle expiry timer. Deleting traffic does not clear usage, JSONL files,
 backups, or cached responses and is not secure erasure.
 
-An older schema-1 binary rejects a schema-2 database. Rollback requires the earlier
+An older schema-1/2 binary rejects a schema-3 database. Rollback requires the earlier
 backup restored into a fresh private directory; do not downgrade the live database
 or manually change its version. Upgrade checks here use isolated fixtures; no
 running workstation or Docker database is migrated by running the tests.

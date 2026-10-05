@@ -42,3 +42,6 @@ flowchart TD
 
 - [Backend storage acceptance](backend-storage-testing.md): repository contracts,
   independent usage, schema upgrades and future external-adapter gates.
+
+- [Application-key rotation](application-key-rotation.md): key overlap, expiry,
+  revocation and management audit.

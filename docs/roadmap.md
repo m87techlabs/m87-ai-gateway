@@ -60,10 +60,12 @@ Follow [backend architecture](backend-architecture.md):
 - [x] Add named backend configuration/registration and reusable behavioral contracts.
 - [x] Migrate retained traffic to independent usage records; verify key preservation.
 - Separate captured content from metadata and add remaining service boundaries.
-- Separate application/key identities and define rotation, revocation and key versions.
+- [x] Separate applications and keys; add overlap rotation, expiry, revocation and
+  transactional identity audit with console controls and shared tests.
+- Define encryption/digest key versions and audit configuration/provider-key changes.
 - Add configuration revisions, stable provider connection identities and atomic activation.
 - [x] Preserve usage through log deletion, with separate retention and duplicate-delivery protection.
-- Add management audit, storage health and bounded durable exporter delivery.
+- Extend management audit, storage health and bounded durable exporter delivery.
 - Add optional PostgreSQL/Vault/export adapters after the local contracts are tested.
 
 Checked items are implemented; the remaining items are planned. Existing Docker

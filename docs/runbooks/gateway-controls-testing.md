@@ -42,7 +42,8 @@ flowchart LR
 | Timeout | Short timeout returns 504; restoring provider behavior/timeout succeeds |
 | Readiness | Disabled default provider yields `/ready` 503 while `/health` remains 200; enabling restores readiness |
 | Request/capture bounds | Policy and body rejections avoid inference; captured input/output report truncation |
-| Restart/deletion | Controls, keys and logs survive restart; confirmed deletion removes history while preserving access |
+| Restart/deletion | Controls, keys and logs survive restart; deletion removes traffic while preserving access and usage |
+| Replacement key | Sample uses replacement during overlap; old-key revocation leaves replacement inference working |
 
 Additional regression tests cover admin authorization, invalid updates, per-app and
 global concurrency isolation, cancellation, retention changes, additive migration,

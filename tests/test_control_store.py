@@ -1,3 +1,4 @@
+from legacy_backend import schema_two_identities
 import json
 import sqlite3
 import stat
@@ -111,6 +112,7 @@ def test_existing_database_upgrades_without_losing_keys(tmp_path):
     control = store(tmp_path)
     _, key = control.create_app_key("existing", ["auto"], False)
     with sqlite3.connect(tmp_path / "control.db") as connection:
+        schema_two_identities(connection)
         connection.execute("ALTER TABLE app_keys DROP COLUMN rate_limit_per_minute")
         connection.execute("ALTER TABLE app_keys DROP COLUMN max_concurrent_requests")
         for name in ("provider_attempts", "provider_retries", "cache_status"):

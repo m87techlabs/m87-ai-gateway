@@ -213,6 +213,7 @@ class ObservabilityConfig(ConfigModel):
 
 class ControlPlaneConfig(ConfigModel):
     backend_adapter: str = Field(default="sqlite", pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    management_audit_retention_days: int = Field(default=365, ge=1, le=3650)
     usage_retention_days: int = Field(default=365, ge=1, le=3650)
     enabled: bool = False
     database_path: str = Field(default="var/lib/m87-gateway/control.db", min_length=1)
@@ -364,6 +365,10 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
         "SERVER_PORT": ("server", "port"),
         "GATEWAY_DEFAULT_MODEL": ("routing", "default_model"),
         "GATEWAY_BACKEND_ADAPTER": ("control_plane", "backend_adapter"),
+        "GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS": (
+            "control_plane",
+            "management_audit_retention_days",
+        ),
         "GATEWAY_USAGE_RETENTION_DAYS": ("control_plane", "usage_retention_days"),
         "GATEWAY_CONTROL_PLANE_DATABASE_PATH": ("control_plane", "database_path"),
         "GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH": ("control_plane", "master_key_path"),

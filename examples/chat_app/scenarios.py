@@ -356,6 +356,30 @@ def exercise():
                         "passed": True,
                     }
                 )
+                path = "/admin/api/apps/scenario-app/keys"
+                existing = operator.get(path).json()["items"][0]
+                issued = operator.post(path, json={"expires_in_days": 30})
+                issued.raise_for_status()
+                replacement = issued.json()
+                assert restarted.state.control_store.authenticate_app_key(app_key)
+                with serving(
+                    sample_app(Settings(gateway_url=url, app_key=replacement["api_key"]))
+                ) as sample_url:
+                    with httpx.Client(base_url=sample_url, timeout=10, trust_env=False) as browser:
+                        payload = {"messages": [{"role": "user", "content": "rotation"}]}
+                        assert browser.post("/api/chat", json=payload).status_code == 200
+                        revoked = operator.delete(path + "/" + existing["key_id"])
+                        assert revoked.status_code == 204
+                        assert restarted.state.control_store.authenticate_app_key(app_key) is None
+                        assert browser.post("/api/chat", json=payload).status_code == 200
+                events = operator.get("/admin/api/management-events").json()["items"]
+                assert any(
+                    e["action"] == "application_key.revoked" and e["key_id"] == existing["key_id"]
+                    for e in events
+                )
+                results.append(
+                    {"scenario": "Sample replacement key, overlap and revocation", "passed": True}
+                )
         return results
     finally:
         state.release.set()

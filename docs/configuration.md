@@ -31,6 +31,7 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_CONTROL_PLANE_DATABASE_PATH` | Local SQLite event and key-metadata path |
 | `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
 | `GATEWAY_BACKEND_ADAPTER` | Registered backend identifier; only `sqlite` is bundled |
+| `GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS` | Identity management audit retention; default 365 days |
 | `GATEWAY_USAGE_RETENTION_DAYS` | Independent usage retention; default 365 days |
 | `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | SQLite event retention in days; pruned at startup and on event writes |
 | `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
@@ -102,6 +103,7 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `control_plane.database_path`, `master_key_path` | Private local persistence paths |
 | `control_plane.admin_api_key_env` | Environment variable containing the admin key |
 | `control_plane.backend_adapter` | Bootstrap backend selection; default `sqlite` |
+| `control_plane.management_audit_retention_days` | Bootstrap management audit retention; default 365 days |
 | `control_plane.usage_retention_days` | Bootstrap usage retention; default 365 days |
 | `control_plane.retention_days` | SQLite event-pruning window; default 30 days |
 | `apps[].capture_content` / `auth.api_keys[].capture_content` | Legacy compatibility fields; ignored by gateway-wide capture |
@@ -142,5 +144,5 @@ older traffic records. Usage has its own retention and survives traffic deletion
 files. See [acceptance runbook](runbooks/gateway-controls-testing.md).
 
 Backend repository contracts and trusted source extensions are documented in
-[backend adapters](backend-adapters.md). Existing stores migrate to schema 2 on
+[backend adapters](backend-adapters.md). Existing stores migrate to schema 3 on
 startup; follow [backend acceptance](runbooks/backend-storage-testing.md) before upgrade.

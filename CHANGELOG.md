@@ -8,6 +8,10 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Schema-3 application/key separation, overlapping key replacement, optional expiry,
+  scoped revocation and transactional identity management audit in the console/API.
+- Shared key-lifecycle adapter contracts and an isolated sample rotation scenario.
+
 - Five SQLite repositories, trusted backend registration/configuration and shared
   adapter contracts; independent schema-2 usage records with atomic writes,
   duplicate-delivery protection, retention and migration preserving existing keys.

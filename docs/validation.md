@@ -11,6 +11,29 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Managed application keys and identity audit
+
+Schema 3 separates application policies from credential digests. It implements
+overlapping replacement keys, optional expiry, individual revocation, an enforced
+ten-active-key bound and transactional identity management audit. The console has
+Manage keys and Management audit views. Initial/migrated keys preserve existing
+behavior; only newly issued replacements receive requested expiry. Audit identifies
+the shared operator role and excludes credential values and inference content.
+
+Verified locally: 194 Python tests, 18 console interaction tests, lint/format,
+Python wheel build and links/fences in 50 Markdown files. Checks cover shared
+adapter lifecycle contracts, schema-1/2 migration, unchanged keys/policies/usage,
+inactive legacy keys, expiry, shared rate limits, concurrent issuance bounds,
+idempotent/scoped revocation, atomic audit rollback, restart, encrypted recovery
+and the sample HTTP replacement-key scenario. Console checks cover overlap, expiry
+submission, revocation confirmation, audit project filters, safe rendering and
+late secret responses after lock. No live user database was migrated and no
+Docker container/image was started, rebuilt or replaced.
+
+Individual operator identity, provider/configuration audit, encryption/digest key
+version migration, remote adapters/export, visual browser checks and final container
+packaging remain deferred. See [key lifecycle runbook](runbooks/application-key-rotation.md).
+
 ## SQLite backend foundations
 
 The first backend increment extracts configuration, identity, secret, traffic and
