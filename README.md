@@ -112,6 +112,7 @@ From a checkout, use the root Docker helpers:
 ./docker-status.sh          # Show container health and console URL
 ./docker-stop.sh            # Stop; preserve keys, configuration and logs
 ./docker-start.sh --build   # Build locally; no private registry login required
+./docker-start.sh --update  # Pull a published update; retain the Docker data volume
 ```
 
 Host Python is not required. Start Docker Engine/Desktop yourself first. If 8087
@@ -169,3 +170,13 @@ scaffold; the completed MVP will use a new version. Public preview and stable
 release criteria are defined in the [lifecycle](docs/lifecycle.md).
 
 Licensed under [Apache License 2.0](LICENSE).
+
+## Development loop
+
+Use `./start.sh` for routine source development, restart for Python changes and
+refresh for console assets. At feature checkpoints use `./docker-start.sh --build`.
+Every main push still builds/tests/publishes a verified image in CI. Explicit
+`--update` consumes a published image; restarting an existing container uses its
+existing code. Native and Docker stores are separate; see
+[development workflow](docs/runbooks/local-development.md) and
+[container data migration](docs/runbooks/container-deployment.md).

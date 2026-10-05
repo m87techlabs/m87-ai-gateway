@@ -176,3 +176,21 @@ the gateway and read the private `admin.key`, or supply a new strong
 `GATEWAY_ADMIN_API_KEY` before restarting. Removing `master.key` destroys access to
 stored credentials. Do not delete it to troubleshoot connectivity. For an isolated
 test reset, use a new data directory and preserve the existing one for recovery.
+
+## Test a connection before saving
+
+In Setup, enter an endpoint and optional provider key, then select **Test connection**.
+The gateway probes the form's current values using model discovery, with a maximum
+10-second timeout. It reports reachability, available model count and elapsed time,
+or a safe timeout/rejection/unreachable result. It does not save settings, replace
+keys, enable a disabled connection, select a default model or generate a completion.
+An empty model list still proves that the service responded correctly.
+
+Stored credentials are reused only for their current endpoint. A different endpoint
+requires a new key or explicit credential removal. After testing, save the connection
+and use **Discover models on saved connection** to populate default-model choices.
+Testing occurs from the gateway process/container, not the browser: Docker Ollama
+usually uses `http://host.docker.internal:11434`. Reachability does not prove that a
+particular model is loaded or a completion will succeed. See
+[container networking](container-deployment.md) and
+[development workflow](local-development.md).

@@ -48,7 +48,10 @@ No host Python installation is required. Explicit ports must be free. A new
 deployment defaults to 8087; use 8187/8287/8387 if the native gateway already runs
 on 8087. Without a port/build override, an existing container is resumed with its
 saved image and port, avoiding an unexpected image update or registry requirement.
-To deliberately update or change ports, supply the appropriate override. Startup
+Use `./docker-start.sh --update` to pull the selected published image and recreate
+the gateway while keeping its current port and volume. Use `--build` for source
+changes or `--port` to change the host port. `--build` and `--update` are mutually
+exclusive. A plain start never automatically updates an existing image. Startup
 waits up to 90 seconds for container health and reports failures with next steps.
 Configuration readiness can remain 503 until a provider is configured.
 
@@ -172,6 +175,40 @@ Bind mounts are advanced: precreate the private data directory with UID/GID 1000
 and 0700 access on a compatible Linux filesystem. Windows bind-mount permission
 semantics are unverified; prefer named volumes. Do not use `volume-nocopy` for a
 fresh volume, because the precreated writable directory is needed.
+
+## Native and Docker data are separate
+
+The source/portable CLI uses its workstation data directory. Docker uses
+`/data/gateway` in a named volume. An empty Docker console does not mean the native
+applications/logs were deleted. Image rebuilds and container recreation retain the
+same Docker volume; changing runtimes does not import native state automatically.
+Earlier YAML-managed source instances may instead use `var/lib/m87-gateway`.
+Use the data directory that belongs to the instance you intend to migrate.
+
+To migrate native history, first stop that source instance and create an encrypted
+backup with its database, master key and operator key using the
+[workstation backup procedure](workstation-distribution.md). Restore into a fresh
+private directory in a new Docker volume, using a compatible image. For example,
+with an encrypted archive already copied into a dedicated `gateway-migration`
+volume at `/data/backups/native.m87backup`:
+
+```bash
+docker run --rm -it --mount source=gateway-migration,target=/data \
+  ghcr.io/m87techlabs/m87-ai-gateway:preview \
+  --data-dir /data/recovered --restore /data/backups/native.m87backup
+```
+
+Start that restored directory with the same image, a separate host port and the
+same volume, including `--data-dir /data/recovered --host 0.0.0.0 --port 8087
+--hide-admin-key` after the image name. Verify old applications, logs, credentials
+and a completion before switching clients. Retrieve the restored operator key
+from `/data/recovered/admin.key`. An Ollama URL from native operation may need to
+change from `localhost` to `host.docker.internal` in the container.
+
+Do not overwrite the current Docker volume or merge SQLite files. Restore refuses
+nonempty destinations, and automatic data merging is not implemented. Preserve
+both original stores until migration is verified. Cross-runtime encrypted recovery
+needs its own acceptance evidence; container startup alone does not verify it.
 
 ## Backup, upgrade and rollback
 

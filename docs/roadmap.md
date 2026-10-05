@@ -103,6 +103,8 @@ release review; development preview publication does not establish production re
 
 Prioritize the first-run experience alongside completion of core controls:
 
+- [x] Add draft connection testing with safe reachability/timeout/rejection feedback,
+  no persistence changes and stored-credential endpoint protection.
 - [x] Add guided console setup for provider connections, model discovery, default
   selection, and application-key creation; launcher supplies private operator access.
 - [x] Add a generic OpenAI-compatible text adapter and source adapter registration;

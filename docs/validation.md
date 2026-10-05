@@ -11,6 +11,32 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Setup connection test and development workflow
+
+On 2026-10-04, the operator reported successful Docker startup. Read-only inspection
+confirmed a healthy local Compose container on loopback port 8087. Its data remains
+in its own volume, independent of source/portable storage. No existing database,
+volume or container was replaced during this change.
+
+Draft connection probe tests cover auth, reachable/empty Ollama model lists,
+network refusal, timeout, upstream rejection, malformed payload, bounded timeout,
+no saved-state/key changes, and stored-key protection at changed endpoints.
+Console interaction checks exercise the unsaved form, success/failure feedback and
+unchanged defaults. Docker helper checks cover explicit update/preserved volume and
+mutually exclusive build/update options. All 172 Python tests, 15 console tests,
+lint/format, shell/JavaScript syntax and Markdown checks passed. The local Docker
+image and isolated run/Compose smoke passed, including the new probe against a
+synthetic host endpoint, tokens/content capture, recreation and cleanup. The
+operator's existing container stayed healthy and was not replaced.
+
+A separate isolated container tested Ollama at `host.docker.internal:11434` and
+returned a safe unreachable result; no completion was generated. This proves the
+failure-reporting path, not an Ollama running-state diagnosis. WSL loopback also
+failed to reach Ollama during this check. Live successful
+Ollama testing and cross-runtime migration remain pending. Hosted results follow.
+Local browser checks, live Ollama connection testing from the user's container,
+and cross-runtime migration remain separate operator checks.
+
 ## Docker workstation helper scripts
 
 On 2026-10-04: 163 Python tests, lint/format, Markdown and shell syntax checks

@@ -132,6 +132,12 @@ def exercise(executable):
                     },
                     admin,
                 )
+                assert call(
+                    path + "/test",
+                    "POST",
+                    {"config": {"base_url": f"http://127.0.0.1:{inference.server_port}/v1"}},
+                    admin,
+                )["ok"]
                 assert call(path + "/models", key=admin)["items"] == [
                     "openai_compatible:synthetic-model"
                 ]

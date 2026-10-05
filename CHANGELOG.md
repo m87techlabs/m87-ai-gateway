@@ -8,6 +8,11 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Setup Test connection probes draft endpoints without saving or generating completions,
+  reports safe outcomes and protects stored credentials across endpoint changes.
+- Explicit Docker image updates and documented native development/container checkpoints,
+  separate persistence and encrypted migration guidance.
+
 - Root Docker start/stop/status helpers with prerequisite checks, health waits,
   local source-build option and port/image-preserving resume.
 

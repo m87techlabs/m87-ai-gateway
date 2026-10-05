@@ -200,3 +200,127 @@ def test_setup_persists_connection_route_and_credentials_and_enforces_safety(tmp
     asyncio.run(scenario())
     assert b"synthetic-provider-key" not in (tmp_path / "control.db").read_bytes()
     assert len(upstream_requests) == 2
+
+
+@pytest.mark.parametrize("outcome", ["models", "empty", "network", "timeout", "auth", "invalid"])
+def test_draft_connection_probe_reports_outcome_without_saving(tmp_path, monkeypatch, outcome):
+    monkeypatch.setenv("GATEWAY_ADMIN_API_KEY", "synthetic-operator-key-long-enough")
+    original = httpx.AsyncClient
+    requests = []
+
+    def upstream(request):
+        requests.append(request)
+        assert request.method == "GET"
+        assert request.url.path == "/api/tags"
+        assert request.headers["authorization"] == "Bearer synthetic-draft-secret"
+        if outcome == "network":
+            raise httpx.ConnectError("private upstream information", request=request)
+        if outcome == "timeout":
+            raise httpx.ReadTimeout("private upstream information", request=request)
+        if outcome == "auth":
+            return httpx.Response(401, text="private upstream information")
+        if outcome == "invalid":
+            return httpx.Response(200, json={"private": "private upstream information"})
+        return httpx.Response(
+            200, json={"models": [{"name": "small"}] if outcome == "models" else []}
+        )
+
+    def client(**kwargs):
+        if "transport" not in kwargs:
+            assert kwargs["timeout"] == 10
+            kwargs["transport"] = httpx.MockTransport(upstream)
+        return original(**kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client)
+
+    async def scenario():
+        application = create_app(local_settings(tmp_path))
+        async with application.router.lifespan_context(application):
+            store = application.state.control_store
+            before = store.runtime_config()
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=application), base_url="http://gateway"
+            ) as browser:
+                payload = {
+                    "config": {"base_url": "http://inference.invalid:11434", "enabled": False},
+                    "key": "synthetic-draft-secret",
+                }
+                path = "/admin/api/connections/ollama/test"
+                assert (await browser.post(path, json=payload)).status_code == 401
+                assert not requests
+                response = await browser.post(
+                    path,
+                    json=payload,
+                    headers={"Authorization": "Bearer synthetic-operator-key-long-enough"},
+                )
+                assert response.status_code == 200
+                result = response.json()
+                assert result["ok"] == (outcome in {"models", "empty"})
+                assert result["latency_ms"] >= 0
+                if result["ok"]:
+                    assert result["model_count"] == (1 if outcome == "models" else 0)
+                assert "private upstream information" not in response.text
+                assert "synthetic-draft-secret" not in response.text
+                assert store.runtime_config() == before
+                assert not application.state.settings.providers.ollama.enabled
+                assert store.get_provider_key("ollama") is None
+                assert len(requests) == 1
+
+    asyncio.run(scenario())
+
+
+def test_probe_reuses_keys_only_at_saved_endpoint_and_never_replaces_them(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setenv("GATEWAY_ADMIN_API_KEY", "synthetic-operator-key-long-enough")
+    original = httpx.AsyncClient
+    requests = []
+
+    def upstream(request):
+        requests.append(request)
+        return httpx.Response(200, json={"models": []})
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: original(transport=httpx.MockTransport(upstream), **kwargs),
+    )
+    headers = {"Authorization": "Bearer synthetic-operator-key-long-enough"}
+    with TestClient(create_app(local_settings(tmp_path))) as browser:
+        path = "/admin/api/connections/ollama"
+        payload = {
+            "config": {"base_url": "http://saved.invalid:11434"},
+            "key": "synthetic-stored-key",
+        }
+        assert browser.put(path, json=payload, headers=headers).status_code == 204
+        store = browser.app.state.control_store
+        before = store.runtime_config()
+        same = {"config": payload["config"]}
+        assert browser.post(path + "/test", json=same, headers=headers).json()["ok"]
+        assert requests[-1].headers["authorization"] == "Bearer synthetic-stored-key"
+        changed = {"config": {"base_url": "http://other.invalid:11434"}}
+        assert browser.post(path + "/test", json=changed, headers=headers).status_code == 409
+        assert len(requests) == 1
+        changed["clear_key"] = True
+        assert browser.post(path + "/test", json=changed, headers=headers).json()["ok"]
+        assert "authorization" not in requests[-1].headers
+        changed["key"] = "synthetic-new-key"
+        assert browser.post(path + "/test", json=changed, headers=headers).json()["ok"]
+        assert requests[-1].headers["authorization"] == "Bearer synthetic-new-key"
+        assert store.get_provider_key("ollama") == "synthetic-stored-key"
+        assert store.runtime_config() == before
+        assert (
+            browser.post(
+                "/admin/api/connections/unknown/test", json=same, headers=headers
+            ).status_code
+            == 400
+        )
+        assert (
+            browser.post(
+                "/admin/api/connections/openai/test",
+                json={"config": {"base_url": "https://api.openai.com/v1"}},
+                headers=headers,
+            ).status_code
+            == 422
+        )
+        assert len(requests) == 3

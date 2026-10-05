@@ -77,13 +77,15 @@
           <form id="connection-form" class="panel form-panel">
             <h3>1. Connect an inference service</h3>
             <label>Adapter<select id="connection-provider" name="provider"></select></label>
-            <label>Endpoint URL<input name="base_url" type="url" required placeholder="http://localhost:11434"></label>
+            <label>Endpoint URL<input name="base_url" type="url" required placeholder="http://localhost:11434"><small>For workstation Ollama from Docker, use http://host.docker.internal:11434.</small></label>
             <label>Timeout in seconds<input name="timeout_seconds" type="number" min="1" max="600" value="60" required></label>
             <label>Provider key (optional for local services)<input name="key" type="password" autocomplete="off"><small>Leave blank to keep the stored key at the same endpoint.</small></label>
             <label class="check"><input name="clear_key" type="checkbox">Remove existing credentials</label>
             <label class="check"><input name="enabled" type="checkbox" checked>Enable connection</label>
             <button type="submit">Save connection</button>
-            <button id="test-connection" type="button" class="secondary">Discover models on saved connection</button>
+            <button id="test-connection" type="button" class="secondary">Test connection</button>
+            <button id="discover-models" type="button" class="secondary">Discover models on saved connection</button>
+            <p id="connection-test-status" class="muted" role="status" aria-live="polite">Test the endpoint above without saving it. No completion is generated.</p>
             <pre id="discovered-models">Connect Ollama, OpenAI, or an OpenAI-compatible server such as vLLM.</pre>
           </form>
           <form id="setup-form" class="panel form-panel">

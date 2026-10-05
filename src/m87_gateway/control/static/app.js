@@ -6,6 +6,7 @@ let activeProject = "";
 let sessionGeneration = 0;
 let testerRequestId = "";
 let testerController = null;
+let connectionTestGeneration = 0;
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -246,6 +247,7 @@ async function loadDestinations() {
 }
 
 function fillConnection() {
+  connectionTestGeneration++;
   const item = connections.find((item) => item.provider === $("connection-provider").value);
   if (!item) return;
   const form = $("connection-form");
@@ -254,6 +256,8 @@ function fillConnection() {
   form.elements.enabled.checked = item.config.enabled;
   form.elements.key.value = "";
   form.elements.clear_key.checked = false;
+  $("connection-test-status").textContent = "Test the endpoint above without saving it. No completion is generated.";
+  $("connection-test-status").className = "muted";
   $("discovered-models").textContent = item.has_stored_key ? "Provider key stored. Discover models to test this connection." : "Discover models after saving this connection.";
 }
 
@@ -335,6 +339,11 @@ $("provider-form").addEventListener("submit", async (event) => {
   } catch (error) { notice(error.message); }
 });
 
+$("connection-form").addEventListener("input", () => {
+  connectionTestGeneration++;
+  $("connection-test-status").textContent = "Settings changed. Test connection to check the current endpoint.";
+  $("connection-test-status").className = "muted";
+});
 $("connection-provider").addEventListener("change", fillConnection);
 $("connection-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const element = event.currentTarget; const form = new FormData(element);
@@ -346,6 +355,28 @@ $("connection-form").addEventListener("submit", async (event) => {
   } catch (error) { notice(error.message); }
 });
 $("test-connection").addEventListener("click", async () => {
+  const element = $("connection-form");
+  if (!element.reportValidity()) return;
+  const form = new FormData(element);
+  const provider = form.get("provider");
+  const session = sessionGeneration;
+  const generation = connectionTestGeneration;
+  const payload = {config: {base_url: form.get("base_url"), timeout_seconds: Number(form.get("timeout_seconds")), enabled: form.has("enabled")}, clear_key: form.has("clear_key")};
+  if (form.get("key")) payload.key = form.get("key");
+  const button = $("test-connection"); const status = $("connection-test-status");
+  button.disabled = true; button.textContent = "Testing…";
+  status.className = "muted"; status.textContent = "Checking connectivity from the gateway…";
+  const current = () => generation === connectionTestGeneration && session === sessionGeneration && adminKey && $("connection-provider").value === provider && element.elements.base_url.value === payload.config.base_url;
+  try {
+    const data = await (await api(`/connections/${encodeURIComponent(provider)}/test`, {method: "POST", body: JSON.stringify(payload)})).json();
+    if (!current()) return;
+    status.className = data.ok ? "enabled" : "error";
+    status.textContent = `${data.ok ? "Connected" : "Connection failed"}: ${data.message} (${data.latency_ms} ms)`;
+  } catch (error) {
+    if (current()) { status.className = "error"; status.textContent = `Connection failed: ${error.message}`; }
+  } finally { button.disabled = false; button.textContent = "Test connection"; }
+});
+$("discover-models").addEventListener("click", async () => {
   try {
     const data = await (await api(`/connections/${encodeURIComponent($("connection-provider").value)}/models`)).json();
     $("discovered-models").textContent = data.items.length ? data.items.join("\n") : "Connected. No models reported; enter a model manually.";

@@ -125,6 +125,12 @@ def exercise(image):
             },
             admin,
         )
+        assert call(
+            path + "/test",
+            "POST",
+            {"config": {"base_url": f"http://host.docker.internal:{backend.server_port}/v1"}},
+            admin,
+        )["ok"]
         assert call(path + "/models", key=admin)["items"] == [model]
         call("/admin/api/setup", "PUT", {"default_model": model, "capture_content": True}, admin)
         app = call(

@@ -10,12 +10,14 @@ port=${GATEWAY_PORT:-}
 port_override=false
 [[ -z $port ]] || port_override=true
 build=false
+update=false
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 usage() {
-    echo "Usage: ./docker-start.sh [--port PORT] [--build]"
+    echo "Usage: ./docker-start.sh [--port PORT] [--build | --update]"
     echo "       ./docker-stop.sh | ./docker-status.sh"
     echo "Requires Bash, Docker Engine (Linux amd64), and Docker Compose v2 with --wait-timeout."
     echo "Host Python is not required. Default port: 8087; existing deployment ports are reused."
+    echo "--update pulls the latest selected image and recreates the service, keeping data."
     echo "--build builds from the checkout instead of pulling the private preview image."
 }
 case "$action" in start|stop|status) ;; *) fail "Unknown Docker lifecycle action." ;; esac
@@ -23,12 +25,14 @@ while (($#)); do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --build) [[ $action == start ]] || fail "--build is a start option."; build=true; shift ;;
+        --update) [[ $action == start ]] || fail "--update is a start option."; update=true; shift ;;
         --port)
             [[ $action == start && $# -ge 2 ]] || fail "Start --port requires a port number."
             port=$2; port_override=true; shift 2 ;;
         *) fail "Unknown option: $1. Use --help." ;;
     esac
 done
+[[ $build != true || $update != true ]] || fail "Choose either --build or --update."
 if [[ -n $port ]]; then
     [[ $port =~ ^[0-9]{1,5}$ ]] && ((10#$port >= 1 && 10#$port <= 65535)) || fail "Port must be between 1 and 65535."
     port=$((10#$port))
@@ -65,7 +69,7 @@ case "$action" in
     start)
         help_text=$(docker compose up --help)
         [[ $help_text == *--wait-timeout* ]] || fail "Update Docker Compose v2: startup requires support for --wait and --wait-timeout."
-        if [[ -n $existing && $build == false && $port_override == false ]]; then
+        if [[ -n $existing && $build == false && $update == false && $port_override == false ]]; then
             command -v sleep >/dev/null || fail "Required Unix tool missing: sleep."
             "${compose[@]}" start m87-ai-gateway || fail "Existing gateway could not start. Check Docker access and container state."
             deadline=$((SECONDS + 90))

@@ -52,6 +52,11 @@ async function consoleFixture(t) {
       return response({model: "ollama:small", choices: [{message: {content: "synthetic answer"}}], usage: {prompt_tokens: 8, completion_tokens: 5, total_tokens: 13}}, 200, {"X-Request-ID": "fixture-request"});
     }
     assert.equal(options.headers.Authorization, "Bearer synthetic-admin-key");
+    if (url.pathname.endsWith("/connections/ollama/test")) {
+      return body.config.base_url.includes("offline")
+        ? response({ok: false, message: "Could not connect to the inference service.", latency_ms: 1})
+        : response({ok: true, message: "Ollama is reachable. 0 model(s) available.", latency_ms: 2});
+    }
     if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls); }
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
     if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
@@ -245,4 +250,28 @@ test("log deletion requires confirmation and follows selected project", async (t
   await until(() => requests.some((r) => r.method === "DELETE"));
   const deletion = requests.find((r) => r.method === "DELETE");
   assert.deepEqual(deletion.body, {confirmation: "DELETE", project_id: "alpha"});
+});
+
+
+test("connection test probes unsaved fields and leaves routing and credentials in the form", async (t) => {
+  const {$, requests, window} = await consoleFixture(t);
+  const form = $("connection-form");
+  form.elements.base_url.value = "http://draft.invalid:11434";
+  form.elements.key.value = "synthetic-draft-secret";
+  const model = $("setup-form").elements.default_model.value;
+  $("test-connection").click();
+  await until(() => $("connection-test-status").textContent.includes("Connected:"));
+  const request = requests.find((item) => item.path.endsWith("/connections/ollama/test"));
+  assert.equal(request.method, "POST");
+  assert.equal(request.body.config.base_url, "http://draft.invalid:11434");
+  assert.equal(request.body.key, "synthetic-draft-secret");
+  assert.equal($("setup-form").elements.default_model.value, model);
+  assert.equal(form.elements.key.value, "synthetic-draft-secret");
+  assert.ok(!requests.some((item) => item.method === "PUT"));
+  form.elements.base_url.value = "http://offline.invalid:11434";
+  form.elements.base_url.dispatchEvent(new window.Event("input", {bubbles: true}));
+  assert.ok($("connection-test-status").textContent.includes("Settings changed"));
+  $("test-connection").click();
+  await until(() => $("connection-test-status").textContent.includes("Connection failed:"));
+  assert.equal($("test-connection").disabled, false);
 });

@@ -4,6 +4,7 @@ import json
 import os
 import secrets
 import sqlite3
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -452,6 +453,78 @@ async def connection_models(provider: str, request: Request, store: AdminStore):
         except ValueError:
             continue
     return {"items": items}
+
+
+@router.post("/admin/api/connections/{provider}/test")
+async def test_connection(
+    provider: str, payload: ConnectionWrite, request: Request, store: AdminStore
+):
+    """Probe a draft connection without saving it or generating inference traffic."""
+    registration = adapters().get(provider)
+    if registration is None:
+        raise GatewayError(400, "unsupported_provider", "Unsupported model provider")
+    if not registration.model_discovery:
+        raise GatewayError(
+            400, "discovery_unavailable", "This adapter does not support connection tests"
+        )
+    current = request.app.state.settings.providers.for_adapter(provider)
+    config = payload.config.model_copy(
+        update={
+            "enabled": True,
+            "api_key_env": None,
+            "base_url_env": None,
+            "timeout_seconds": min(payload.config.timeout_seconds, 10),
+        }
+    )
+    if not config.base_url:
+        raise GatewayError(422, "missing_endpoint", "Enter the provider endpoint URL")
+    stored_key = store.get_provider_key(provider) or os.getenv(current.api_key_env or "")
+    if (
+        current.base_url != config.base_url
+        and stored_key
+        and not (payload.key or payload.clear_key)
+    ):
+        raise GatewayError(
+            409,
+            "credential_confirmation_required",
+            "Testing a different endpoint requires a new key or explicit credential removal",
+        )
+    key = payload.key.get_secret_value() if payload.key else None
+    if not key and not payload.clear_key and current.base_url == config.base_url:
+        key = stored_key
+    if registration.requires_key and not key:
+        raise GatewayError(
+            422, "provider_not_configured", "Enter a provider key to test this connection"
+        )
+    adapter = registration.factory(config, key)
+    started = time.perf_counter()
+    try:
+        names = await adapter.list_models()
+    except GatewayError as exc:
+        messages = {
+            "provider_timeout": "Connection timed out. Check the endpoint, firewall and service.",
+            "provider_rejected": "Service rejected the connection test. Check credentials and endpoint.",
+            "provider_rate_limited": "Service is rate limiting requests. Try again later.",
+            "provider_invalid_payload": "Endpoint responded with an invalid model list. Check the adapter and URL.",
+        }
+        return {
+            "ok": False,
+            "provider": provider,
+            "code": exc.code,
+            "message": messages.get(
+                exc.code,
+                "Could not connect to the inference service. Check that it is running and reachable from the gateway.",
+            ),
+            "latency_ms": round((time.perf_counter() - started) * 1000, 3),
+        }
+    return {
+        "ok": True,
+        "provider": provider,
+        "code": "connected",
+        "message": f"{registration.label} is reachable. {len(names)} model(s) available.",
+        "model_count": len(names),
+        "latency_ms": round((time.perf_counter() - started) * 1000, 3),
+    }
 
 
 @router.put("/admin/api/setup", status_code=204)

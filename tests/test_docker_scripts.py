@@ -146,3 +146,19 @@ def test_status_absent_service_returns_stopped(runner):
     assert result.returncode == 3
     assert "No gateway container" in result.stdout
     assert not any("start" in call or "stop" in call for call in calls)
+
+
+def test_explicit_update_pulls_and_recreates_preserving_port_and_volume(runner):
+    result, calls = runner("start", "--update", DOCKER_TEST_EXISTING="1")
+    assert result.returncode == 0
+    assert "http://127.0.0.1:8187" in result.stdout
+    assert any("pull" in call for call in calls)
+    assert any("up" in call and "-d" in call for call in calls)
+    assert not any("down" in call or "--volumes" in call for call in calls)
+
+
+def test_build_and_update_are_mutually_exclusive(runner):
+    result, calls = runner("start", "--build", "--update")
+    assert result.returncode == 1
+    assert "Choose either" in result.stderr
+    assert not calls
