@@ -17,7 +17,7 @@ from m87_gateway.main import create_app
 
 def test_sample_control_scenarios_over_real_http():
     results = exercise()
-    assert len(results) == 10
+    assert len(results) == 12
     assert all(result["passed"] for result in results)
 
 
@@ -74,7 +74,14 @@ def test_operator_controls_authorization_validation_and_restart(tmp_path, monkey
                 assert (await client.put("/admin/api/controls", json=invalid)).status_code == 422
                 assert (await client.get("/admin/api/controls")).json() == controls
                 controls.update(
-                    cache={"enabled": True, "ttl_seconds": 7, "max_entries": 2}, retention_days=90
+                    cache={"enabled": True, "ttl_seconds": 7, "max_entries": 2},
+                    retention_days=90,
+                    limits={
+                        "max_concurrent_requests": 2,
+                        "queue_max_depth": 3,
+                        "queue_max_depth_per_app": 1,
+                        "queue_wait_timeout_seconds": 0.5,
+                    },
                 )
                 assert (await client.put("/admin/api/controls", json=controls)).status_code == 204
                 assert app.state.response_cache.enabled
@@ -94,6 +101,8 @@ def test_operator_controls_authorization_validation_and_restart(tmp_path, monkey
                 assert (await client.get("/health")).status_code == 200
         restarted = create_app(settings)
         async with restarted.router.lifespan_context(restarted):
+            assert restarted.state.settings.limits.queue_max_depth == 3
+            assert restarted.state.settings.limits.queue_wait_timeout_seconds == 0.5
             assert restarted.state.response_cache.enabled
             assert restarted.state.response_cache.ttl_seconds == 7
             assert restarted.state.control_store.get_event("old")

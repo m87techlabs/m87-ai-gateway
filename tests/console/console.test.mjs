@@ -77,7 +77,7 @@ async function consoleFixture(t) {
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
     if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
     if (url.pathname.endsWith("/limits")) { Object.assign(apps[0], body); return response(null, 204); }
-    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
+    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, capability_matrix: {text_chat: true, streaming: false, generation_parameters: ["top_p", "seed"], response_formats: ["text", "json_object"]}, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
     if (url.pathname.endsWith("/projects")) {
       if (method === "POST") { projects.push({...body, app_count: 0}); return response(body, 201); }
       return response({items: projects});
@@ -230,10 +230,17 @@ test("controls edit persistent values and show readiness, then clear response ca
   form.elements.max_attempts.value = "2";
   form.elements.retention_days.value = "90";
   form.elements.cache_enabled.checked = true;
+  form.elements.queue_enabled.checked = true;
+  form.elements.queue_max_depth.value = "4";
+  form.elements.queue_max_depth_per_app.value = "2";
+  form.elements.queue_wait_timeout_seconds.value = "0.5";
   submit("controls-form");
   await until(() => requests.some((r) => r.path.endsWith("/controls") && r.method === "PUT"));
   const request = requests.find((r) => r.path.endsWith("/controls") && r.method === "PUT");
   assert.equal(request.body.limits.max_concurrent_requests, 8);
+  assert.equal(request.body.limits.queue_max_depth, 4);
+  assert.equal(request.body.limits.queue_max_depth_per_app, 2);
+  assert.equal(request.body.limits.queue_wait_timeout_seconds, 0.5);
   assert.equal(request.body.retry.max_attempts, 2);
   assert.equal(request.body.retention_days, 90);
   assert.equal(request.body.cache.enabled, true);
@@ -337,4 +344,11 @@ test("management audit follows project filters and renders references safely", a
   assert.equal(query.query.get("project_id"), "alpha");
   assert.equal($("management-events").querySelector("img"), null);
   assert.match($("management-events").textContent, /<img src=x>/);
+});
+
+ test("setup shows adapter capabilities without promising model support", async (t) => {
+  const {$} = await consoleFixture(t);
+  assert.match($("adapter-capabilities").textContent, /top_p, seed/);
+  assert.match($("adapter-capabilities").textContent, /Unavailable/);
+  assert.match($("adapter-capabilities").textContent, /json_object/);
 });

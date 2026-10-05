@@ -448,6 +448,7 @@ async def setup(request: Request, store: AdminStore):
                 "label": adapter.label,
                 "requires_key": adapter.requires_key,
                 "capabilities": ["text_chat", "non_streaming"],
+                "capability_matrix": adapter.capabilities.as_dict(),
                 "model_discovery": adapter.model_discovery,
                 "configured": name in saved.get("providers", {}),
                 "has_stored_key": name in keys,
@@ -493,7 +494,11 @@ async def save_connection(
 
 @router.get("/admin/api/connections/{provider}/models")
 async def connection_models(provider: str, request: Request, store: AdminStore):
-    adapter = get_provider(provider, request.app.state.settings, store)
+    settings = request.app.state.settings
+    adapter = get_provider(provider, settings, store)
+    config = settings.providers.for_adapter(provider)
+    registration = adapters()[provider]
+    endpoint = config.base_url or registration.default_url or ""
     names = await adapter.list_models()
     # Validate discovered names before offering them as routes or app allowlists.
     items = []
@@ -502,6 +507,8 @@ async def connection_models(provider: str, request: Request, store: AdminStore):
             items.append(validate_model(f"{provider}:{name}", allow_auto=False))
         except ValueError:
             continue
+    if request.app.state.settings is settings:
+        request.app.state.model_catalog.replace(provider, endpoint, items)
     return {"items": items}
 
 

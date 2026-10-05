@@ -87,3 +87,35 @@ flowchart TD
     Upstream --> Normalize[Common text completion and nullable usage]
     Normalize --> Observe[Core cache, audit events and metrics]
 ```
+
+
+## Capability declarations
+
+Each registered Adapter carries a frozen Capabilities declaration. Setup displays
+its matrix. Built-in Ollama, OpenAI and generic compatible adapters support text
+chat, seed and text/JSON object/schema formats. All currently declare streaming,
+tools, embeddings, images and multiple choices unavailable. Ollama lacks the penalty
+and strict-schema mappings; compatible adapters declare them. Model/server support
+may be narrower and must be verified separately.
+
+Custom adapters default to temperature/max_tokens and text format. Add mappings
+and tests before declaring more support:
+
+```python
+from m87_gateway.adapters import Capabilities
+
+capabilities = Capabilities(
+    generation_parameters=frozenset({"temperature", "max_tokens", "top_p"}),
+    response_formats=frozenset({"text"}),
+)
+# Pass capabilities=capabilities to your trusted Adapter registration.
+```
+
+The chat route checks declared generation options and formats before constructing
+the provider. Existing non-streaming schema restrictions still reject streaming,
+tools, images and multiple choices; a flag alone does not implement a protocol.
+Tests in tests/test_inference_backlog.py exercise each built-in declaration and
+provider mapping, including unsupported paths. Reuse these cases for extensions.
+Mappings follow the [OpenAI chat reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create),
+[Ollama chat reference](https://docs.ollama.com/api/chat) and
+[Ollama parameter reference](https://docs.ollama.com/modelfile).

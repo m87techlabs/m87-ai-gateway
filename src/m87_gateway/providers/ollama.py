@@ -25,14 +25,24 @@ class OllamaProvider(Provider):
             options["temperature"] = payload.temperature
         if payload.max_tokens is not None:
             options["num_predict"] = payload.max_tokens
+        for field in ("top_p", "stop", "seed"):
+            value = getattr(payload, field)
+            if value is not None:
+                options[field] = [value] if field == "stop" and isinstance(value, str) else value
+        body = {
+            "model": model,
+            "messages": [message.model_dump() for message in payload.messages],
+            "stream": False,
+            "options": options,
+        }
+        if payload.response_format is not None:
+            if payload.response_format.type == "json_object":
+                body["format"] = "json"
+            elif payload.response_format.type == "json_schema":
+                body["format"] = payload.response_format.json_schema.schema_value
         data = await self.post(
             "/api/chat",
-            {
-                "model": model,
-                "messages": [message.model_dump() for message in payload.messages],
-                "stream": False,
-                "options": options,
-            },
+            body,
             self.headers(),
         )
         message = data.get("message")

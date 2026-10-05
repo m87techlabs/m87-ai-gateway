@@ -13,6 +13,8 @@ digests, private files and encrypted backups remain available. Multiple applicat
 transactional identity audit are implemented in schema 3. Master-key version
 migration, configuration revisions, content-table separation and remote implementations
 remain planned.
+Schema 4 adds nullable queue wait/outcome and hashed user-attribution fields to traffic;
+existing keys, usage and audit remain preserved.
 See [backend adapters](backend-adapters.md) for contracts and testing.
 
 ## Current implementation

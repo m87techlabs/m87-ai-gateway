@@ -18,6 +18,7 @@ from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWin
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
 from m87_gateway.metrics import GatewayMetrics
+from m87_gateway.model_catalog import ModelCatalog
 
 
 def create_app(settings: GatewaySettings | None = None) -> FastAPI:
@@ -27,8 +28,9 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             active = settings if settings is not None else get_settings()
             application.state.settings = active
             application.state.metrics = GatewayMetrics()
+            application.state.model_catalog = ModelCatalog()
             application.state.rate_limiter = SlidingWindowRateLimiter()
-            application.state.inflight_limiter = InFlightLimiter()
+            application.state.inflight_limiter = InFlightLimiter(application.state.metrics)
             application.state.control_store = None
             application.state.admin_api_key = ""
             if active.control_plane.enabled:

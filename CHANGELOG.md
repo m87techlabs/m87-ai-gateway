@@ -8,6 +8,12 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Authenticated model listing, adapter capability declarations/console matrix,
+  bounded generation parameters and hashed gateway-only user attribution.
+- Optional global/per-app bounded request queues, wait/overflow errors, cancellation
+  cleanup, queue metrics/log fields and schema-4 preservation migration.
+- SDK compatibility checks and sample model/parameter and queue recovery scenarios.
+
 - Schema-3 application/key separation, overlapping key replacement, optional expiry,
   scoped revocation and transactional identity management audit in the console/API.
 - Shared key-lifecycle adapter contracts and an isolated sample rotation scenario.

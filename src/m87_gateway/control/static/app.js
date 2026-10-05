@@ -170,7 +170,7 @@ async function showDetail(requestId) {
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";
@@ -299,6 +299,8 @@ function fillConnection() {
   form.elements.enabled.checked = item.config.enabled;
   form.elements.key.value = "";
   form.elements.clear_key.checked = false;
+  const matrix = Object.entries(item.capability_matrix || {}).map(([feature, support]) => ({feature, support: Array.isArray(support) ? support.join(", ") : support ? "Supported" : "Unavailable"}));
+  table($("adapter-capabilities"), ["Feature", "Support"], matrix, (row, entry) => { cell(row, entry.feature.replaceAll("_", " ")); cell(row, entry.support); });
   $("connection-test-status").textContent = "Test the endpoint above without saving it. No completion is generated.";
   $("connection-test-status").className = "muted";
   $("discovered-models").textContent = item.has_stored_key ? "Provider key stored. Discover models to test this connection." : "Discover models after saving this connection.";
@@ -332,7 +334,11 @@ async function loadControls() {
   const form = $("controls-form");
   for (const name of ["max_concurrent_requests", "max_request_bytes", "max_message_chars", "max_attempts", "backoff_ms", "ttl_seconds", "max_entries", "retention_days", "max_content_chars"]) form.elements[name].value = fields[name];
   form.elements.cache_enabled.checked = values.cache.enabled;
-  $("readiness-status").textContent = `${report.ready ? "Ready" : "Needs configuration"} · ${report.default_model} · ${report.active_requests} active requests`;
+  form.elements.queue_enabled.checked = (fields.queue_max_depth || 0) > 0;
+  form.elements.queue_max_depth.value = fields.queue_max_depth || 64;
+  form.elements.queue_max_depth_per_app.value = fields.queue_max_depth_per_app ?? 16;
+  form.elements.queue_wait_timeout_seconds.value = fields.queue_wait_timeout_seconds ?? 10;
+  $("readiness-status").textContent = `${report.ready ? "Ready" : "Needs configuration"} · ${report.default_model} · ${report.active_requests} active requests · ${report.queued_requests ?? 0} queued`;
   table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
 }
 
@@ -492,7 +498,7 @@ $("tester-detail").addEventListener("click", async () => {
 
 $("controls-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const number = (name) => Number(form.get(name));
-  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), max_content_chars: number("max_content_chars")};
+  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), max_content_chars: number("max_content_chars")};
   const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
   try { await api("/controls", {method: "PUT", body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
   catch (error) { notice(error.message); }

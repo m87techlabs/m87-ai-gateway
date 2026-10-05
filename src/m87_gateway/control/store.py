@@ -22,7 +22,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 class LocalControlStore(BackendFacade):
@@ -114,8 +114,7 @@ class LocalControlStore(BackendFacade):
                 );
                 """
             )
-            if previous_version < 3:
-                self._ensure_columns(connection)
+            self._ensure_columns(connection, legacy_identities=previous_version < 3)
             self.identities.migrate(connection, previous_version)
             self.management_audit.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
@@ -127,9 +126,12 @@ class LocalControlStore(BackendFacade):
         _tighten_sqlite_files(self.database_path)
 
     @staticmethod
-    def _ensure_columns(connection: sqlite3.Connection) -> None:
+    def _ensure_columns(connection: sqlite3.Connection, legacy_identities: bool = True) -> None:
         migrations = {
             "events": {
+                "client_user_hash": "TEXT",
+                "queue_wait_ms": "REAL",
+                "queue_outcome": "TEXT",
                 "provider_attempts": "INTEGER NOT NULL DEFAULT 0",
                 "provider_retries": "INTEGER NOT NULL DEFAULT 0",
                 "cache_status": "TEXT NOT NULL DEFAULT 'disabled'",
@@ -142,6 +144,8 @@ class LocalControlStore(BackendFacade):
             },
         }
         for table, additions in migrations.items():
+            if table == "app_keys" and not legacy_identities:
+                continue
             existing = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
             for name, definition in additions.items():
                 if name not in existing:

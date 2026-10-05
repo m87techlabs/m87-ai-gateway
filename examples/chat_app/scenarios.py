@@ -165,11 +165,39 @@ def exercise():
                 app_key = save(
                     "apps", {"app_id": "scenario-app", "allowed_models": ["auto", model]}, "POST"
                 )["api_key"]
+                with httpx.Client(base_url=gateway_url, trust_env=False) as caller:
+                    models = caller.get(
+                        "/v1/models", headers={"Authorization": f"Bearer {app_key}"}
+                    )
+                    assert [item["id"] for item in models.json()["data"]] == ["auto", model]
+                    parameters = caller.post(
+                        "/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {app_key}"},
+                        json={
+                            "model": model,
+                            "messages": [{"role": "user", "content": "Synthetic parameter test"}],
+                            "top_p": 0.7,
+                            "stop": ["END"],
+                            "seed": 1,
+                            "presence_penalty": 0.1,
+                            "frequency_penalty": 0.1,
+                            "response_format": {"type": "text"},
+                            "user": "synthetic-user",
+                        },
+                    )
+                    assert parameters.status_code == 200
+                results.append(
+                    {
+                        "scenario": "Application model catalog and generation parameters",
+                        "passed": True,
+                    }
+                )
                 controls = operator.get("/admin/api/controls").json()
 
                 def configure(**updates):
                     controls.update(updates)
                     save("controls", controls)
+                    controls.update(operator.get("/admin/api/controls").json())
 
                 def limits(rpm=None, concurrent=None):
                     save(
@@ -215,7 +243,9 @@ def exercise():
                         assert hit.json()["cache_status"] == "HIT" and state.calls == calls + 1
                         assert detail(hit)["provider_attempts"] == 0
                         tokens = operator.get("/admin/api/overview").json()["total_tokens"]
-                        assert tokens == 12  # Initial completion and one cache miss.
+                        assert (
+                            tokens == 18
+                        )  # Parameter test, initial completion and one cache miss.
                         operator.post("/admin/api/cache/clear").raise_for_status()
                         assert chat().json()["cache_status"] == "MISS"
                         results.append(
@@ -260,6 +290,55 @@ def exercise():
                         results.append(
                             {
                                 "scenario": "Concurrent request rejection and slot recovery",
+                                "passed": True,
+                            }
+                        )
+
+                        configure(
+                            limits={
+                                "max_concurrent_requests": 1,
+                                "queue_max_depth": 1,
+                                "queue_max_depth_per_app": 1,
+                                "queue_wait_timeout_seconds": 2,
+                            }
+                        )
+                        state.entered.clear()
+                        state.release.clear()
+                        state.mode = "hold"
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            active = pool.submit(chat, "Active request")
+                            waiting = None
+                            try:
+                                assert state.entered.wait(timeout=3)
+                                waiting = pool.submit(chat, "Queued request")
+                                for _ in range(100):
+                                    if (
+                                        operator.get("/admin/api/diagnostics").json()[
+                                            "queued_requests"
+                                        ]
+                                        == 1
+                                    ):
+                                        break
+                                    time.sleep(0.01)
+                                else:
+                                    raise AssertionError("Request did not enter queue")
+                                rejected = chat("Full queue request")
+                                assert rejected.status_code == 429
+                                assert detail(rejected)["error_type"] == "queue_full"
+                            finally:
+                                state.release.set()
+                            assert active.result(timeout=5).status_code == 200
+                            queued = waiting.result(timeout=5)
+                            assert queued.status_code == 200
+                            record = detail(queued)
+                            assert record["queue_outcome"] == "admitted"
+                            assert record["queue_wait_ms"] > 0
+                        state.mode = "healthy"
+                        configure(limits={"max_concurrent_requests": 64, "queue_max_depth": 0})
+                        assert operator.get("/admin/api/diagnostics").json()["queued_requests"] == 0
+                        results.append(
+                            {
+                                "scenario": "Bounded queue, overflow and slot recovery",
                                 "passed": True,
                             }
                         )

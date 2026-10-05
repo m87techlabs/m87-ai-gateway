@@ -28,6 +28,7 @@ def apply_overrides(settings: GatewaySettings, saved: dict) -> GatewaySettings:
 
 def activate(request, settings):
     state = request.app.state
+    state.model_catalog.clear()
     state.settings = settings
     state.recorder.settings = settings
     state.control_store.config = settings.control_plane

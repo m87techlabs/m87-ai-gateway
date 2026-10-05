@@ -80,3 +80,10 @@ retry:
   # Additional attempts can duplicate billable work. Enable deliberately.
   max_attempts: 1
   backoff_ms: 100
+
+# Optional process-local waiting before inference; 0 preserves immediate rejection.
+limits:
+  max_concurrent_requests: 64
+  queue_max_depth: 0
+  queue_max_depth_per_app: 16
+  queue_wait_timeout_seconds: 10

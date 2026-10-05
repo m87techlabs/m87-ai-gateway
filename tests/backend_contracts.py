@@ -27,6 +27,25 @@ def exchange(request_id="contract-request", **updates):
 class BackendContract:
     """Each factory must reopen the same isolated store, never a live user store."""
 
+    def test_traffic_attribution_and_queue_metadata_survive_reopen(self, backend_factory):
+        backend = backend_factory()
+        event = exchange(
+            "queue-contract",
+            client_user_hash="a" * 64,
+            queue_wait_ms=12.5,
+            queue_outcome="admitted",
+        )
+        backend.emit(event)
+        backend.close()
+        reopened = backend_factory()
+        try:
+            stored = reopened.get_event("queue-contract")
+            assert stored["client_user_hash"] == "a" * 64
+            assert stored["queue_wait_ms"] == 12.5
+            assert stored["queue_outcome"] == "admitted"
+        finally:
+            reopened.close()
+
     def test_identity_secrets_and_config_survive_reopen(self, backend_factory):
         backend = backend_factory()
         backend.create_project("testing", "Testing")

@@ -233,3 +233,22 @@ through a compatibility facade and explicit backend registry. Schema 2 keeps
 content-free usage records independently of traffic deletion/retention. Only SQLite
 is bundled. See [backend adapters](backend-adapters.md) for trusted extension
 registration, contract tests and remaining remote-secret/backup requirements.
+
+
+## Catalog, capability validation and bounded waiting
+
+The app-facing model catalog is authenticated and filtered by explicit allowlists.
+Operator discovery stores a bounded endpoint-bound snapshot; catalog requests never
+probe providers or reveal endpoints/credentials. Adapter capability declarations
+validate generation fields before inference and are visible in Setup. They describe
+implemented mappings; individual models may have narrower support.
+
+Optional request queueing uses the same global and per-app active caps. Waiting is
+bounded by global/per-app depth and a deadline; eligible FIFO avoids blocking spare
+capacity behind an app already at its active cap. Queue metadata stays in traffic,
+while metric labels use fixed outcomes only. User attribution is gateway-only SHA-256
+correlation, excluded from provider payloads and raw stored content. Arrival settings,
+provider credentials and cache objects are retained across the wait so a setup change
+cannot mix connection generations. These are process-local controls. Streaming,
+automatic cancellation during active upstream generation and shared admission remain
+planned. See [the runbook](runbooks/inference-api-and-queueing.md).

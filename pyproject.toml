@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sdk-tests = ["openai>=2,<3"]
 bundle = ["pyinstaller>=6.0,<7"]
 dev = [
   "pytest>=8.0.0",

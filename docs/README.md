@@ -17,6 +17,7 @@ gates in the lifecycle guide.
 | [Gateway controls acceptance](runbooks/gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
 | [Projects and usage](runbooks/projects-and-usage.md) | Group applications, filter dashboards/logs, and test APIs |
 | [Roadmap](roadmap.md) | Milestones, acceptance criteria, and provider coverage |
+| [Feature backlog](backlog.md) | Missing capabilities broken into scoped, prioritized work items |
 | [Design](design.md) | Product scope, boundaries, and design decisions |
 | [Backend adapters](backend-adapters.md) | Storage contracts, extension registration and reusable tests |
 | [Application-key rotation](runbooks/application-key-rotation.md) | Overlap, expiry, revocation and transactional management audit |
@@ -57,3 +58,5 @@ flowchart LR
     Release --> Feedback[Issues and feedback]
     Feedback --> Plan
 ```
+
+- [Inference API and queue testing](runbooks/inference-api-and-queueing.md): model catalog, options, bounded waiting and recovery.

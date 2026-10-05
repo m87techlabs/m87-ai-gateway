@@ -46,6 +46,15 @@ isolated `python -m examples.chat_app.scenarios` suite exercises the HTTP flow a
 failure/recovery without Docker or changes to a running gateway. Keep limits/cache
 scoped to one process; budget/shared enforcement and remote delivery remain planned.
 
+Backlog batch A2/A4/P2/R3 adds an authenticated model catalog, bounded generation
+parameters, adapter capabilities in Setup, and optional process-local queueing.
+Queueing defaults off; Controls persists depth/per-app/wait settings. Preserve
+arrival provider/credential/cache snapshots while queued. Eligible FIFO, timeout,
+queued disconnect/cancellation and metrics are implemented; active upstream
+client-disconnect cancellation and streaming remain planned. Schema 4 adds nullable
+queue/user-hash traffic fields while preserving keys/usage/audit. User attribution
+is SHA-256 correlation only; never persist or forward the raw user field.
+
 Phase 2 portable preview uses native Windows/Linux builds, ZIPs and checksums,
 OS-private storage, exclusive data-directory locks, and native status/stop commands.
 Offline backups encrypt SQLite snapshots and local keys; restore accepts only fresh

@@ -13,6 +13,9 @@ class SQLiteTrafficRepository(SQLiteRepository):
     def emit(self, event: dict[str, Any]) -> None:
         fields = (
             "request_id",
+            "client_user_hash",
+            "queue_wait_ms",
+            "queue_outcome",
             "project_id",
             "created_at",
             "app_id",

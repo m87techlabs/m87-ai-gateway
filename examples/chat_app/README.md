@@ -149,12 +149,13 @@ python -m examples.chat_app.scenarios
 ```
 
 This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
-inference service on reserved, temporary loopback ports. It exercises ten scenarios
+inference service on reserved, temporary loopback ports. It exercises twelve scenarios
 and reports PASS for each. It uses a private temporary database and generated keys;
 all test services/data are cleaned up afterward. Your running gateway, existing
 keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
 
-The scenarios cover successful input/output capture, cache hits and token accounting,
+The scenarios cover application model listing, generation parameters, bounded queue
+overflow/recovery, successful input/output capture, cache hits and token accounting,
 rate limits, concurrency limits, retries/outages, timeouts, readiness, request bounds,
 truncation, restart persistence, log deletion preserving usage, and replacement-key overlap/revocation. These same scenarios run in pytest.
 The sample UI displays cache status and retry delay; retries/provider attempts are

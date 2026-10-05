@@ -110,11 +110,14 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `rate_limit_per_minute` | Enforced rolling 60-second request allowance per app and process |
 | `monthly_budget_usd` | Validated future budget field; not enforced |
 | `cache.enabled`, `ttl_seconds`, `max_entries` | Opt-in in-memory response cache |
+| `limits.queue_max_depth` | Waiting requests per process; default 0 disables queueing; maximum 10,000 |
+| `limits.queue_max_depth_per_app` | Waiting requests per app; default 16; maximum 10,000 |
+| `limits.queue_wait_timeout_seconds` | Maximum wait; default 10 seconds; positive and at most 300 |
 | `retry.max_attempts`, `backoff_ms` | Bounded transient provider retries; default one attempt |
 
-The text-chat contract accepts messages, model, temperature, max_tokens, optional
-task, and `stream: false`. Streaming, tools, images, arbitrary extra options,
-and tool-role messages are rejected with a safe 422.
+The text-chat contract accepts the [generation parameters below](#chat-generation-parameters),
+plus optional `task` and `stream: false`. Streaming, tools, images, multiple choices,
+arbitrary extra options and tool-role messages return a safe 422.
 
 See [observability](observability.md) for content storage and retention,
 [configuration changes](runbooks/configuration-changes.md) for rotation, and
@@ -122,7 +125,7 @@ See [observability](observability.md) for content storage and retention,
 
 ## Persistent console controls
 
-Use **Controls** to edit gateway concurrency, request bytes/message characters,
+Use **Controls** to edit gateway concurrency, queue depth/wait, request bytes/message characters,
 retry attempts/backoff, cache enablement/TTL/capacity, SQLite retention days, and
 capture character limits. Set the per-provider timeout in **Setup**, gateway-wide
 content capture in **Setup**, and managed application rate/concurrency limits in
@@ -146,3 +149,49 @@ files. See [acceptance runbook](runbooks/gateway-controls-testing.md).
 Backend repository contracts and trusted source extensions are documented in
 [backend adapters](backend-adapters.md). Existing stores migrate to schema 3 on
 startup; follow [backend acceptance](runbooks/backend-storage-testing.md) before upgrade.
+
+
+## Chat generation parameters
+
+| Field | Bounds / mapping |
+| --- | --- |
+| `temperature`, `max_tokens` | Existing temperature/output bound; Ollama maps max_tokens to num_predict |
+| `top_p` | 0–1; forwarded to compatible APIs or Ollama options |
+| `stop` | One string or 1–4 strings, each 1–1,024 characters; Ollama receives a list |
+| `seed` | Signed 64-bit integer; forwarded to compatible APIs or Ollama options |
+| `presence_penalty`, `frequency_penalty` | −2–2; compatible APIs only; Ollama returns 422 |
+| `response_format` | text, json_object or json_schema; see below |
+| `user` | Optional 1–200 character attribution; stored as client_user_hash (SHA-256); never sent upstream |
+
+JSON object mode maps to Ollama `format: "json"`. JSON schema mode requires a
+name and nonempty schema object (serialized maximum 65,536 characters); Ollama
+receives the schema as `format`. Compatible APIs receive the response_format object,
+including optional strict/description. Ollama rejects an explicitly supplied strict
+flag, including false. The gateway validates the request shape and bounds; inference
+services enforce their supported schema subset and output format. It does not
+validate generated output against the schema or resolve remote schema references.
+
+The [capability matrix](adapters.md#capability-declarations) rejects unsupported
+options before inference. Individual models/servers can reject additional options;
+declarations describe the gateway's mapping support, not a live model guarantee.
+Missing provider token counts remain unknown.
+
+`user` is gateway-only correlation. Hashing enables repeat correlation and is not
+anonymization; avoid personal identifiers. Raw user values are excluded from stored
+content/stdout metadata and provider requests. Generation fields participate in
+cache keys; cache entries cannot interchange different sampling/schema options.
+
+## Model listing
+
+`GET /v1/models` uses the same application bearer key as chat. It returns sorted,
+app-allowed identifiers, including auto when allowlisted; disabled providers are
+excluded. It makes no upstream calls and does not consume inference rate/concurrency
+allowances. Created is 0 because provider creation dates are unknown; owned_by is
+the adapter name or gateway for auto. A listing establishes configured authorization,
+not upstream availability or a guarantee that auto resolves to an allowed target.
+
+Saved connection discovery populates an endpoint-bound, process-local snapshot
+(up to 2,048 models per adapter, 15-minute expiry). Setup/connection/control saves
+and restart invalidate it. Discovery never widens an application's allowlist;
+manually allowed models remain listed without discovery. Draft Test connection
+results do not populate this catalog. No endpoint URLs or credentials are returned.

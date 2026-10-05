@@ -11,6 +11,32 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Inference API and request queueing
+
+Backlog A2/A4/P2/R3 are implemented. Verified locally: 236 Python tests, 19
+console interaction tests, lint/format, wheel build and links/fences in 52 Markdown
+files. The SDK test ran with OpenAI Python 2.54.0 (test-only optional dependency).
+Mermaid declarations/fences were checked; rendered diagram review remains manual.
+Synthetic checks cover standard OpenAI Python
+SDK model listing over local HTTP, per-app catalog filtering/authentication, snapshot
+expiry/endpoint binding, bounds and built-in parameter/JSON mappings, unsupported
+Ollama options before inference, gateway-only hashed user correlation, eligible FIFO,
+global/per-app queue overflow, wait timeout, queued cancellation/disconnect cleanup,
+slot recovery and bounded-label queue metrics. A queued-request setup-change test preserves the arrival endpoint, credential and
+cache while new requests use the updated connection. Shared backend contracts
+preserve queue/hash metadata across reopen. Controls persist through restart;
+console checks cover the capability matrix and queue setting submission. Schema-3
+upgrade tests preserve keys, usage and identity audit while adding nullable fields.
+The sample acceptance suite now contains twelve scenarios including catalog/options
+and real HTTP queue overflow/recovery.
+
+Live model/provider JSON compliance, Ollama/Windows, vLLM/OpenAI/tunnel integration,
+visual browser behavior and final container/native clean-host packaging remain
+unverified for this batch. No Docker image was rebuilt and no live user state was
+migrated. Streaming and active upstream cancellation after client disconnect remain
+planned; queued disconnect removal does not establish those features. See the
+[inference and queue runbook](runbooks/inference-api-and-queueing.md).
+
 ## Managed application keys and identity audit
 
 Schema 3 separates application policies from credential digests. It implements

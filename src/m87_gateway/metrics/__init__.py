@@ -1,4 +1,4 @@
-from prometheus_client import CollectorRegistry, Counter, Histogram, generate_latest
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, generate_latest
 
 
 class GatewayMetrics:
@@ -6,6 +6,17 @@ class GatewayMetrics:
 
     def __init__(self):
         self.registry = CollectorRegistry()
+        self.queue_depth = Gauge(
+            "m87_gateway_queue_depth",
+            "Requests awaiting concurrency admission",
+            registry=self.registry,
+        )
+        self.queue_wait = Histogram(
+            "m87_gateway_queue_wait_seconds",
+            "Time spent awaiting concurrency admission",
+            ("outcome",),
+            registry=self.registry,
+        )
         labels = ("app_id", "provider", "status_code")
         self.requests = Counter(
             "m87_gateway_requests_total",
@@ -105,7 +116,7 @@ class GatewayMetrics:
         if event.get("error_type") == "rate_limit_exceeded":
             self.rate_limits.labels(event.get("app_id") or "anonymous").inc()
 
-        if event.get("error_type") == "concurrency_limit_exceeded":
+        if event.get("error_type") in {"concurrency_limit_exceeded", "queue_full", "queue_timeout"}:
             self.concurrency_limits.labels(event.get("app_id") or "anonymous").inc()
 
     def render(self) -> bytes:

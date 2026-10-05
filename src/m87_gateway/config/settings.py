@@ -248,6 +248,9 @@ class RetryConfig(ConfigModel):
 
 
 class LimitsConfig(ConfigModel):
+    queue_max_depth: int = Field(default=0, ge=0, le=10000)
+    queue_max_depth_per_app: int = Field(default=16, ge=1, le=10000)
+    queue_wait_timeout_seconds: float = Field(default=10, gt=0, le=300)
     max_concurrent_requests: int = Field(default=64, ge=1, le=10000)
 
 

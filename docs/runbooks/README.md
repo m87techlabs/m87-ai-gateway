@@ -45,3 +45,5 @@ flowchart TD
 
 - [Application-key rotation](application-key-rotation.md): key overlap, expiry,
   revocation and management audit.
+
+- [Inference API and queueing](inference-api-and-queueing.md): catalog, parameter mapping, admission/recovery and test commands.

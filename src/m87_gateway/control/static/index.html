@@ -87,6 +87,8 @@
             <button id="test-connection" type="button" class="secondary">Test connection</button>
             <button id="discover-models" type="button" class="secondary">Discover models on saved connection</button>
             <p id="connection-test-status" class="muted" role="status" aria-live="polite">Test the endpoint above without saving it. No completion is generated.</p>
+            <p class="muted">Capabilities describe gateway support; the selected model may support fewer options.</p>
+            <div id="adapter-capabilities"></div>
             <pre id="discovered-models">Connect Ollama, OpenAI, or an OpenAI-compatible server such as vLLM.</pre>
           </form>
           <form id="setup-form" class="panel form-panel">
@@ -108,6 +110,10 @@
           <h3>Traffic and logging controls</h3>
           <p>Changes apply to new requests and survive restart. Saving clears cached responses. Limits apply to this gateway process.</p>
           <label>Gateway concurrent requests<input name="max_concurrent_requests" type="number" min="1" max="10000" required></label>
+          <label class="check"><input name="queue_enabled" type="checkbox">Queue requests while concurrency is full</label>
+          <label>Maximum queued requests<input name="queue_max_depth" type="number" min="1" max="10000" value="64" required></label>
+          <label>Maximum queued requests per application<input name="queue_max_depth_per_app" type="number" min="1" max="10000" value="16" required></label>
+          <label>Maximum queue wait (seconds)<input name="queue_wait_timeout_seconds" type="number" min="0.01" max="300" step="0.01" value="10" required></label>
           <label>Maximum request bytes<input name="max_request_bytes" type="number" min="1" max="10485760" required></label>
           <label>Maximum characters per message<input name="max_message_chars" type="number" min="1" max="1048576" required></label>
           <label>Provider attempts (including first call)<input name="max_attempts" type="number" min="1" max="5" required><small>Retries can duplicate provider work and charges.</small></label>

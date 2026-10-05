@@ -1,8 +1,36 @@
 """Adapter registration shared by configuration, routing and the control plane."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
+
+
+@dataclass(frozen=True)
+class Capabilities:
+    """Gateway-supported protocol features; model-specific support may be narrower."""
+
+    streaming: bool = False
+    tools: bool = False
+    embeddings: bool = False
+    images: bool = False
+    multiple_choices: bool = False
+    generation_parameters: frozenset[str] = frozenset({"temperature", "max_tokens"})
+    response_formats: frozenset[str] = frozenset({"text"})
+    strict_json_schema: bool = False
+
+    def as_dict(self) -> dict:
+        return {
+            "text_chat": True,
+            "streaming": self.streaming,
+            "tools": self.tools,
+            "embeddings": self.embeddings,
+            "images": self.images,
+            "multiple_choices": self.multiple_choices,
+            "seed": "seed" in self.generation_parameters,
+            "generation_parameters": sorted(self.generation_parameters),
+            "response_formats": sorted(self.response_formats),
+            "strict_json_schema": self.strict_json_schema,
+        }
 
 
 @dataclass(frozen=True)
@@ -13,6 +41,7 @@ class Adapter:
     default_url: str | None = None
     requires_key: bool = False
     model_discovery: bool = False
+    capabilities: Capabilities = field(default_factory=Capabilities)
 
 
 _registry: dict[str, Adapter] = {}
@@ -49,10 +78,51 @@ def _compatible(config, key):
     return OpenAICompatibleProvider(config, api_key=key)
 
 
-register_adapter(Adapter("openai", "OpenAI", _openai, "https://api.openai.com/v1", True, True))
-register_adapter(
-    Adapter("ollama", "Ollama", _ollama, "http://localhost:11434", model_discovery=True)
+_COMPATIBLE_CAPABILITIES = Capabilities(
+    generation_parameters=frozenset(
+        {
+            "temperature",
+            "max_tokens",
+            "top_p",
+            "stop",
+            "seed",
+            "presence_penalty",
+            "frequency_penalty",
+        }
+    ),
+    response_formats=frozenset({"text", "json_object", "json_schema"}),
+    strict_json_schema=True,
 )
 register_adapter(
-    Adapter("openai_compatible", "OpenAI-compatible server", _compatible, model_discovery=True)
+    Adapter(
+        "openai",
+        "OpenAI",
+        _openai,
+        "https://api.openai.com/v1",
+        True,
+        True,
+        capabilities=_COMPATIBLE_CAPABILITIES,
+    )
+)
+register_adapter(
+    Adapter(
+        "ollama",
+        "Ollama",
+        _ollama,
+        "http://localhost:11434",
+        model_discovery=True,
+        capabilities=Capabilities(
+            generation_parameters=frozenset({"temperature", "max_tokens", "top_p", "stop", "seed"}),
+            response_formats=frozenset({"text", "json_object", "json_schema"}),
+        ),
+    )
+)
+register_adapter(
+    Adapter(
+        "openai_compatible",
+        "OpenAI-compatible server",
+        _compatible,
+        model_discovery=True,
+        capabilities=_COMPATIBLE_CAPABILITIES,
+    )
 )

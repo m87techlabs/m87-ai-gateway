@@ -19,7 +19,7 @@ class OpenAIProvider(Provider):
             raise GatewayError(
                 503, "provider_not_configured", "Model provider credentials are unavailable"
             )
-        body = payload.model_dump(exclude_none=True, exclude={"task"})
+        body = payload.model_dump(exclude_none=True, exclude={"task", "user"}, by_alias=True)
         body["model"] = model
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
         data = await self.post("/chat/completions", body, headers)

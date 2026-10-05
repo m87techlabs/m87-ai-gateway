@@ -48,6 +48,25 @@ restart without losing data, stop only that profile, and recover or roll back
 through documented procedures. No plaintext secrets or captured prompts appear
 in metrics, process arguments, generated manifests, or default logs.
 
+## Backlog first batch — implemented
+
+- [x] **A2** authenticated app-filtered `/v1/models`, endpoint-bound discovery
+  snapshots, and a standard OpenAI SDK listing test over local HTTP.
+- [x] **A4** bounded sampling/stop/seed/penalty and JSON object/schema parameters,
+  explicit unsupported-option errors, and hashed gateway-only user attribution.
+- [x] **P2** adapter declarations, pre-inference validation and a console matrix.
+- [x] **R3** optional bounded queue with global/per-app waiting caps, eligible FIFO,
+  wait timeout, queued cancellation/disconnect cleanup, depth/wait metrics and logs.
+- [x] Add sample HTTP catalog/parameter and queue-overflow/recovery scenarios.
+- [x] Schema 4 adds nullable attribution and queue fields while preserving keys,
+  usage, captured content and identity audit through upgrade.
+
+See [operating/testing procedures](runbooks/inference-api-and-queueing.md) and
+[validation](validation.md#inference-api-and-request-queueing). Streaming (A1),
+active upstream disconnect cancellation (A3), fallback routing and shared queues
+remain in [backlog](backlog.md). Queue admission and response caching remain local
+to one process. Live provider/model compatibility is a separate release gate.
+
 ## Current priority: backend foundations — in progress
 
 Native source development takes priority. Keep existing Docker packaging files and

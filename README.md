@@ -31,7 +31,8 @@ app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
 Ollama and generic OpenAI-compatible adapters, configured request guardrails, safe provider errors, correlated
 JSON outcome events, optional private traffic capture, Prometheus metrics, a
 health endpoint, per-app rate limits, opt-in response caching, bounded retries,
-and an optional local control plane. The control plane provides
+an authenticated model catalog, validated generation parameters, optional bounded
+request queueing, adapter capabilities, and an optional local control plane. The control plane provides
 token analytics, inspectable opted-in LLM input/output, runtime application keys,
 encrypted provider credentials, log export, and a local operator console with
 persistent connection setup and model discovery. Source users can register
