@@ -8,6 +8,10 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Five SQLite repositories, trusted backend registration/configuration and shared
+  adapter contracts; independent schema-2 usage records with atomic writes,
+  duplicate-delivery protection, retention and migration preserving existing keys.
+
 - Proposed backend architecture for embedded storage, secret/key lifecycle,
   configuration revisions, independent usage history and optional exporters.
 - Explicit CI container packaging option while backend development takes priority.

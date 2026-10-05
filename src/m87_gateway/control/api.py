@@ -18,13 +18,13 @@ from m87_gateway.config.settings import CacheConfig, LimitsConfig, ProviderConfi
 from m87_gateway.adapters import adapters
 from m87_gateway.providers.factory import get_provider
 from m87_gateway.control.setup import activate, apply_overrides
-from m87_gateway.control.store import LocalControlStore
+from m87_gateway.control.backends import Backend
 
 STATIC_DIR = Path(__file__).with_name("static")
 router = APIRouter()
 
 
-def _store(request: Request) -> LocalControlStore:
+def _store(request: Request) -> Backend:
     store = getattr(request.app.state, "control_store", None)
     if store is None:
         raise GatewayError(404, "control_plane_disabled", "Control plane is disabled")
@@ -33,7 +33,7 @@ def _store(request: Request) -> LocalControlStore:
 
 async def require_admin(
     request: Request, authorization: Annotated[str | None, Header()] = None
-) -> LocalControlStore:
+) -> Backend:
     scheme, _, token = (authorization or "").partition(" ")
     expected = getattr(request.app.state, "admin_api_key", "")
     if (
@@ -48,7 +48,7 @@ async def require_admin(
     return _store(request)
 
 
-AdminStore = Annotated[LocalControlStore, Depends(require_admin)]
+AdminStore = Annotated[Backend, Depends(require_admin)]
 ProjectIdentifier = Annotated[
     str, Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
 ]

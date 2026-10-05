@@ -32,6 +32,8 @@ def local_settings(data_dir: Path) -> GatewaySettings:
         },
         control_plane={
             "enabled": True,
+            "backend_adapter": os.getenv("GATEWAY_BACKEND_ADAPTER", "sqlite"),
+            "usage_retention_days": os.getenv("GATEWAY_USAGE_RETENTION_DAYS", "365"),
             "database_path": str(data_dir / "control.db"),
             "master_key_path": str(data_dir / "master.key"),
         },

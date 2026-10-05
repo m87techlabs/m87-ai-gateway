@@ -124,3 +124,12 @@ and configuration, and leaves separate JSONL copies untouched. Deletion is logic
 it does not promise forensic erasure from SQLite pages, backups, or exported copies.
 In-flight requests can write new events after deletion. Details and acceptance
 steps are in the [controls runbook](runbooks/gateway-controls-testing.md).
+
+## Backend storage lifecycle
+
+The SQLite backend now uses separate configuration, identity, secret, traffic and
+usage repositories. Deleting traffic logs preserves usage; usage has independent
+365-day retention by default. Schema-2 startup migrates retained earlier events
+without changing credential formats. Follow [backend acceptance](runbooks/backend-storage-testing.md)
+before upgrading existing data; see [backend adapters](backend-adapters.md) for
+trusted extensions and future adapter testing requirements.

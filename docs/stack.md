@@ -105,3 +105,11 @@ shutdown rather than PID/port-based termination. Offline backup uses SQLite snap
 backup, a versioned encrypted envelope and password-derived keys; restore validates
 integrity, configuration, schema and provider ciphertext before writing a fresh
 private destination. See [workstation runbook](runbooks/workstation-distribution.md).
+
+## Embedded backend extension boundary
+
+Five repositories share one private SQLite database. Traffic and content-free usage
+records are written atomically with separate retention. Backend factories are
+registered explicitly in trusted source; configuration selects an identifier.
+Only SQLite is bundled. External database/secret stores require the shared
+[backend contracts](backend-adapters.md) and service-specific acceptance tests.

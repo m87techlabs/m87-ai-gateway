@@ -16,7 +16,7 @@ Project attribution comes from the authenticated app key, with a default project
 for existing apps. A client cannot select a project through headers. Request-time
 membership stays in events even if an app moves projects. The console adds project
 filters, hourly UTC charts, and application/model breakdowns; cache hits do not
-add provider-token consumption. Reports cover retained events and known usage,
+add provider-token consumption. Reports cover independently retained usage records and known usage,
 with a separate count for provider requests without usage. They are not billing.
 See [projects and usage](runbooks/projects-and-usage.md).
 

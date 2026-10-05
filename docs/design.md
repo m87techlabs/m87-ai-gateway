@@ -225,3 +225,11 @@ work: retain embedded SQLite, separate backend responsibilities and introduce
 independent usage records and explicit key/configuration lifecycles. These changes
 remain proposed. Native source development is the current focus; Docker remains a
 packaging option to verify for the final functional release scope.
+
+## Implemented backend foundation
+
+SQLite now composes configuration, identity, secret, traffic and usage repositories
+through a compatibility facade and explicit backend registry. Schema 2 keeps
+content-free usage records independently of traffic deletion/retention. Only SQLite
+is bundled. See [backend adapters](backend-adapters.md) for trusted extension
+registration, contract tests and remaining remote-secret/backup requirements.

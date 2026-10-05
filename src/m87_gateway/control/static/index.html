@@ -114,7 +114,7 @@
           <label class="check"><input name="cache_enabled" type="checkbox">Cache identical responses per application and model</label>
           <label>Cache lifetime in seconds<input name="ttl_seconds" type="number" min="1" max="86400" required></label>
           <label>Maximum cached responses<input name="max_entries" type="number" min="1" max="100000" required></label>
-          <label>SQLite log retention in days<input name="retention_days" type="number" min="1" max="3650" required><small>Older records are removed on save, restart, and subsequent request logging. Usage summaries reflect retained records.</small></label>
+          <label>SQLite log retention in days<input name="retention_days" type="number" min="1" max="3650" required><small>Older records are removed on save, restart, and subsequent request logging. Usage has separate retention and survives log deletion.</small></label>
           <label>Captured characters per input/output record<input name="max_content_chars" type="number" min="1" max="65536" required><small>Gateway-wide capture is enabled in Setup. Redaction happens before truncation.</small></label>
           <button type="submit">Save controls</button>
           <button id="clear-cache" type="button" class="secondary">Clear response cache</button>
@@ -135,7 +135,7 @@
           <article><span>Cache hits</span><strong id="cache-hits">—</strong></article>
           <article><span>Provider requests without usage</span><strong id="usage-unknown">—</strong></article>
         </div>
-        <div class="panel dashboard-panel"><h3>Last 24 hours · hourly UTC buckets</h3><p class="muted">Cached responses add requests, with no additional provider tokens. Totals include retained, reported usage.</p><div class="charts"><div><h4>Requests</h4><div id="request-chart"></div></div><div><h4>Provider tokens</h4><div id="token-chart"></div></div></div></div>
+        <div class="panel dashboard-panel"><h3>Last 24 hours · hourly UTC buckets</h3><p class="muted">Cached responses add requests, with no additional provider tokens. Totals include reported usage within the separate usage retention window.</p><div class="charts"><div><h4>Requests</h4><div id="request-chart"></div></div><div><h4>Provider tokens</h4><div id="token-chart"></div></div></div></div>
         <div class="charts dashboard-panel"><div class="panel"><h3>Usage by application</h3><div id="usage-apps"></div></div><div class="panel"><h3>Usage by model</h3><div id="usage-models"></div></div></div>
         <div class="panel"><h3>Recent LLM exchanges</h3><div id="recent"></div></div>
       </section>

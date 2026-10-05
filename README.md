@@ -183,4 +183,8 @@ existing code. Native and Docker stores are separate; see
 [development workflow](docs/runbooks/local-development.md) and
 [container data migration](docs/runbooks/container-deployment.md).
 
-Current backend direction: [architecture proposal](docs/backend-architecture.md).
+The compact backend uses five SQLite repositories with independent usage retention.
+Trusted extensions can register backend implementations and reuse the
+[adapter contracts](docs/backend-adapters.md). Only SQLite is bundled; see
+[backend architecture](docs/backend-architecture.md) and the
+[upgrade/testing runbook](docs/runbooks/backend-storage-testing.md).

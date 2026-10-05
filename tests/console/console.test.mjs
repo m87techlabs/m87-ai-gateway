@@ -245,7 +245,7 @@ test("log deletion requires confirmation and follows selected project", async (t
   window.confirm = () => false;
   $("delete-logs").click();
   assert.equal(requests.some((r) => r.method === "DELETE"), false);
-  window.confirm = (message) => { assert.match(message, /project alpha/); return true; };
+  window.confirm = (message) => { assert.match(message, /project alpha/); assert.match(message, /Usage totals are preserved/); return true; };
   $("delete-logs").click();
   await until(() => requests.some((r) => r.method === "DELETE"));
   const deletion = requests.find((r) => r.method === "DELETE");

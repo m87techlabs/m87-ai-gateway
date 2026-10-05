@@ -88,7 +88,7 @@ and response capture remains opt-in, bounded, redacted, and access-controlled.
 Grafana views must follow the same data access and retention rules as source stores.
 
 Each authenticated request takes its project identity from its application key.
-Events retain that identity when the app moves projects. Current usage sums retained
+Events retain that identity when the app moves projects. Current usage sums independently retained
 provider-reported tokens and excludes cache hits from new provider consumption.
 This is operational reporting, not authoritative billing: missing usage, retries,
 retention, and external inference traffic constrain accounting. Project roles,

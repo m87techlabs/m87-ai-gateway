@@ -79,12 +79,16 @@ and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are
 explicit provider targets. Hosting on AWS, Azure, and Google Cloud is a separate
 deployment objective. Cloud capabilities remain planned until tested and documented.
 
-The proposed backend direction is documented in docs/backend-architecture.md:
+The backend direction is documented in docs/backend-architecture.md:
 SQLite stays the embedded default while services/repositories separate configuration,
-identities, secret storage, traffic/content, usage and management audit. Usage must
-become independent of log retention. Remote stores/exporters remain optional and
-planned. Preserve current keys/data with explicit migrations; do not claim these
-proposed boundaries are implemented or silently move user data.
+identities, secret storage, traffic/content, usage and management audit. Five SQLite
+repositories and an explicit trusted backend registry are implemented.
+Schema 2 separates content-free usage records from traffic; usage retention defaults
+to 365 days, traffic to 30. Duplicate IDs preserve first usage attribution, and
+traffic deletion leaves accounting intact. Upgrade backfills only retained events.
+Shared tests in tests/backend_contracts.py must be reused by new adapters.
+Remote stores/exporters remain optional and planned. Preserve current keys/data with explicit migrations; do not claim these
+remaining planned features are implemented or silently move user data.
 
 Use these pages as the lasting source of project context:
 

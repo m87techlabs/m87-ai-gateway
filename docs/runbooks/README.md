@@ -39,3 +39,6 @@ flowchart TD
     Impact -->|Yes| Incident[Incident response]
     Impact -->|No| Provider[Provider troubleshooting]
 ```
+
+- [Backend storage acceptance](backend-storage-testing.md): repository contracts,
+  independent usage, schema upgrades and future external-adapter gates.

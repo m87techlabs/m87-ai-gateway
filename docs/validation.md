@@ -11,6 +11,28 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## SQLite backend foundations
+
+The first backend increment extracts configuration, identity, secret, traffic and
+usage repositories behind the compatible control API. A trusted named registry
+selects SQLite or explicitly registered source extensions. Only SQLite is bundled.
+Schema 2 backfills usage from retained traffic before normal pruning; usage is
+content-free, independently retained and unaffected by traffic deletion.
+
+Verified locally with isolated synthetic stores: 185 Python tests, 15 console
+tests, Python wheel build, lint/format and links/fences in 49 Markdown files. Coverage includes shared
+adapter contracts, application startup through a registered factory, key/credential
+preservation, independent retention, unknown/cache usage, duplicate delivery,
+configuration/credential rollback, traffic/usage rollback, failed migration rollback,
+encrypted backup usage preservation and sample HTTP log deletion preserving totals.
+No live native or Docker store was migrated. Docker was not started or rebuilt.
+
+PostgreSQL, Vault and exporter implementations/tests remain deferred. Large-history
+migration performance, disk-full/crash recovery, cross-release rollback and final
+container packaging need separate evidence; best-effort logging is not a lossless
+accounting guarantee. See [backend adapters](backend-adapters.md) and
+[acceptance/upgrade runbook](runbooks/backend-storage-testing.md).
+
 ## Backend discussion and deferred Docker packaging
 
 On 2026-10-05 the development priority changed to backend architecture. The proposal

@@ -444,7 +444,7 @@ $("clear-cache").addEventListener("click", async () => {
 $("delete-logs").addEventListener("click", async () => {
   const project = activeProject;
   const scope = project ? `project ${project}` : "ALL projects";
-  if (!window.confirm(`Delete SQLite logs and their usage history for ${scope}? Separate JSONL files and in-flight requests are unaffected.`)) return;
+  if (!window.confirm(`Delete SQLite logs for ${scope}? Usage totals are preserved. Separate JSONL files and in-flight requests are unaffected.`)) return;
   try {
     const data = await (await api("/logs", {method: "DELETE", body: JSON.stringify({confirmation: "DELETE", project_id: project || null})})).json();
     notice(`${data.deleted} records deleted`); await loadLogs();

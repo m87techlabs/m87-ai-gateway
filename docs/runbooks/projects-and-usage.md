@@ -69,7 +69,7 @@ sequenceDiagram
 - A cache hit increases request/cache totals without increasing provider-token
   totals. If an app moves projects and receives an earlier cached response, the
   new project's event records a hit with no additional provider token usage.
-- The dashboard covers the last 24 hours of retained events; APIs accept `hours`
+- The dashboard covers the last 24 hours of independently retained usage records; APIs accept `hours`
   from 1 through 2160. First/current hourly buckets are partial. Breakdown tables
   return up to 100 applications/models; total cards and charts cover the full scope.
 - Unknown provider usage remains null in events. A separate count shows provider

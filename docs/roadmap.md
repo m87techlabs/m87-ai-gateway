@@ -48,22 +48,25 @@ restart without losing data, stop only that profile, and recover or roll back
 through documented procedures. No plaintext secrets or captured prompts appear
 in metrics, process arguments, generated manifests, or default logs.
 
-## Current priority: backend foundations — proposed
+## Current priority: backend foundations — in progress
 
 Native source development takes priority. Keep existing Docker packaging files and
 helpers, with explicit packaging CI when a functional release candidate is ready.
 Routine main pushes do not rebuild Docker. Container acceptance remains a release gate.
 
-Follow [backend architecture proposal](backend-architecture.md):
+Follow [backend architecture](backend-architecture.md):
 
-- Separate services/repositories behind the existing SQLite store without data loss.
+- [x] Extract five SQLite repositories behind a compatibility facade.
+- [x] Add named backend configuration/registration and reusable behavioral contracts.
+- [x] Migrate retained traffic to independent usage records; verify key preservation.
+- Separate captured content from metadata and add remaining service boundaries.
 - Separate application/key identities and define rotation, revocation and key versions.
 - Add configuration revisions, stable provider connection identities and atomic activation.
-- Keep usage history independent of retained request/content logs.
+- [x] Preserve usage through log deletion, with separate retention and duplicate-delivery protection.
 - Add management audit, storage health and bounded durable exporter delivery.
 - Add optional PostgreSQL/Vault/export adapters after the local contracts are tested.
 
-This is the proposed next phase, not implemented functionality. Existing Docker
+Checked items are implemented; the remaining items are planned. Existing Docker
 startup evidence remains valid for its verified commits; further container work is
 on hold while the backend is developed.
 

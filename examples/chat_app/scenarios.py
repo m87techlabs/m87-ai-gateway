@@ -340,11 +340,15 @@ def exercise():
                 assert operator.get("/ready").status_code == 200
                 assert restarted.state.control_store.authenticate_app_key(app_key)
                 assert operator.get("/admin/api/logs").json()["items"]
+                usage_before = operator.get("/admin/api/overview").json()
                 response = operator.request(
                     "DELETE", "/admin/api/logs", json={"confirmation": "DELETE"}
                 )
                 assert response.json()["deleted"] > 0
                 assert operator.get("/admin/api/logs").json()["items"] == []
+                usage_after = operator.get("/admin/api/overview").json()
+                for field in ("requests", "total_tokens", "cache_hits", "usage_unknown"):
+                    assert usage_after[field] == usage_before[field]
                 assert restarted.state.control_store.authenticate_app_key(app_key)
                 results.append(
                     {

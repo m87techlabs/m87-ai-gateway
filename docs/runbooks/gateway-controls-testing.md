@@ -87,8 +87,8 @@ Record original settings before live checks and restore them afterward. Saving
 Controls applies to new requests and clears cached responses. Lower concurrency
 caps do not cancel admitted requests; existing rate windows remain until expiry.
 Shorter SQLite retention removes expired history on save, restart and event writes;
-usage reports reflect remaining events. There is no idle background pruning timer.
-Logs/usage deletion is logical, not secure erasure or a backup/recovery mechanism.
+usage reports have separate retention and survive log deletion. There is no idle background pruning timer.
+Log deletion is logical, not secure erasure or a backup/recovery mechanism.
 
 If readiness fails, read the failed check in Controls and correct Setup or storage
 permissions. If a real chat fails while readiness passes, inspect its request ID

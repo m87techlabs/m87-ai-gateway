@@ -11,7 +11,7 @@ from m87_gateway import __version__
 from m87_gateway.api.errors import GatewayError, error_response
 from m87_gateway.api.routes import router
 from m87_gateway.config import GatewaySettings, get_settings
-from m87_gateway.control import LocalControlStore
+from m87_gateway.control.backends import create_backend
 from m87_gateway.control.api import router as control_router
 from m87_gateway.control.setup import apply_overrides
 from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWindowRateLimiter
@@ -36,7 +36,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
                 if len(admin_key) < 24 or any(character.isspace() for character in admin_key):
                     raise ValueError("Control plane requires a strong admin key")
                 application.state.admin_api_key = admin_key
-                application.state.control_store = LocalControlStore(active.control_plane)
+                application.state.control_store = create_backend(active.control_plane)
                 active = apply_overrides(active, application.state.control_store.runtime_config())
                 application.state.settings = active
                 application.state.control_store.ensure_projects(

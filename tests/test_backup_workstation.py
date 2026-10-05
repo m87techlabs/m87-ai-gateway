@@ -54,6 +54,7 @@ def test_encrypted_backup_roundtrip_preserves_identity_config_and_logs(tmp_path)
     assert restored.get_provider_key("openai") == "synthetic-provider-secret"
     assert restored.get_event("backup-event")["request_content"]
     assert restored.runtime_config() == store.runtime_config()
+    assert restored.overview() == store.overview()
     assert operator_key(recovered) == admin
 
 

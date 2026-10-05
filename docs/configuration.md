@@ -30,6 +30,8 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_CONTROL_PLANE_ENABLED` | Enable the local SQLite store, admin API, and console |
 | `GATEWAY_CONTROL_PLANE_DATABASE_PATH` | Local SQLite event and key-metadata path |
 | `GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` | Owner-only provider-key encryption key path |
+| `GATEWAY_BACKEND_ADAPTER` | Registered backend identifier; only `sqlite` is bundled |
+| `GATEWAY_USAGE_RETENTION_DAYS` | Independent usage retention; default 365 days |
 | `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | SQLite event retention in days; pruned at startup and on event writes |
 | `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
 | `GATEWAY_CACHE_ENABLED`, `GATEWAY_CACHE_TTL_SECONDS`, `GATEWAY_CACHE_MAX_ENTRIES` | Cache enablement, expiry, and capacity |
@@ -99,6 +101,8 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `control_plane.enabled` | Optional local SQLite event/key store, admin API, and `/admin` console |
 | `control_plane.database_path`, `master_key_path` | Private local persistence paths |
 | `control_plane.admin_api_key_env` | Environment variable containing the admin key |
+| `control_plane.backend_adapter` | Bootstrap backend selection; default `sqlite` |
+| `control_plane.usage_retention_days` | Bootstrap usage retention; default 365 days |
 | `control_plane.retention_days` | SQLite event-pruning window; default 30 days |
 | `apps[].capture_content` / `auth.api_keys[].capture_content` | Legacy compatibility fields; ignored by gateway-wide capture |
 | `rate_limit_per_minute` | Enforced rolling 60-second request allowance per app and process |
@@ -134,5 +138,9 @@ YAML supports `limits.max_concurrent_requests` (default 64) and application
 `max_concurrent_requests` (default null). These are single-process limits.
 SQLite retention is applied at startup, on Controls save, and on event writes.
 Idle instances do not run a background expiry timer. Shortening retention removes
-older records and affects usage summaries. It does not manage separate JSONL
+older traffic records. Usage has its own retention and survives traffic deletion. It does not manage separate JSONL
 files. See [acceptance runbook](runbooks/gateway-controls-testing.md).
+
+Backend repository contracts and trusted source extensions are documented in
+[backend adapters](backend-adapters.md). Existing stores migrate to schema 2 on
+startup; follow [backend acceptance](runbooks/backend-storage-testing.md) before upgrade.

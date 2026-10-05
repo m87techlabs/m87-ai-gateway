@@ -1,4 +1,4 @@
-# Backend architecture proposal
+# Backend architecture
 
 ## Direction and status
 
@@ -7,15 +7,16 @@ backend interfaces. Source development is the current priority. Docker files and
 helpers remain available; further container work is deferred until a functional
 release candidate needs packaging verification.
 
-This page proposes the next backend work. Existing SQLite storage, encrypted
-provider keys, application-key digests, private files and encrypted backups are
-implemented. Repository separation, independent usage accounting, expanded key
-lifecycle, configuration revisions and remote backend adapters are planned.
+Repository separation, explicit backend registration/configuration and independent
+usage accounting are implemented with SQLite. Encrypted provider keys, application-key
+digests, private files and encrypted backups remain available. Expanded key lifecycle,
+configuration revisions, content-table separation and remote implementations are planned.
+See [backend adapters](backend-adapters.md) for contracts and testing.
 
 ## Current implementation
 
-`LocalControlStore` currently owns projects, application keys, encrypted provider
-keys, runtime configuration, captured events and usage queries. SQLite uses WAL,
+`LocalControlStore` now composes configuration, identity, secret, traffic and usage
+repositories behind a compatibility facade. SQLite uses WAL,
 private files and a schema version. Provider secrets use Fernet; application keys
 use an HMAC digest derived from the same local master key. Operator access uses a
 separate bootstrap key file. Captured request/response text is bounded and redacted
@@ -25,8 +26,10 @@ current local access boundary.
 The recorder already has an `EventSink` interface. Writes run through a thread pool
 and are best effort: a failed sink increments an error metric and emits a safe
 failure notice. Remote export, durable delivery queues and accounting guarantees
-are not implemented. Usage is calculated from retained events, so removing events
-also removes the history behind those aggregates.
+are not implemented. Usage is stored independently in schema-2 `usage_records`,
+without captured content; deleting traffic does not change those aggregates.
+Traffic/usage writes share a transaction, and repeated request IDs do not add usage.
+Usage retention defaults to 365 days independently of 30-day traffic retention.
 
 Native and Docker instances select different storage directories by default.
 That is a storage-selection difference, not a different gateway data model. A
@@ -113,8 +116,8 @@ Use distinct record types even when stored in the same SQLite database:
 | Usage records | Provider-reported token usage and request/cache counters | Independent retention; deleting content/traffic must not erase accounting |
 | Management audit | Key/configuration/project changes and actor identity | No raw secrets; defined retention and restricted operator access |
 
-Proposed defaults should be chosen during implementation rather than silently
-changing today's retention. Add content encryption and content access roles as
+Traffic retains its existing 30-day default; independent usage defaults to 365
+days. Content-specific and management-audit retention are still planned. Add content encryption and content access roles as
 explicit features; current event bodies have filesystem protection and redaction.
 
 Usage records need unique request/attempt identifiers for duplicate prevention.
@@ -155,9 +158,10 @@ with Grafana as an optional visualization surface. See
 
 ## Proposed implementation sequence
 
-1. Extract repositories/services behind the existing SQLite facade; preserve behavior
-   and pass compatibility tests with existing data and keys.
-2. Separate traffic/content from usage records, with retention independence and
+1. Repository extraction is implemented. Continue service boundaries behind the
+   existing SQLite facade; preserve behavior, data and keys.
+2. Independent usage records are implemented; captured content remains in traffic.
+   Continue separating traffic/content with independent retention and
    idempotent accounting. Show storage/capture failures in the console. Backfill
    only from retained evidence; already deleted history cannot be reconstructed.
 3. Split application metadata from key records; add tested rotation/revocation and
@@ -169,5 +173,6 @@ with Grafana as an optional visualization surface. See
    functional scope before publishing a release.
 
 Each step needs a migration, compatibility tests and an operational runbook. These
-steps are proposed scope for review; this documentation change does not implement
-the new storage services or move existing user data.
+steps include implemented foundations and remaining planned scope. Existing user
+stores migrate only when started with the new version; development tests use
+isolated stores. Follow the [upgrade runbook](runbooks/backend-storage-testing.md).
