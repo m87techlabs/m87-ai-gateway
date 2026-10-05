@@ -75,7 +75,7 @@ a migrated database. Distinct-version rollback remains a release gate.
 
 ## Automated development previews
 
-Successful main CI runs publish a tested Linux amd64 image with immutable commit
+Explicit CI dispatches on main with `package_container` enabled publish a tested Linux amd64 image with immutable commit
 and moving preview tags, and retain native ZIPs/checksums and Compose in a commit
 prerelease. These are development previews, distinct from reviewed stable/public
 releases. See [container publication](container-deployment.md). Publication follows

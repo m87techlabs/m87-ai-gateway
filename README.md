@@ -174,9 +174,13 @@ Licensed under [Apache License 2.0](LICENSE).
 ## Development loop
 
 Use `./start.sh` for routine source development, restart for Python changes and
-refresh for console assets. At feature checkpoints use `./docker-start.sh --build`.
-Every main push still builds/tests/publishes a verified image in CI. Explicit
+refresh for console assets. Keep Docker packaging for a functional
+release checkpoint using `./docker-start.sh --build`. Routine main pushes run
+source/docs/native checks; dispatch CI with `package_container` enabled to build,
+test and publish a container preview. Explicit
 `--update` consumes a published image; restarting an existing container uses its
 existing code. Native and Docker stores are separate; see
 [development workflow](docs/runbooks/local-development.md) and
 [container data migration](docs/runbooks/container-deployment.md).
+
+Current backend direction: [architecture proposal](docs/backend-architecture.md).

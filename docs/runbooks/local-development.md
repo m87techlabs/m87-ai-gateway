@@ -74,7 +74,7 @@ for the separate checks that require a container runtime.
    two running gateways at the same SQLite directory. See
    [moving native data to Docker](container-deployment.md).
 
-6. At a feature checkpoint, verify the container package:
+6. When the functional release candidate is ready, verify the container package:
 
    ```bash
    ./docker-start.sh --build
@@ -87,9 +87,10 @@ for the separate checks that require a container runtime.
    dependencies, packaging/network changes and end-to-end container acceptance;
    they are unnecessary for every source edit.
 
-7. Each push to `main` currently runs CI and builds/tests the container, then
-   publishes a verified preview alongside native artifacts. This maintains
-   distribution evidence while the inner development loop stays native. To
+7. Each push to `main` runs source/docs/native CI. Docker packaging is currently
+   deferred: explicitly dispatch CI with `package_container` enabled on main to
+   build/test the container and publish a verified development preview. Container
+   acceptance remains required before the final functional release. To
    consume a published image explicitly, run `./docker-start.sh --update`.
    Plain `docker-start.sh` resumes the existing image/port and does not pull an
    update. Both update/build paths retain the volume; back up before upgrades.

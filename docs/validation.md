@@ -11,6 +11,18 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Backend discussion and deferred Docker packaging
+
+On 2026-10-05 the development priority changed to backend architecture. The proposal
+separates existing SQLite responsibilities without adding default external services,
+and calls out independent usage history, secret/key lifecycle, configuration revisions
+and reliable export contracts as planned work. No data migration or backend refactor
+was performed during this discussion. Docker files/helpers remain available; image
+build/publication now requires an explicit CI dispatch with `package_container`.
+Routine source pushes retain source/docs/native verification. Final container
+acceptance is still required before release. No local containers were started,
+stopped or rebuilt for this architecture/documentation change.
+
 ## Setup connection test and development workflow
 
 On 2026-10-04, the operator reported successful Docker startup. Read-only inspection
@@ -33,7 +45,9 @@ A separate isolated container tested Ollama at `host.docker.internal:11434` and
 returned a safe unreachable result; no completion was generated. This proves the
 failure-reporting path, not an Ollama running-state diagnosis. WSL loopback also
 failed to reach Ollama during this check. Live successful
-Ollama testing and cross-runtime migration remain pending. Hosted results follow.
+Ollama testing and cross-runtime migration remain pending. Hosted CI passed all source/docs/native,
+container and publication jobs for `1ea8d68`; see
+[CI evidence](https://github.com/m87techlabs/m87-ai-gateway/actions/runs/37246001474).
 Local browser checks, live Ollama connection testing from the user's container,
 and cross-runtime migration remain separate operator checks.
 

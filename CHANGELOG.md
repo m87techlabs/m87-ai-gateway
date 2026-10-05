@@ -8,6 +8,10 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Proposed backend architecture for embedded storage, secret/key lifecycle,
+  configuration revisions, independent usage history and optional exporters.
+- Explicit CI container packaging option while backend development takes priority.
+
 - Setup Test connection probes draft endpoints without saving or generating completions,
   reports safe outcomes and protects stored credentials across endpoint changes.
 - Explicit Docker image updates and documented native development/container checkpoints,

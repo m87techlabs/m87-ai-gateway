@@ -58,8 +58,11 @@ Root `docker-start.sh`, `docker-stop.sh` and `docker-status.sh` manage only the
 fixed gateway Compose project, check Docker/Compose/engine requirements, and
 preserve data on stop. Host Python is unnecessary. Default resume preserves the
 existing image/port; --build, --update and --port are explicit startup overrides.
-Use native source startup for routine development and Docker builds at feature
-checkpoints; CI still verifies/publishes images on main pushes. Native and Docker
+Current priority is backend architecture and native source development. Keep Docker
+files/helpers available but defer further container work. Container build/publication
+is an explicit CI workflow_dispatch package_container option; routine main pushes
+run source/docs/native checks without rebuilding Docker. Packaging verification
+remains required for the final functional release scope. Native and Docker
 data stores remain separate. Draft connection tests use model discovery without
 saving or completing inference; never send stored credentials to a changed endpoint.
 Container distribution uses a non-root single-app image with the included setup
@@ -75,6 +78,13 @@ deterministic routing, provider adapters, policy checks, safe errors, observabil
 and resource controls. AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI are
 explicit provider targets. Hosting on AWS, Azure, and Google Cloud is a separate
 deployment objective. Cloud capabilities remain planned until tested and documented.
+
+The proposed backend direction is documented in docs/backend-architecture.md:
+SQLite stays the embedded default while services/repositories separate configuration,
+identities, secret storage, traffic/content, usage and management audit. Usage must
+become independent of log retention. Remote stores/exporters remain optional and
+planned. Preserve current keys/data with explicit migrations; do not claim these
+proposed boundaries are implemented or silently move user data.
 
 Use these pages as the lasting source of project context:
 

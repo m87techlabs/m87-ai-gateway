@@ -156,6 +156,9 @@ python scripts/smoke_standalone.py dist/m87-gateway
 Windows smoke uses `dist/m87-gateway.exe`. The ZIP includes the executable, scripts,
 this guide, license/notice, and a manifest recording dependency versions and the
 binary digest. Build records do not guarantee identical bytes across rebuilds.
-CI runs platform storage/backup tests and the native executable smoke. A CI runner
+CI runs platform storage/backup tests and the native executable smoke. Routine
+source pushes upload temporary native CI artifacts; durable preview publication
+now requires an explicit CI packaging dispatch on main. Existing preview release
+downloads remain available until deleted. A CI runner
 has development tools installed, so it is not clean-workstation evidence. Record
 manual Windows Ollama and clean-host checks in validation before expanding claims.

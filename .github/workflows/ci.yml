@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      package_container:
+        description: Build, verify and publish the container/native development preview
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -118,6 +123,7 @@ jobs:
           npm test --prefix tests/console
 
   container:
+    if: github.event_name == 'workflow_dispatch' && inputs.package_container
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: [test, docs]
@@ -131,12 +137,12 @@ jobs:
       - name: Exercise Docker run and Compose
         run: python scripts/smoke_container.py m87-ai-gateway:check
       - name: Save verified image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && inputs.package_container && github.ref == 'refs/heads/main'
         run: |
           mkdir -p dist/container
           docker save m87-ai-gateway:check | gzip > dist/container/gateway-image.tar.gz
       - name: Upload verified image for publication
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'workflow_dispatch' && inputs.package_container && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: gateway-container
@@ -144,7 +150,7 @@ jobs:
           retention-days: 1
 
   publish-preview:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.package_container && github.ref == 'refs/heads/main'
     needs: [test, docs, bundle, container]
     runs-on: ubuntu-24.04
     timeout-minutes: 10

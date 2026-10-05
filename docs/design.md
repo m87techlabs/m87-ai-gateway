@@ -217,3 +217,11 @@ exec. Source builds and prebuilt images use the same Dockerfile. CI checks the
 image before publishing immutable commit and preview tags. Native ZIPs and Compose
 are retained as commit preview release downloads; public release gates remain.
 See the [container runbook](runbooks/container-deployment.md).
+
+## Backend development priority
+
+See [backend architecture proposal](backend-architecture.md) for the next storage
+work: retain embedded SQLite, separate backend responsibilities and introduce
+independent usage records and explicit key/configuration lifecycles. These changes
+remain proposed. Native source development is the current focus; Docker remains a
+packaging option to verify for the final functional release scope.

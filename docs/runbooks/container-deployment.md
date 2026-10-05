@@ -190,7 +190,8 @@ backup with its database, master key and operator key using the
 [workstation backup procedure](workstation-distribution.md). Restore into a fresh
 private directory in a new Docker volume, using a compatible image. For example,
 with an encrypted archive already copied into a dedicated `gateway-migration`
-volume at `/data/backups/native.m87backup`:
+volume at `/data/backups/native.m87backup`, readable by UID 10001 with private
+0700 parent directories and a 0600 archive file:
 
 ```bash
 docker run --rm -it --mount source=gateway-migration,target=/data \
@@ -265,10 +266,13 @@ shutdown. It removes its own containers and volumes. It never calls a paid cloud
 API or starts the workstation Docker engine. Record exact verified/deferred scope
 in [validation](../validation.md).
 
-Only after source, docs, native bundles and container checks pass does CI publish
+Container work is currently deferred while backend functionality is developed.
+Routine main pushes do not build/publish images. Dispatch the CI workflow on main
+with `package_container` enabled for a packaging candidate. Only after source,
+docs, native bundles and container checks pass does that packaging run publish
 `ghcr.io/m87techlabs/m87-ai-gateway:sha-<full-commit>` and update `:preview`.
 The tested image is transferred between jobs rather than rebuilt before publishing.
-Each successful main push also creates an immutable `preview-<commit-prefix>`
+Each successful explicitly requested packaging run also creates an immutable `preview-<commit-prefix>`
 GitHub prerelease with Windows/Linux ZIPs, checksums and Compose, retained until
 explicit deletion. The historical `v0.1.0` tag and repository visibility stay intact.
 Use immutable image tags or digests for repeatable deployments. No stable `latest`
