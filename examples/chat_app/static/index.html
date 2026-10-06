@@ -20,7 +20,7 @@
       <form id="chat-form">
         <label for="prompt">Your message</label>
         <textarea id="prompt" rows="3" maxlength="8192" placeholder="Explain how an AI gateway works in three sentences." required></textarea>
-        <div class="form-footer"><span>Use synthetic content while testing.</span><button id="send" type="submit">Send message</button></div>
+        <div class="form-footer"><span>Use synthetic content while testing.</span><label><input id="streaming" type="checkbox">Stream response</label><button id="stop" type="button" hidden>Stop</button><button id="send" type="submit">Send message</button></div>
       </form>
     </section>
     <section class="details" aria-label="Last response details">

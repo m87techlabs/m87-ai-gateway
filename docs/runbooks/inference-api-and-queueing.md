@@ -15,8 +15,8 @@ pytest -q tests/test_inference_backlog.py tests/test_request_queue.py tests/test
 
 The sample suite starts its own sample application, gateway and synthetic inference
 service on temporary loopback ports/private storage. It stops them afterward and
-leaves existing services and user data intact. Twelve scenarios cover catalog and
-generation fields, capture, cache, rate/concurrency, queue overflow/recovery, retries,
+leaves existing services and user data intact. Thirteen scenarios cover catalog and
+generation fields, streaming/capture, cache, rate/concurrency, queue overflow/recovery, retries,
 timeout, disabled connections, bounds, restart/deletion and key replacement.
 The optional SDK test uses an actual OpenAI Python client against the local gateway;
 CI installs this extra so the test runs. It never calls a cloud provider.
@@ -87,9 +87,10 @@ Multi-worker/shared enforcement and durable jobs remain planned.
 - If waits grow, check the provider endpoint, GPU capacity and provider timeout.
   Reduce bursts or waiting depth rather than treating queued work as extra capacity.
 
-Queued client disconnects remove waiters promptly. Cancellation of an active task
-releases capacity, but automatic upstream cancellation on a client disconnect
-during generation is still backlog A3. Streaming is still backlog A1.
+Queued client disconnects remove waiters promptly. Active disconnects cancel the
+gateway upstream HTTP request; streaming shares these lifecycle controls. Live
+backend generation-stop behavior remains a separate check. See
+[streaming and cancellation](streaming-and-cancellation.md).
 
 ## Upgrade and deferred evidence
 

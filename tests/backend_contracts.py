@@ -34,6 +34,10 @@ class BackendContract:
             client_user_hash="a" * 64,
             queue_wait_ms=12.5,
             queue_outcome="admitted",
+            streaming=True,
+            request_outcome="failed",
+            http_status_code=200,
+            response_content_partial=True,
         )
         backend.emit(event)
         backend.close()
@@ -43,6 +47,10 @@ class BackendContract:
             assert stored["client_user_hash"] == "a" * 64
             assert stored["queue_wait_ms"] == 12.5
             assert stored["queue_outcome"] == "admitted"
+            assert stored["streaming"]
+            assert stored["request_outcome"] == "failed"
+            assert stored["http_status_code"] == 200
+            assert stored["response_content_partial"]
         finally:
             reopened.close()
 

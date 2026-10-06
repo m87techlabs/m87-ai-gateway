@@ -50,10 +50,19 @@ Backlog batch A2/A4/P2/R3 adds an authenticated model catalog, bounded generatio
 parameters, adapter capabilities in Setup, and optional process-local queueing.
 Queueing defaults off; Controls persists depth/per-app/wait settings. Preserve
 arrival provider/credential/cache snapshots while queued. Eligible FIFO, timeout,
-queued disconnect/cancellation and metrics are implemented; active upstream
-client-disconnect cancellation and streaming remain planned. Schema 4 adds nullable
+queued disconnect/cancellation and metrics are implemented. Streaming and active
+client-disconnect HTTP cancellation now have adapter and real TCP tests. Schema 4 adds nullable
 queue/user-hash traffic fields while preserving keys/usage/audit. User attribution
 is SHA-256 correlation only; never persist or forward the raw user field.
+
+Streaming text is implemented for built-in adapters with cache/retry bypass,
+first-chunk validation before headers, bounded SSE/NDJSON parsing, final usage or
+unknown counts, terminal safe errors and bounded redacted capture. Sample chat
+has a streaming toggle and Stop button; cancellation propagates through both
+HTTP hops. Closing upstream HTTP does not guarantee backend compute/billing stops;
+keep live provider evidence separate. Schema 5 preserves prior data while adding
+outcome, wire-status, streaming and partial-content fields. A1 live verification
+remains in backlog; A3 transport cancellation is implemented. Never fabricate usage.
 
 Phase 2 portable preview uses native Windows/Linux builds, ZIPs and checksums,
 OS-private storage, exclusive data-directory locks, and native status/stop commands.
@@ -459,7 +468,7 @@ Never log:
 - Full completions by default
 - Secrets or credentials
 
-Prompt/response capture is implemented for non-streaming chat. The gateway-level
+Prompt/response capture is implemented for complete and streaming text chat. The gateway-level
 switch controls logging across all authorized apps; legacy app capture fields are
 accepted for compatibility and ignored. It uses private SQLite or rotating JSONL
 storage and remains best effort. Metadata stdout and metrics

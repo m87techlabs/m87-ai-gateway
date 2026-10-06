@@ -171,9 +171,9 @@ def test_capability_declarations_match_gateway_protocol():
     for name, adapter in adapters().items():
         matrix = adapter.capabilities.as_dict()
         assert matrix["text_chat"]
+        assert matrix["streaming"]
         assert not any(
-            matrix[field]
-            for field in ("streaming", "tools", "images", "embeddings", "multiple_choices")
+            matrix[field] for field in ("tools", "images", "embeddings", "multiple_choices")
         )
         for parameter in adapter.capabilities.generation_parameters:
             value = "end" if parameter == "stop" else 1
@@ -186,7 +186,8 @@ def test_capability_declarations_match_gateway_protocol():
     assert Capabilities().response_formats == frozenset({"text"})
 
 
-def test_schema_three_migration_preserves_keys_usage_and_audit(tmp_path):
+@pytest.mark.parametrize("version", [3, 4])
+def test_schema_migration_preserves_keys_usage_and_audit(tmp_path, version):
     import sqlite3
     from backend_contracts import exchange
     from m87_gateway.cli import local_settings
@@ -201,16 +202,19 @@ def test_schema_three_migration_preserves_keys_usage_and_audit(tmp_path):
     audit = store.list_management_events()
     store.close()
     with sqlite3.connect(config.database_path) as database:
-        for column in ("client_user_hash", "queue_wait_ms", "queue_outcome"):
+        columns = ["streaming", "request_outcome", "http_status_code", "response_content_partial"]
+        if version == 3:
+            columns += ["client_user_hash", "queue_wait_ms", "queue_outcome"]
+        for column in columns:
             database.execute(f"ALTER TABLE events DROP COLUMN {column}")
-        database.execute("PRAGMA user_version = 3")
+        database.execute(f"PRAGMA user_version = {version}")
     upgraded = LocalControlStore(config)
     assert upgraded.authenticate_app_key(key).app_id == "migration-app"
     assert upgraded.overview() == before
     assert upgraded.list_management_events() == audit
     assert upgraded.get_event("migration-event")["queue_wait_ms"] is None
     with sqlite3.connect(config.database_path) as database:
-        assert database.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert database.execute("PRAGMA user_version").fetchone()[0] == 5
     upgraded.close()
 
 

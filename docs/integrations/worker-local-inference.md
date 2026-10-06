@@ -31,7 +31,8 @@ sequenceDiagram
 
 The inspected reference Worker relays `/v1/chat/completions`, `/v1/models`,
 and `/v1/embeddings` and can pass streaming responses. This gateway currently
-supports only non-streaming text chat. It rejects `stream: true` and unsupported
+supports complete and streaming text chat. Live streaming through the Worker/tunnel
+remains unverified. It rejects embeddings, tool/multimodal fields and unsupported
 fields; models and embeddings endpoints are not implemented.
 
 Use a separate test Worker/origin or a dedicated chat test route first. Preserve

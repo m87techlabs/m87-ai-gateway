@@ -153,3 +153,19 @@ The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and
 must be recorded at that layer. Streaming, embeddings, traces,
 cost estimation, and remote exporters remain planned.
+
+
+## Stream and cancellation outcomes
+
+Schema-5 traffic stores streaming, request_outcome, http_status_code and
+response_content_partial. One outcome is emitted after the response lifecycle;
+status_code is the final gateway status (including 499 cancellation), while
+http_status_code is the actual committed wire status or null before headers.
+A terminal SSE error can have wire 200 and final 502/504. Captured stream prefixes
+are redacted before truncation and marked partial when interrupted; no partial
+content enters stdout or metric labels. Missing final usage stays unknown.
+
+m87_gateway_streams_total counts completed/failed/cancelled streams by provider;
+m87_gateway_cancellations_total counts cancellations. Client cancellations are
+excluded from provider-error counts. Usage received before interruption remains
+charged to provider accounting. See [streaming operations](runbooks/streaming-and-cancellation.md).

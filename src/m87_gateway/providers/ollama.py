@@ -1,3 +1,4 @@
+import json
 import time
 import os
 from uuid import uuid4
@@ -5,6 +6,7 @@ from uuid import uuid4
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.api.schemas import ChatCompletionRequest
 from m87_gateway.providers.base import Provider
+from m87_gateway.providers.streaming import lines, invalid_stream, validate_chunk
 
 
 class OllamaProvider(Provider):
@@ -19,7 +21,7 @@ class OllamaProvider(Provider):
     async def list_models(self) -> list[str]:
         return self.model_names(await self.get("/api/tags", self.headers()), "models", "name")
 
-    async def chat_completions(self, payload: ChatCompletionRequest, model: str) -> dict:
+    def body(self, payload: ChatCompletionRequest, model: str) -> dict:
         options = {}
         if payload.temperature is not None:
             options["temperature"] = payload.temperature
@@ -40,11 +42,10 @@ class OllamaProvider(Provider):
                 body["format"] = "json"
             elif payload.response_format.type == "json_schema":
                 body["format"] = payload.response_format.json_schema.schema_value
-        data = await self.post(
-            "/api/chat",
-            body,
-            self.headers(),
-        )
+        return body
+
+    async def chat_completions(self, payload: ChatCompletionRequest, model: str) -> dict:
+        data = await self.post("/api/chat", self.body(payload, model), self.headers())
         message = data.get("message")
         if not isinstance(message, dict) or not isinstance(message.get("content"), str):
             raise GatewayError(
@@ -73,3 +74,63 @@ class OllamaProvider(Provider):
             ],
             "usage": usage,
         }
+
+    async def stream_chat_completions(self, payload, model):
+        body = self.body(payload, model)
+        body["stream"] = True
+        identity = {
+            "id": f"chatcmpl-{uuid4().hex}",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": f"ollama:{model}",
+        }
+        async with self.stream("/api/chat", body, self.headers()) as response:
+            async for line in lines(response):
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                except ValueError as exc:
+                    raise invalid_stream() from exc
+                if (
+                    not isinstance(data, dict)
+                    or "error" in data
+                    or type(data.get("done")) is not bool
+                ):
+                    raise invalid_stream()
+                message = data.get("message")
+                if not isinstance(message, dict) or not isinstance(message.get("content"), str):
+                    raise invalid_stream()
+                if message.get("tool_calls"):
+                    raise invalid_stream()
+                chunk = {
+                    **identity,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"role": "assistant", "content": message["content"]},
+                            "finish_reason": (data.get("done_reason") or "stop")
+                            if data["done"]
+                            else None,
+                        }
+                    ],
+                }
+                yield validate_chunk(chunk)
+                if data["done"]:
+                    prompt, completion = data.get("prompt_eval_count"), data.get("eval_count")
+                    if (
+                        type(prompt) is int
+                        and type(completion) is int
+                        and min(prompt, completion) >= 0
+                    ):
+                        yield {
+                            **identity,
+                            "choices": [],
+                            "usage": {
+                                "prompt_tokens": prompt,
+                                "completion_tokens": completion,
+                                "total_tokens": prompt + completion,
+                            },
+                        }
+                    return
+        raise invalid_stream()

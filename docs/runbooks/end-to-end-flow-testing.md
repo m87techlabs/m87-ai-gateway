@@ -7,8 +7,9 @@ a Tunnel to a local gateway and Ollama model. Run it before changing an existing
 application route or claiming that the Worker integration is verified.
 
 The first session uses a dedicated test Worker or route, a synthetic app identity,
-and synthetic prompts. The gateway currently supports non-streaming text chat, so
-the test does not cover streaming, model discovery, or embeddings.
+and synthetic prompts. The initial test covers complete-response text chat;
+streaming runtime is implemented, with a separate [live streaming checklist](streaming-and-cancellation.md).
+Embeddings remain unsupported.
 
 ```mermaid
 flowchart LR
@@ -179,7 +180,7 @@ Run one case at a time and restore service before continuing:
 | E4 | Stop Ollama | Gateway returns safe 502/504; provider error increases |
 | E5 | Stop the gateway | Worker or edge returns a bounded upstream error |
 | E6 | Stop the Tunnel | Cloudflare fails without a gateway event |
-| E7 | Send `stream: true` | Worker or gateway explicitly rejects the request |
+| E7 | Send `stream: true` on the dedicated test route | Validate SSE and terminal errors; verify proxy buffering and Stop cleanup; live evidence pending |
 
 Do not deliberately expose a secret or send sensitive content to test redaction.
 Use synthetic credential-shaped strings in unit tests for that behavior.

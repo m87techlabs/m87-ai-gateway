@@ -48,6 +48,25 @@ restart without losing data, stop only that profile, and recover or roll back
 through documented procedures. No plaintext secrets or captured prompts appear
 in metrics, process arguments, generated manifests, or default logs.
 
+## Streaming and disconnect cancellation — implemented; live checks deferred
+
+- [x] Stream text SSE from Ollama NDJSON and compatible/OpenAI adapters, with
+  declared capabilities and include_usage support; missing usage stays unknown.
+- [x] Hold admission through the full response and bypass cache/retry for streams.
+- [x] Validate before headers; terminate later failures with safe SSE error events.
+- [x] Bound parsing/capture, redact credentials across deltas and flag partial output.
+- [x] Cancel upstream HTTP on client disconnect in both response modes; test direct
+  and sample-to-gateway TCP cleanup, slot release and one final event (A3).
+- [x] Add sample streaming/Stop UI, thirteen HTTP scenarios, SDK streaming tests,
+  final-outcome metrics and schema-5 data preservation contracts.
+- [x] Extend native bundle smoke to exercise streamed inference and captured output.
+- Record live Ollama/OpenAI/vLLM and Worker/tunnel/proxy evidence for A1; local
+  Ollama discovery was unavailable on 2026-10-06. Verify backend generation stops
+  separately from gateway transport cancellation. Final Docker work stays deferred.
+
+See [streaming operations](runbooks/streaming-and-cancellation.md) and
+[validation](validation.md#streaming-and-disconnect-cancellation).
+
 ## Backlog first batch — implemented
 
 - [x] **A2** authenticated app-filtered `/v1/models`, endpoint-bound discovery
@@ -62,8 +81,7 @@ in metrics, process arguments, generated manifests, or default logs.
   usage, captured content and identity audit through upgrade.
 
 See [operating/testing procedures](runbooks/inference-api-and-queueing.md) and
-[validation](validation.md#inference-api-and-request-queueing). Streaming (A1),
-active upstream disconnect cancellation (A3), fallback routing and shared queues
+[validation](validation.md#inference-api-and-request-queueing). Live streaming verification (A1), fallback routing and shared queues
 remain in [backlog](backlog.md). Queue admission and response caching remain local
 to one process. Live provider/model compatibility is a separate release gate.
 
@@ -258,7 +276,7 @@ deployment has recorded startup, health, request, and rollback evidence.
 
 - Stabilize the provider extension interface and publish a minimal adapter example.
 - Add configuration validation tooling and JavaScript/Python client examples.
-- Introduce streaming, tools, or multimodal support through explicit capability contracts.
+- [x] Introduce text streaming through explicit capability contracts; add tools/multimodal later.
 - [x] Add opt-in exact-response caching and bounded transient retries.
 - Add authorized fallback routes and shared state.
 - Document migration paths and extension compatibility.
@@ -281,9 +299,9 @@ may happen earlier when the same gates are satisfied for a smaller declared scop
 
 | Integration | State | Next requirement |
 | --- | --- | --- |
-| OpenAI | Partial adapter | Live compatibility checks and capability matrix |
-| Ollama | Partial adapter | Live/container/tunnel checks and streaming later |
-| OpenAI-compatible server | Partial text adapter | Live vLLM/server checks; non-streaming only |
+| OpenAI | Partial adapter | Live complete/streaming compatibility checks |
+| Ollama | Partial adapter | Live streaming/container/tunnel checks |
+| OpenAI-compatible server | Partial text adapter | Live vLLM/server complete/streaming checks |
 | Anthropic | Planned | Adapter, contract tests, credential and operations guide |
 | AWS Bedrock | Planned | Adapter, cloud credentials, contract and live smoke checks |
 | Azure OpenAI | Planned | Adapter, deployment/model mapping, contract and live smoke checks |

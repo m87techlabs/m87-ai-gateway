@@ -170,7 +170,7 @@ async function showDetail(requestId) {
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["HTTP status", item.http_status_code], ["Response mode", item.streaming ? "Streaming" : "Complete response"], ["Outcome", item.request_outcome], ["Partial output", item.response_content_partial ? "Yes" : "No"], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";

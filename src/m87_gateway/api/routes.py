@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import ValidationError
 
 from m87_gateway.adapters import adapters
+from m87_gateway.api.streaming import ChatStreamResponse
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.api.schemas import ChatCompletionRequest, ChatCompletionResponse
 from m87_gateway.auth.api_key import authenticate_app
@@ -52,6 +53,13 @@ async def models(
 
 def validate_capabilities(payload: ChatCompletionRequest, provider_name: str) -> None:
     capability = adapters()[provider_name].capabilities
+    if payload.stream and not capability.streaming:
+        raise GatewayError(
+            422,
+            "unsupported_streaming",
+            "Selected adapter does not support streaming",
+            "invalid_request_error",
+        )
     for field in (
         "temperature",
         "max_tokens",
@@ -113,6 +121,8 @@ async def chat_completions(
             headers={"Retry-After": str(retry_after)},
         )
     prepared = prepare(payload, request, app_context, settings)
+    if payload.stream:
+        return ChatStreamResponse(request, payload, app_context, settings, prepared)
     async with request.app.state.inflight_limiter.admit_wait(
         app_context.app_id,
         settings.limits.max_concurrent_requests,
@@ -120,7 +130,7 @@ async def chat_completions(
         settings.limits.queue_max_depth,
         settings.limits.queue_max_depth_per_app,
         settings.limits.queue_wait_timeout_seconds,
-        disconnected=request.is_disconnected,
+        disconnected=request.state.is_disconnected,
         audit=audit,
     ):
         return await complete(payload, request, http_response, app_context, settings, prepared)

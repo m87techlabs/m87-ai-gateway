@@ -15,8 +15,8 @@ rejections, and malformed payloads. Only transient error codes are retried.
 
 `async list_models()` is optional. Its default reports that discovery is unavailable;
 users can enter models manually. Built-in discovery uses Ollama `/api/tags` and
-compatible `/models` APIs. The setup API reports the text/non-streaming contract and model
-discovery support. Streaming, tools, embeddings, multimodal input, Anthropic,
+compatible `/models` APIs. The setup API reports text/streaming capabilities and model
+discovery support. Tools, embeddings, multimodal input, Anthropic,
 Bedrock, Azure-specific authentication, and Vertex-specific authentication remain
 unsupported. A compatible wire format does not establish live provider compatibility.
 
@@ -93,8 +93,8 @@ flowchart TD
 
 Each registered Adapter carries a frozen Capabilities declaration. Setup displays
 its matrix. Built-in Ollama, OpenAI and generic compatible adapters support text
-chat, seed and text/JSON object/schema formats. All currently declare streaming,
-tools, embeddings, images and multiple choices unavailable. Ollama lacks the penalty
+chat, streaming, seed and text/JSON object/schema formats. Tools, embeddings,
+images and multiple choices remain unavailable. Ollama lacks the penalty
 and strict-schema mappings; compatible adapters declare them. Model/server support
 may be narrower and must be verified separately.
 
@@ -112,10 +112,29 @@ capabilities = Capabilities(
 ```
 
 The chat route checks declared generation options and formats before constructing
-the provider. Existing non-streaming schema restrictions still reject streaming,
-tools, images and multiple choices; a flag alone does not implement a protocol.
+the provider. Request schema restrictions still reject tools, images and multiple choices;
+a flag alone does not implement a protocol.
 Tests in tests/test_inference_backlog.py exercise each built-in declaration and
 provider mapping, including unsupported paths. Reuse these cases for extensions.
 Mappings follow the [OpenAI chat reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create),
 [Ollama chat reference](https://docs.ollama.com/api/chat) and
 [Ollama parameter reference](https://docs.ollama.com/modelfile).
+
+
+## Streaming extension contract
+
+Implement an async generator stream_chat_completions(payload, model) only when
+declaring Capabilities(streaming=True). Yield normalized chat.completion.chunk
+dictionaries with stable id/created, one index-0 text/refusal delta, finish_reason,
+and optional final empty-choices usage. The gateway checks these fields and maps
+the model to the authorized route. Use context-managed HTTP streams, safe
+GatewayError values and finally cleanup; cancellation must close the upstream
+connection. Never catch/suppress task cancellation or leave background generation
+running in the adapter. Existing third-party adapters default to streaming false.
+
+Streams bypass gateway cache/retry; admission and logs wrap the iterator through
+its complete lifecycle. Reuse tests/test_streaming.py and the real disconnect
+cases for new adapters. See the [streaming runbook](runbooks/streaming-and-cancellation.md).
+Wire contracts follow the [OpenAI streaming reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)
+and [Ollama chat reference](https://docs.ollama.com/api/chat). Closing HTTP is the
+adapter guarantee; generation cancellation/billing must be checked with each server.

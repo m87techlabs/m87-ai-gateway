@@ -8,6 +8,12 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Text SSE streaming for built-in providers, usage chunks, bounded parsing/capture,
+  terminal errors, cache/retry bypass and full-lifecycle admission.
+- Single-owner disconnect monitoring, upstream HTTP cancellation, final outcome
+  metrics and schema-5 traffic fields preserving prior keys/usage/audit.
+- Sample streaming/Stop UI, SDK/real TCP cleanup tests and native stream smoke.
+
 - Authenticated model listing, adapter capability declarations/console matrix,
   bounded generation parameters and hashed gateway-only user attribution.
 - Optional global/per-app bounded request queues, wait/overflow errors, cancellation

@@ -75,7 +75,7 @@ variable. Ollama defaults to `http://localhost:11434` and calls
 `/api/chat`. A disabled provider is rejected before invocation. Missing OpenAI
 credentials return a safe 503 when that provider is selected.
 
-`providers.openai_compatible` supports the current non-streaming text contract at
+`providers.openai_compatible` supports the current complete/streaming text contract at
 an explicitly configured base URL, typically ending in `/v1`. Its key is optional;
 Ollama can also use a gateway-stored or environment bearer key for protected endpoints.
 Registered source extensions use `providers.custom.<adapter-name>`; see
@@ -116,7 +116,7 @@ was previously configured. See [guided setup](runbooks/guided-setup.md).
 | `retry.max_attempts`, `backoff_ms` | Bounded transient provider retries; default one attempt |
 
 The text-chat contract accepts the [generation parameters below](#chat-generation-parameters),
-plus optional `task` and `stream: false`. Streaming, tools, images, multiple choices,
+plus optional `task`, `stream` and `stream_options.include_usage`. Tools, images, multiple choices,
 arbitrary extra options and tool-role messages return a safe 422.
 
 See [observability](observability.md) for content storage and retention,
@@ -195,3 +195,10 @@ Saved connection discovery populates an endpoint-bound, process-local snapshot
 and restart invalidate it. Discovery never widens an application's allowlist;
 manually allowed models remain listed without discovery. Draft Test connection
 results do not populate this catalog. No endpoint URLs or credentials are returned.
+
+## Streaming options
+
+stream defaults false. With stream true, include_usage requests the final SSE
+usage chunk; absent provider counts remain null. stream_options requires stream
+true and accepts include_usage only. Streams bypass cache/retry and retain
+admission until completion or disconnect. See [stream lifecycle and errors](runbooks/streaming-and-cancellation.md).

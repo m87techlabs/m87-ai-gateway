@@ -29,6 +29,7 @@ flowchart LR
 Implemented foundations include validated YAML/environment configuration, bearer
 app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
 Ollama and generic OpenAI-compatible adapters, configured request guardrails, safe provider errors, correlated
+complete/streaming text responses with disconnect cancellation,
 JSON outcome events, optional private traffic capture, Prometheus metrics, a
 health endpoint, per-app rate limits, opt-in response caching, bounded retries,
 an authenticated model catalog, validated generation parameters, optional bounded
@@ -189,3 +190,7 @@ Trusted extensions can register backend implementations and reuse the
 [adapter contracts](docs/backend-adapters.md). Only SQLite is bundled; see
 [backend architecture](docs/backend-architecture.md) and the
 [upgrade/testing runbook](docs/runbooks/backend-storage-testing.md).
+
+Streaming is available in the sample chat toggle, with a Stop button and final
+provider usage. See [streaming and cancellation](docs/runbooks/streaming-and-cancellation.md)
+for SSE errors, partial capture, live checks and upgrade notes.

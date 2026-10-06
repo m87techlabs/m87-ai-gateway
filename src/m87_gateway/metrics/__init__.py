@@ -17,6 +17,18 @@ class GatewayMetrics:
             ("outcome",),
             registry=self.registry,
         )
+        self.streams = Counter(
+            "m87_gateway_streams_total",
+            "Final streaming outcomes",
+            ("provider", "outcome"),
+            registry=self.registry,
+        )
+        self.cancellations = Counter(
+            "m87_gateway_cancellations_total",
+            "Cancelled chat requests",
+            ("provider",),
+            registry=self.registry,
+        )
         labels = ("app_id", "provider", "status_code")
         self.requests = Counter(
             "m87_gateway_requests_total",
@@ -93,13 +105,20 @@ class GatewayMetrics:
             str(event["status_code"]),
         ).inc()
         self.latency.labels(provider).observe(event["latency_ms"] / 1000)
+        outcome = event.get("request_outcome")
+        if event.get("streaming") and outcome in {"completed", "failed", "cancelled"}:
+            self.streams.labels(provider, outcome).inc()
+        if outcome == "cancelled":
+            self.cancellations.labels(provider).inc()
         attempts = event.get("provider_attempts", 0) or (
             1 if event.get("provider_attempted") else 0
         )
         if attempts:
             self.provider_requests.labels(provider).inc(attempts)
             retries = event.get("provider_retries", 0)
-            failures = retries + (1 if event["status_code"] >= 400 else 0)
+            failures = retries + (
+                1 if event["status_code"] >= 400 and outcome != "cancelled" else 0
+            )
             if failures:
                 self.provider_errors.labels(provider).inc(failures)
             if retries:

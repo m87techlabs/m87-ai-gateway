@@ -96,12 +96,12 @@ provide separate operator roles or tenant isolation. See
 
 | Capability | Product expectation | Current state |
 | --- | --- | --- |
-| API | Documented chat completion contract; explicit handling of unsupported options | Partial: text requests and non-streaming responses |
+| API | Documented chat completion contract; explicit handling of unsupported options | Partial: complete and streaming text responses; tools/images planned |
 | Identity | Per-app authentication and model authorization, including resolved routes | Implemented for bearer app keys and model allowlists |
 | Routing | Deterministic selection, aliases, configuration validation | Implemented for direct models, `auto`, and task rules |
-| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: non-streaming OpenAI and Ollama text chat; native Ollama flow verified |
+| Providers | Common adapter contract with declared capabilities and safe failure handling | Partial: complete/streaming OpenAI and Ollama text chat; live stream checks pending |
 | Policy | Configurable request/response checks with bounded request sizes | Partial: request bounds and configured blocklist; response checks planned |
-| Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: timeouts and opt-in bounded retries; fallback planned |
+| Reliability | Timeouts, cancellation, bounded retries, explicit fallback policy | Partial: timeouts, HTTP cancellation and opt-in complete-response retries; fallback planned |
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
 | Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate/concurrency enforcement, UI controls and opt-in response cache; budgets planned |
 | Projects and dashboard | Project/application usage, logs, API testing and trends | Implemented local grouping; roles, project budgets and billing remain planned |
@@ -249,6 +249,11 @@ capacity behind an app already at its active cap. Queue metadata stays in traffi
 while metric labels use fixed outcomes only. User attribution is gateway-only SHA-256
 correlation, excluded from provider payloads and raw stored content. Arrival settings,
 provider credentials and cache objects are retained across the wait so a setup change
-cannot mix connection generations. These are process-local controls. Streaming,
-automatic cancellation during active upstream generation and shared admission remain
-planned. See [the runbook](runbooks/inference-api-and-queueing.md).
+cannot mix connection generations. These are process-local controls. Streaming and HTTP cancellation are implemented; live backend generation-stop
+behavior and shared admission remain unverified/planned respectively. See [the runbook](runbooks/inference-api-and-queueing.md).
+
+Streams and complete responses share a single-owner client disconnect monitor.
+Streaming responses prefetch one validated chunk, retain admission during transfer,
+and always close the upstream iterator. Wire HTTP status and final outcome are
+recorded separately when failures/cancellation follow HTTP 200. See the
+[streaming lifecycle](runbooks/streaming-and-cancellation.md).

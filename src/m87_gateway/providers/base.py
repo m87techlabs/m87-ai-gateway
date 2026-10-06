@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 
 import httpx
 
@@ -64,6 +65,44 @@ class Provider(ABC):
             raise GatewayError(
                 502, "provider_invalid_payload", "Model provider could not complete the request"
             ) from exc
+
+    @asynccontextmanager
+    async def stream(self, path, body, headers=None):
+        try:
+            async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+                async with client.stream(
+                    "POST", f"{self.config.base_url}{path}", json=body, headers=headers
+                ) as response:
+                    response.raise_for_status()
+                    yield response
+        except httpx.TimeoutException as exc:
+            raise GatewayError(504, "provider_timeout", "Model provider timed out") from exc
+        except httpx.HTTPStatusError as exc:
+            upstream = exc.response.status_code
+            code = (
+                "provider_rate_limited"
+                if upstream == 429
+                else (
+                    "provider_error"
+                    if upstream in {408, 409} or upstream >= 500
+                    else "provider_rejected"
+                )
+            )
+            raise GatewayError(
+                503 if upstream == 429 else 502,
+                code,
+                "Model provider could not complete the request",
+            ) from exc
+        except httpx.RequestError as exc:
+            raise GatewayError(
+                502, "provider_error", "Model provider could not complete the request"
+            ) from exc
+
+    async def stream_chat_completions(self, payload, model):
+        raise GatewayError(
+            422, "unsupported_streaming", "Selected adapter does not support streaming"
+        )
+        yield  # Adapter extensions implement an asynchronous iterator of normalized chunks.
 
     @abstractmethod
     async def chat_completions(self, payload: ChatCompletionRequest, model: str) -> dict:

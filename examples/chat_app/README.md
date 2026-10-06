@@ -149,15 +149,26 @@ python -m examples.chat_app.scenarios
 ```
 
 This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
-inference service on reserved, temporary loopback ports. It exercises twelve scenarios
+inference service on reserved, temporary loopback ports. It exercises thirteen scenarios
 and reports PASS for each. It uses a private temporary database and generated keys;
 all test services/data are cleaned up afterward. Your running gateway, existing
 keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
 
-The scenarios cover application model listing, generation parameters, bounded queue
+The scenarios cover streamed text/final usage/capture, application model listing, generation parameters, bounded queue
 overflow/recovery, successful input/output capture, cache hits and token accounting,
 rate limits, concurrency limits, retries/outages, timeouts, readiness, request bounds,
 truncation, restart persistence, log deletion preserving usage, and replacement-key overlap/revocation. These same scenarios run in pytest.
 The sample UI displays cache status and retry delay; retries/provider attempts are
 visible in gateway log details. For live Ollama/manual UI checks, follow the
 [acceptance runbook](../../docs/runbooks/gateway-controls-testing.md).
+
+
+## Streaming and Stop
+
+Enable Stream response in the chat page for incremental text and final provider
+usage. Stop cancels a pending request in either response mode; the sample closes
+its gateway request, and the gateway closes the inference request and releases
+capacity. Draft and partial text remain visible, but partial/failed turns are
+excluded from conversation history. Look up the request ID in gateway Logs for
+completed/cancelled/failed outcome and partial capture. Restart the source gateway
+and sample after updating code. See [streaming checks](../../docs/runbooks/streaming-and-cancellation.md).

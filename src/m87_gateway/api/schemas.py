@@ -1,7 +1,7 @@
 import json
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
 from m87_gateway.config.settings import validate_model
 
@@ -50,6 +50,11 @@ ResponseFormat = Annotated[
 ]
 
 
+class StreamOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    include_usage: bool = Field(default=False, strict=True)
+
+
 class ChatCompletionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     model: str = "auto"
@@ -64,7 +69,14 @@ class ChatCompletionRequest(BaseModel):
     response_format: ResponseFormat | None = None
     user: str | None = Field(default=None, min_length=1, max_length=200, strict=True)
     task: str | None = Field(default=None, min_length=1, max_length=100)
-    stream: Literal[False] = False
+    stream: bool = Field(default=False, strict=True)
+    stream_options: StreamOptions | None = None
+
+    @model_validator(mode="after")
+    def streaming_options(self):
+        if self.stream_options is not None and not self.stream:
+            raise ValueError("stream_options requires stream true")
+        return self
 
     @field_validator("model")
     @classmethod

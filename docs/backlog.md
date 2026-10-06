@@ -10,11 +10,12 @@ Every item here is **planned**. When an item is implemented, remove it from this
 and record its tests and verification in the roadmap, [validation](validation.md) and the relevant runbook.
 
 Completed first batch: **A2 model listing, A4 generation parameters, P2 adapter
-capabilities, R3 bounded queueing**. See [roadmap](roadmap.md#backlog-first-batch--implemented)
+capabilities, R3 bounded queueing**. A3 disconnect cancellation and the streaming
+runtime are also implemented; live streaming verification remains below. See [roadmap](roadmap.md#backlog-first-batch--implemented)
 and the [testing runbook](runbooks/inference-api-and-queueing.md).
 
-The authenticated inference API exposes `GET /v1/models` and non-streaming
-`POST /v1/chat/completions`. Operator APIs live under `/admin`; `/health`,
+The authenticated inference API exposes `GET /v1/models` and
+`POST /v1/chat/completions` (complete or streaming text). Operator APIs live under `/admin`; `/health`,
 `/ready` and `/metrics` provide operational endpoints. Supported fields are
 documented in [configuration](configuration.md#chat-generation-parameters).
 
@@ -22,8 +23,7 @@ documented in [configuration](configuration.md#chat-generation-parameters).
 
 | Priority | Item | Area | Size |
 | --- | --- | --- | --- |
-| P1 | [A1 Streaming responses](#a1-streaming-responses) | API | L |
-| P1 | [A3 Client cancellation](#a3-client-cancellation) | API | M |
+| P1 | [A1 Streaming live verification](#a1-streaming-live-verification) | API | L |
 | P2 | [R1 Fallback routes](#r1-fallback-routes) | Routing | M |
 | P2 | [R4 Priority classes](#r4-priority-classes) | Routing | M |
 | P2 | [S1 Budget enforcement](#s1-budget-enforcement) | Security | M |
@@ -39,8 +39,8 @@ Sizes are rough: S ≈ days, M ≈ one to two weeks, L ≈ several weeks.
 
 ```mermaid
 flowchart LR
-    A2[A2 Model listing complete] --> A1[A1 Streaming]
-    A1 --> A3[A3 Cancellation]
+    A2[A2 Model listing complete] --> A1[A1 Streaming live verification]
+    A1 --> A3[A3 Cancellation implemented]
     A1 --> O4[O4 Latency metrics]
     A1 --> A7[A7 Tool calling]
     P2[P2 Capability matrix complete] --> A1
@@ -54,40 +54,21 @@ flowchart LR
 
 ## A. Inference API surface
 
-### A1 Streaming responses
+### A1 Streaming live verification
 
-**Why:** interactive clients expect incremental output. Without streaming, users
-see nothing until the whole reply has been generated, and long generations hit
-client timeouts.
+The streaming runtime, adapter contracts and browser Stop flow are implemented;
+see [streaming and cancellation](runbooks/streaming-and-cancellation.md). Remaining
+work is live evidence before the original A1 acceptance gate is satisfied.
 
-**Scope**
-- Accept `stream: true` and return OpenAI-style Server-Sent Events (`chat.completion.chunk`
-  objects followed by `data: [DONE]`). Support `stream_options.include_usage`.
-- Streaming support in the Ollama, OpenAI and OpenAI-compatible adapters, declared
-  through the capability matrix ([implemented adapter capabilities](adapters.md#capability-declarations)).
-- Logging and usage: one outcome event per stream, recorded when the stream ends,
-  with prompt and completion tokens (from provider usage, or a documented estimate
-  when the provider sends none) and a final status of completed, cancelled or failed.
-- Content capture assembles the streamed text within the existing capture limits.
-- Concurrency and rate-limit slots are held for the whole stream and released on every exit path.
-- Errors after the first chunk are sent as a terminal error event, not a new HTTP status.
-- Cache: streamed responses either skip the cache or replay cached content as a
-  stream. Pick one, document it, and test it.
+**Scope:** run text streaming against Windows/local Ollama, OpenAI and a compatible
+server; inspect final usage, bounded capture and initial/terminal errors. Verify
+Stop closes HTTP and that each backend actually stops generation. Repeat through
+the Worker/tunnel/proxy path with buffering and timeout checks. Preserve unknown
+counts when no provider usage arrives; do not introduce token estimates.
 
-**Acceptance:** contract tests cover a normal stream, an upstream error before and
-during the stream, client disconnect, usage accounting, slot release and capture
-truncation. A live check against Ollama is recorded in validation.
-
-### A3 Client cancellation
-
-**Why:** when a caller disconnects, the provider keeps generating, so GPU or paid
-capacity is wasted and concurrency slots stay held.
-
-**Scope:** detect client disconnects for both streaming and non-streaming requests,
-cancel the upstream request, release slots, and record a `cancelled` outcome.
-
-**Acceptance:** a test shows that disconnecting mid-request cancels the upstream
-call, frees the slot within a bounded time, and logs the request as cancelled.
+**Acceptance:** record provider/model versions and successful completion, token
+accounting, truncation and disconnect recovery in [validation](validation.md).
+Local Ollama discovery was unavailable on 2026-10-06, so this gate remains planned.
 
 ### A5 Multiple choices (`n`)
 
@@ -294,7 +275,7 @@ attempt, retries and cache. Propagate `traceparent` from callers.
 ### O4 Latency and throughput metrics
 
 **Scope:** time to first token, tokens per second and queue wait, broken down by
-provider, model and application. Needs [A1](#a1-streaming-responses) and [implemented queueing](runbooks/inference-api-and-queueing.md).
+provider, model and application. Needs [A1](#a1-streaming-live-verification) and [implemented queueing](runbooks/inference-api-and-queueing.md).
 
 ### O5 Cost and resource estimates
 

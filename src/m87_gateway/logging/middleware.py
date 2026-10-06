@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from time import perf_counter
 from uuid import uuid4
+from m87_gateway.cancellation import monitor_disconnect
 
 from fastapi import Request
 from starlette.concurrency import run_in_threadpool
@@ -42,20 +43,25 @@ class TrafficMiddleware:
             "provider_attempts": 0,
             "provider_retries": 0,
             "cache_status": "disabled",
+            "streaming": False,
+            "request_outcome": None,
+            "response_content_partial": False,
         }
         audit = state["audit"]
         started = perf_counter()
         status = 500
         response_started = False
+        wire_status = None
         is_chat = scope["path"] == "/v1/chat/completions" and scope["method"] == "POST"
         runtime = scope["app"].state
         settings = runtime.settings
 
         async def tracked_send(message):
-            nonlocal status, response_started
+            nonlocal status, response_started, wire_status
             if message["type"] == "http.response.start":
                 response_started = True
                 status = message["status"]
+                wire_status = status
                 message = dict(message)
                 message["headers"] = [
                     (key, value)
@@ -96,7 +102,7 @@ class TrafficMiddleware:
                     message = await receive()
                     if message["type"] == "http.disconnect":
                         status = 499
-                        audit["error_type"] = "client_disconnected"
+                        audit.update(error_type="client_disconnected", request_outcome="cancelled")
                         return
                     body.extend(message.get("body", b""))
                     if len(body) > settings.guardrails.max_request_bytes:
@@ -108,22 +114,38 @@ class TrafficMiddleware:
                     if not message.get("more_body", False):
                         break
                 delivered = False
+                disconnected = asyncio.Event()
+
+                async def is_disconnected():
+                    return disconnected.is_set()
+
+                state["is_disconnected"] = is_disconnected
 
                 async def replay():
                     nonlocal delivered
                     if not delivered:
                         delivered = True
                         return {"type": "http.request", "body": bytes(body), "more_body": False}
-                    return await receive()
+                    await disconnected.wait()
+                    return {"type": "http.disconnect"}
 
                 downstream_receive = replay
-            await self.app(scope, downstream_receive, tracked_send)
+            if not is_chat:
+                await self.app(scope, downstream_receive, tracked_send)
+            else:
+                if await monitor_disconnect(
+                    self.app(scope, downstream_receive, tracked_send), receive, disconnected
+                ):
+                    status = 499
+                    audit.update(error_type="client_disconnected", request_outcome="cancelled")
         except asyncio.CancelledError:
             status = 499
-            audit["error_type"] = "client_disconnected"
+            audit.update(error_type="client_disconnected", request_outcome="cancelled")
             raise
         except Exception:
-            audit["error_type"] = "internal_error"
+            audit.update(
+                error_type="internal_error", request_outcome="failed", outcome_status_code=500
+            )
             if not response_started:
                 await reject(
                     GatewayError(500, "internal_error", "Gateway could not complete the request")
@@ -132,7 +154,15 @@ class TrafficMiddleware:
                 raise
         finally:
             if is_chat:
-                audit["status_code"] = status
+                audit["http_status_code"] = wire_status
+                audit["status_code"] = (
+                    499
+                    if audit.get("request_outcome") == "cancelled"
+                    else audit.get("outcome_status_code", status)
+                )
+                audit["request_outcome"] = audit.get("request_outcome") or (
+                    "completed" if status < 400 else "failed"
+                )
                 audit["latency_ms"] = round((perf_counter() - started) * 1000, 3)
                 if settings.observability.prometheus_metrics:
                     runtime.metrics.observe(audit)

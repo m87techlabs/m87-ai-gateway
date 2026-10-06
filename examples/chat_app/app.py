@@ -11,13 +11,14 @@ import time
 from typing import Literal
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 import uvicorn
+from examples.chat_app.streaming import GatewayStream, LocalBoundary
 from m87_gateway.local_server import DEFAULT_GATEWAY_PORT, bind_listener
 
 STATIC = Path(__file__).with_name("static")
@@ -145,32 +146,7 @@ def create_app(settings: Settings, *, transport=None):
     app.mount("/assets", StaticFiles(directory=STATIC), name="assets")
     base = settings.gateway_url.rstrip("/")
 
-    @app.middleware("http")
-    async def local_boundary(request: Request, call_next):
-        # This app has no end-user login. Keep access on the local workstation.
-        allowed_hosts = {"localhost", "127.0.0.1"}
-        if request.url.hostname not in allowed_hosts:
-            response = error("Unrecognized application host", 400)
-        elif request.method == "POST" and (
-            request.headers.get("sec-fetch-site") == "cross-site"
-            or (
-                request.headers.get("origin")
-                and request.headers["origin"] != str(request.base_url).rstrip("/")
-            )
-        ):
-            response = error("Use the application from its own browser page", 403)
-        elif request.method == "POST" and len(await request.body()) > 128 * 1024:
-            response = error("Conversation is too large", 413)
-        else:
-            response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
-        )
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        return response
+    app.add_middleware(LocalBoundary, error_factory=error)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_input(request, exc):
@@ -192,6 +168,23 @@ def create_app(settings: Settings, *, transport=None):
             "gateway_url": settings.gateway_url,
             "model": settings.model,
         }
+
+    @app.post("/api/chat/stream")
+    async def stream_chat(body: Chat):
+        return GatewayStream(
+            app.state.gateway,
+            f"{base}/v1/chat/completions",
+            settings.app_key,
+            {
+                "model": settings.model,
+                "messages": [message.model_dump() for message in body.messages],
+                "max_tokens": 512,
+                "stream": True,
+                "stream_options": {"include_usage": True},
+            },
+            error,
+            REQUEST_ID,
+        )
 
     @app.post("/api/chat")
     async def chat(body: Chat):

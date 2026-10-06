@@ -65,6 +65,38 @@ class Inference(BaseHTTPRequestHandler):
         if mode == "hold":
             state.entered.set()
             state.release.wait(timeout=5)
+        if body.get("stream"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.end_headers()
+            base = {
+                "id": "chatcmpl-scenario",
+                "object": "chat.completion.chunk",
+                "created": 1,
+                "model": "scenario-model",
+            }
+            for content, reason in [("synthetic ", None), ("answer", "stop")]:
+                value = {
+                    **base,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"role": "assistant", "content": content},
+                            "finish_reason": reason,
+                        }
+                    ],
+                }
+                self.wfile.write(f"data: {json.dumps(value)}\n\n".encode())
+                self.wfile.flush()
+                time.sleep(0.02)
+            value = {
+                **base,
+                "choices": [],
+                "usage": {"prompt_tokens": 4, "completion_tokens": 2, "total_tokens": 6},
+            }
+            self.wfile.write(f"data: {json.dumps(value)}\n\ndata: [DONE]\n\n".encode())
+            self.wfile.flush()
+            return
         self.reply(
             200,
             {
@@ -236,6 +268,50 @@ def exercise():
                             }
                         )
 
+                        with browser.stream(
+                            "POST",
+                            "/api/chat/stream",
+                            json={
+                                "messages": [
+                                    {"role": "user", "content": "Synthetic streaming question"}
+                                ]
+                            },
+                        ) as streamed:
+                            assert streamed.status_code == 200
+                            request_id = streamed.headers["x-request-id"]
+                            frames = [
+                                json.loads(line[6:])
+                                for line in streamed.iter_lines()
+                                if line.startswith("data: ") and line != "data: [DONE]"
+                            ]
+                            assert (
+                                "".join(
+                                    choice["delta"].get("content", "")
+                                    for frame in frames
+                                    for choice in frame["choices"]
+                                )
+                                == "synthetic answer"
+                            )
+                            assert frames[-1]["usage"]["total_tokens"] == 6
+                        for _ in range(100):
+                            record = operator.get("/admin/api/logs/" + request_id)
+                            if record.status_code == 200:
+                                break
+                            time.sleep(0.01)
+                        record.raise_for_status()
+                        assert record.json()["request_outcome"] == "completed"
+                        assert (
+                            record.json()["streaming"]
+                            and not record.json()["response_content_partial"]
+                        )
+                        assert record.json()["response_content"]
+                        results.append(
+                            {
+                                "scenario": "Sample streaming, final usage and captured output",
+                                "passed": True,
+                            }
+                        )
+
                         configure(cache={"enabled": True, "ttl_seconds": 300, "max_entries": 10})
                         calls = state.calls
                         miss, hit = chat(), chat()
@@ -244,8 +320,8 @@ def exercise():
                         assert detail(hit)["provider_attempts"] == 0
                         tokens = operator.get("/admin/api/overview").json()["total_tokens"]
                         assert (
-                            tokens == 18
-                        )  # Parameter test, initial completion and one cache miss.
+                            tokens == 24
+                        )  # Parameter test, complete/streamed replies and one cache miss.
                         operator.post("/admin/api/cache/clear").raise_for_status()
                         assert chat().json()["cache_status"] == "MISS"
                         results.append(

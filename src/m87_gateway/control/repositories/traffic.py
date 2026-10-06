@@ -13,6 +13,10 @@ class SQLiteTrafficRepository(SQLiteRepository):
     def emit(self, event: dict[str, Any]) -> None:
         fields = (
             "request_id",
+            "streaming",
+            "request_outcome",
+            "http_status_code",
+            "response_content_partial",
             "client_user_hash",
             "queue_wait_ms",
             "queue_outcome",
@@ -40,7 +44,13 @@ class SQLiteTrafficRepository(SQLiteRepository):
             "response_content",
             "response_content_truncated",
         )
-        defaults = {"provider_attempts": 0, "provider_retries": 0, "cache_status": "disabled"}
+        defaults = {
+            "provider_attempts": 0,
+            "provider_retries": 0,
+            "cache_status": "disabled",
+            "streaming": False,
+            "response_content_partial": False,
+        }
         values = [event.get(name, defaults.get(name)) for name in fields]
         with self._connect() as connection:
             connection.execute(
@@ -98,7 +108,8 @@ class SQLiteTrafficRepository(SQLiteRepository):
                 f"""SELECT request_id, created_at, project_id, app_id, provider, model, routed_model,
                            status_code, latency_ms, prompt_tokens, completion_tokens,
                            total_tokens, error_type, cache_status, provider_attempts,
-                           provider_retries
+                           provider_retries, streaming, request_outcome, http_status_code,
+                           response_content_partial, queue_wait_ms, queue_outcome, client_user_hash
                     FROM events {where} ORDER BY created_at DESC LIMIT ?""",
                 values,
             ).fetchall()

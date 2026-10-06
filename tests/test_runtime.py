@@ -241,7 +241,7 @@ def test_message_size_and_body_size_limits(runtime):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"stream": True},
+        {"stream_options": {"include_usage": True}},
         {"tools": []},
         {"model": "not-a-model"},
         {"messages": []},

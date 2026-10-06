@@ -16,7 +16,7 @@ sequenceDiagram
     Auth-->>API: Authorized app and concrete route
     API->>Policy: Check message lengths and configured blocklist
     Policy-->>API: Allow or safe rejection
-    API->>Provider: Validated non-streaming chat
+    API->>Provider: Validated complete or streaming text chat
     Provider-->>API: Normalized completion or safe error
     API-->>App: Response and X-Request-ID
     API->>Logs: Correlated outcome event

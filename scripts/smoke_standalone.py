@@ -33,6 +33,39 @@ class Inference(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         assert body["model"] == "synthetic-model"
         assert self.headers["Authorization"] == "Bearer synthetic-provider-key"
+        if body.get("stream"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.end_headers()
+            base = {
+                "id": "chatcmpl-bundle",
+                "object": "chat.completion.chunk",
+                "created": 1,
+                "model": "synthetic-model",
+            }
+            values = [
+                {
+                    **base,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"role": "assistant", "content": "synthetic answer"},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                },
+                {
+                    **base,
+                    "choices": [],
+                    "usage": {"prompt_tokens": 4, "completion_tokens": 2, "total_tokens": 6},
+                },
+            ]
+            for value in values:
+                self.wfile.write(f"data: {json.dumps(value)}\n\n".encode())
+                self.wfile.flush()
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+            return
         self.reply(
             {
                 "id": "chatcmpl-bundle",
@@ -218,6 +251,35 @@ def exercise(executable):
                 assert sum(item["requests"] for item in usage["series"]) == 1
                 assert b"synthetic-provider-key" not in (data_dir / "control.db").read_bytes()
 
+                stream = call(
+                    "/v1/chat/completions",
+                    "POST",
+                    {
+                        "model": "auto",
+                        "messages": [{"role": "user", "content": "synthetic stream"}],
+                        "stream": True,
+                        "stream_options": {"include_usage": True},
+                    },
+                    app["api_key"],
+                )
+                assert stream.endswith(b"data: [DONE]\n\n")
+                frames = [
+                    json.loads(line[6:])
+                    for line in stream.decode().splitlines()
+                    if line.startswith("data: ") and line != "data: [DONE]"
+                ]
+                assert frames[-1]["usage"]["total_tokens"] == 6
+                assert frames[0]["model"] == model
+                for _ in range(50):
+                    rows = call("/admin/api/logs", key=admin)["items"]
+                    streamed = [row for row in rows if row["streaming"]]
+                    if streamed:
+                        break
+                    time.sleep(0.1)
+                assert len(streamed) == 1 and streamed[0]["request_outcome"] == "completed"
+                detail = call("/admin/api/logs/" + streamed[0]["request_id"], key=admin)
+                assert detail["response_content"][0]["message"]["content"] == "synthetic answer"
+
                 def native(*arguments):
                     result = subprocess.run(
                         [str(executable), "--data-dir", str(data_dir), *arguments],
@@ -252,7 +314,7 @@ def exercise(executable):
                 native("--stop")
                 process.wait(timeout=10)
                 print(
-                    "Standalone setup, controls, lifecycle, encrypted backup/restore and restored inference passed"
+                    "Standalone setup, complete/streaming inference, controls, lifecycle and encrypted recovery passed"
                 )
         finally:
             if process is not None and process.poll() is None:

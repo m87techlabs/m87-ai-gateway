@@ -79,6 +79,7 @@ def _compatible(config, key):
 
 
 _COMPATIBLE_CAPABILITIES = Capabilities(
+    streaming=True,
     generation_parameters=frozenset(
         {
             "temperature",
@@ -112,6 +113,7 @@ register_adapter(
         "http://localhost:11434",
         model_discovery=True,
         capabilities=Capabilities(
+            streaming=True,
             generation_parameters=frozenset({"temperature", "max_tokens", "top_p", "stop", "seed"}),
             response_formats=frozenset({"text", "json_object", "json_schema"}),
         ),

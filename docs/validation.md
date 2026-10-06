@@ -11,9 +11,37 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Streaming and disconnect cancellation
+
+Implemented text SSE for built-in adapters and upstream HTTP cancellation (A3)
+for both response modes. Verified locally: 265 Python tests, 24 console interaction
+tests, lint/format, wheel build and links/fences in 53 Markdown files. OpenAI Python
+2.54.0 streamed real synthetic HTTP traffic through the gateway; no cloud calls
+or stored credentials were used. The sample suite has thirteen isolated scenarios.
+
+Tests cover all adapter streams, usage inclusion/unknown counts, byte-boundary
+framing, safe initial/terminal errors, inactivity timeouts, missing DONE,
+oversized events, changing stream identities, strict options, unsupported adapters,
+cache/retry bypass and slot cleanup. Capture tests redact credentials split across
+chunks, bound stored prefixes and flag truncation/partial failures. Real TCP tests
+close clients directly and through the sample in both response modes, requiring
+upstream closure, zero active/queued requests and one final cancellation record
+within a bounded interval. Shared backend contracts preserve outcome metadata
+across reopen; schema-3/4 upgrades preserve keys, usage and audit. Console tests
+cover incremental safe text rendering, final usage, Stop and partial-history exclusion.
+Native bundle smoke now exercises streaming and captured output.
+
+Local Ollama discovery at loopback port 11434 timed out on 2026-10-06, so live
+streaming inference was not attempted. A1 live evidence remains in the backlog:
+Windows/Ollama, OpenAI/vLLM, backend generation-stop/billing behavior and Worker/
+tunnel/proxy buffering checks. Transport cancellation does not prove those backend
+behaviors. Visual browser review, clean-host packaging and final Docker verification
+remain deferred. No live user database or running Docker instance was changed.
+See [the streaming runbook](runbooks/streaming-and-cancellation.md).
+
 ## Inference API and request queueing
 
-Backlog A2/A4/P2/R3 are implemented. Verified locally: 236 Python tests, 19
+Backlog A2/A4/P2/R3 are implemented. Previous batch verification: 236 Python tests, 19
 console interaction tests, lint/format, wheel build and links/fences in 52 Markdown
 files. The SDK test ran with OpenAI Python 2.54.0 (test-only optional dependency).
 Mermaid declarations/fences were checked; rendered diagram review remains manual.
@@ -27,14 +55,14 @@ cache while new requests use the updated connection. Shared backend contracts
 preserve queue/hash metadata across reopen. Controls persist through restart;
 console checks cover the capability matrix and queue setting submission. Schema-3
 upgrade tests preserve keys, usage and identity audit while adding nullable fields.
-The sample acceptance suite now contains twelve scenarios including catalog/options
+That batch added twelve sample scenarios including catalog/options
 and real HTTP queue overflow/recovery.
 
 Live model/provider JSON compliance, Ollama/Windows, vLLM/OpenAI/tunnel integration,
 visual browser behavior and final container/native clean-host packaging remain
 unverified for this batch. No Docker image was rebuilt and no live user state was
-migrated. Streaming and active upstream cancellation after client disconnect remain
-planned; queued disconnect removal does not establish those features. See the
+migrated. Streaming and active disconnect cancellation are implemented in the
+subsequent batch above; its live provider evidence remains deferred. See the
 [inference and queue runbook](runbooks/inference-api-and-queueing.md).
 
 ## Managed application keys and identity audit

@@ -146,7 +146,8 @@ class AuditRecorder:
             ("response_content", response_content),
         ):
             if value is not None:
-                stored[name], stored[f"{name}_truncated"] = self.content(value)
+                stored[name], was_truncated = self.content(value)
+                stored[f"{name}_truncated"] = was_truncated or bool(event.get(f"{name}_truncated"))
         for sink in self.sinks:
             try:
                 sink.emit(stored)

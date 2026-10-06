@@ -22,7 +22,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class LocalControlStore(BackendFacade):
@@ -129,6 +129,10 @@ class LocalControlStore(BackendFacade):
     def _ensure_columns(connection: sqlite3.Connection, legacy_identities: bool = True) -> None:
         migrations = {
             "events": {
+                "streaming": "INTEGER NOT NULL DEFAULT 0",
+                "request_outcome": "TEXT",
+                "http_status_code": "INTEGER",
+                "response_content_partial": "INTEGER NOT NULL DEFAULT 0",
                 "client_user_hash": "TEXT",
                 "queue_wait_ms": "REAL",
                 "queue_outcome": "TEXT",

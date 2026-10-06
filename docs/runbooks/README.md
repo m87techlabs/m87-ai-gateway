@@ -47,3 +47,5 @@ flowchart TD
   revocation and management audit.
 
 - [Inference API and queueing](inference-api-and-queueing.md): catalog, parameter mapping, admission/recovery and test commands.
+
+- [Streaming and cancellation](streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.

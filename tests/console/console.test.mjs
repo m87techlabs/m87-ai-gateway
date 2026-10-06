@@ -77,7 +77,7 @@ async function consoleFixture(t) {
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
     if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
     if (url.pathname.endsWith("/limits")) { Object.assign(apps[0], body); return response(null, 204); }
-    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, capability_matrix: {text_chat: true, streaming: false, generation_parameters: ["top_p", "seed"], response_formats: ["text", "json_object"]}, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
+    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, capability_matrix: {text_chat: true, streaming: true, tools: false, generation_parameters: ["top_p", "seed"], response_formats: ["text", "json_object"]}, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
     if (url.pathname.endsWith("/projects")) {
       if (method === "POST") { projects.push({...body, app_count: 0}); return response(body, 201); }
       return response({items: projects});
@@ -104,7 +104,7 @@ async function consoleFixture(t) {
   $("admin-key").value = "synthetic-admin-key";
   submit("login-form");
   await until(() => !$("console").hidden);
-  return {window, $, submit, requests, deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
+  return {window, $, submit, requests, setEvent: (fields) => Object.assign(event, fields), deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
     deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail,
     deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue};
 }
@@ -351,4 +351,22 @@ test("management audit follows project filters and renders references safely", a
   assert.match($("adapter-capabilities").textContent, /top_p, seed/);
   assert.match($("adapter-capabilities").textContent, /Unavailable/);
   assert.match($("adapter-capabilities").textContent, /json_object/);
+});
+
+
+test("stream details distinguish wire status, cancellation and partial captured output", async (t) => {
+  const {$, window, setEvent} = await consoleFixture(t);
+  setEvent({streaming: true, request_outcome: "cancelled", status_code: 499, http_status_code: 200,
+    response_content_partial: true, response_content: [{message: {content: "<script>partial output</script>"}}]});
+  window.document.querySelector('[data-view="logs"]').click();
+  await until(() => $("logs").querySelector("tr[data-id]"));
+  $("logs").querySelector("tr[data-id]").click();
+  await until(() => $("detail").hasAttribute("open"));
+  const text = $("detail-body").textContent;
+  assert.match(text, /HTTP status200/);
+  assert.match(text, /Streaming/);
+  assert.match(text, /cancelled/);
+  assert.match(text, /Partial outputYes/);
+  assert.match(text, /<script>partial output/);
+  assert.equal($("detail-body").querySelectorAll("script").length, 0);
 });
