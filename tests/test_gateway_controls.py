@@ -17,7 +17,7 @@ from m87_gateway.main import create_app
 
 def test_sample_control_scenarios_over_real_http():
     results = exercise()
-    assert len(results) == 13
+    assert len(results) == 15
     assert all(result["passed"] for result in results)
 
 

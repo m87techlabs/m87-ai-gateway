@@ -49,3 +49,5 @@ flowchart TD
 - [Inference API and queueing](inference-api-and-queueing.md): catalog, parameter mapping, admission/recovery and test commands.
 
 - [Streaming and cancellation](streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
+
+- [Configuration recovery and storage health](configuration-recovery.md): settings history/restore, management audit and safe storage verification.

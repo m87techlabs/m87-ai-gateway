@@ -32,6 +32,8 @@
         <button class="nav" data-view="logs">Logs</button>
         <button class="nav" data-view="apps">Applications</button>
         <button class="nav" data-view="audit">Management audit</button>
+        <button class="nav" data-view="history">Configuration history</button>
+        <button class="nav" data-view="storage">Storage health</button>
         <button class="nav" data-view="keys">Provider keys</button>
         <button class="nav" data-view="destinations">Destinations</button>
       </nav>
@@ -181,7 +183,7 @@
         </div>
       </section>
       <section id="view-audit" class="view" hidden>
-        <div class="panel"><h3>Management audit</h3><p>Recent project, application and key changes. Actor identifies the shared operator role. Credential values are excluded.</p><div id="management-events"></div></div>
+        <div class="panel"><h3>Management audit</h3><p>Recent project, application, configuration, connection and key changes. Gateway-wide changes appear when All projects is selected. Actor identifies the shared operator role. Credential values are excluded.</p><div id="management-events"></div></div>
       </section>
 
       <section id="view-keys" class="view" hidden>
@@ -197,6 +199,25 @@
           <div class="panel"><h3>Configured provider keys</h3><div id="provider-keys"></div></div>
         </div>
       </section>
+
+      <section id="view-history" class="view" hidden>
+        <div class="panel"><h3>Configuration history</h3><p id="revision-status"></p><p>Review and restore console-managed settings. The latest 100 revisions are retained. Restoring creates a new revision and clears the response cache. Credentials, application keys, logs and usage are excluded. Retention changes can delete old logs; restoring cannot recover deleted data.</p><div id="configuration-revisions"></div></div>
+      </section>
+      <section id="view-storage" class="view" hidden>
+        <div class="panel"><h3>Storage health</h3><p id="storage-status"></p><p id="storage-sizes"></p><div id="storage-checks"></div><p id="storage-warnings"></p><button id="verify-storage" type="button">Verify integrity and write access</button><p>Verification checks SQLite integrity and rolls back a test write. It may briefly contend with other database writes. No repair or migration is performed. Back up before upgrading or recovering storage.</p></div>
+      </section>
+      <dialog id="revision-dialog">
+        <form id="revision-form" class="form-panel">
+          <h3 id="revision-title">Review configuration</h3><p id="revision-scope"></p>
+          <pre id="revision-preview"></pre>
+          <label class="check"><input id="revision-clear-credentials" type="checkbox">Remove stored credentials and environment bindings for changed providers</label>
+          <p id="revision-credential-warning"></p>
+          <label>Type RESTORE to activate these settings<input id="revision-confirmation" required pattern="RESTORE" autocomplete="off"></label>
+          <p id="revision-error" role="alert"></p>
+          <button id="revision-restore" type="submit">Restore settings</button>
+          <button id="revision-close" type="button" class="secondary">Cancel</button>
+        </form>
+      </dialog>
 
       <section id="view-destinations" class="view" hidden><div class="panel"><h3>Log and metric destinations</h3><div id="destinations"></div></div></section>
     </main>

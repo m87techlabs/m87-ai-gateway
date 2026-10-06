@@ -149,7 +149,7 @@ python -m examples.chat_app.scenarios
 ```
 
 This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
-inference service on reserved, temporary loopback ports. It exercises thirteen scenarios
+inference service on reserved, temporary loopback ports. It exercises 15 scenarios
 and reports PASS for each. It uses a private temporary database and generated keys;
 all test services/data are cleaned up afterward. Your running gateway, existing
 keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
@@ -172,3 +172,9 @@ capacity. Draft and partial text remain visible, but partial/failed turns are
 excluded from conversation history. Look up the request ID in gateway Logs for
 completed/cancelled/failed outcome and partial capture. Restart the source gateway
 and sample after updating code. See [streaming checks](../../docs/runbooks/streaming-and-cancellation.md).
+
+
+The acceptance suite also restores gateway settings, rejects stale restore attempts,
+then verifies sample inference still succeeds. Storage verification preserves keys,
+usage and audit. For manual settings review/recovery, use the gateway console's
+Configuration history and Storage health pages; see [recovery runbook](../../docs/runbooks/configuration-recovery.md).

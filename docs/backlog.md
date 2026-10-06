@@ -11,7 +11,8 @@ and record its tests and verification in the roadmap, [validation](validation.md
 
 Completed first batch: **A2 model listing, A4 generation parameters, P2 adapter
 capabilities, R3 bounded queueing**. A3 disconnect cancellation and the streaming
-runtime are also implemented; live streaming verification remains below. See [roadmap](roadmap.md#backlog-first-batch--implemented)
+runtime are also implemented, along with configuration recovery/provider-key audit
+and storage health; live streaming verification remains below. See [roadmap](roadmap.md#backlog-first-batch--implemented)
 and the [testing runbook](runbooks/inference-api-and-queueing.md).
 
 The authenticated inference API exposes `GET /v1/models` and
@@ -215,18 +216,18 @@ or block, plus a documented test corpus.
 **Acceptance:** precision and recall on the corpus are recorded, and flag-only mode
 never blocks traffic.
 
-### S4 Key versions and full management audit
+### S4 Key versions and remaining management audit
 
-**Why:** application-key rotation, expiry, revocation and identity audit are in
-place. Encryption/digest key versions and auditing of configuration and provider-key
-changes are not.
+**Why:** application-key lifecycle, configuration/provider-key audit, encrypted
+settings history, atomic activation and rollback are implemented. Crypto key versions
+and remaining actions such as cache clearing and log deletion still need coverage.
 
-**Scope:** versioned master/digest keys with re-encryption, and audit records for
-configuration, control, connection and provider-key changes. Add
-configuration revisions with atomic activation and rollback.
+**Scope:** versioned master/digest keys with re-encryption, remaining management
+actions and stable connection identities for multiple connections of one adapter.
 
-**Acceptance:** a master key can be rotated without downtime, every management
-change appears in the audit log, and a previous configuration revision can be restored.
+**Acceptance:** a master key can be rotated without losing application-key validity
+or provider secrets, remaining management changes appear in audit, and migration/
+backup/recovery pass shared contracts. Current settings rollback never restores old secrets.
 
 ### S5 Operator roles
 
@@ -306,7 +307,7 @@ Worker/tunnel path still need recorded live evidence in [validation](validation.
 
 | Item | Scope |
 | --- | --- |
-| D1 Backend storage | Store captured content separately from metadata; storage health reporting; PostgreSQL and Vault adapters behind the existing contracts |
+| D1 Backend storage | Store captured content separately from metadata; PostgreSQL and Vault adapters behind the existing contracts |
 | D2 Managed ecosystem services | Service profiles, container-engine detection, lifecycle controls for Grafana/Prometheus/log storage/Vault, backups and recovery (see [ecosystem](ecosystem.md)) |
 | D3 Workstation release gates | Clean Windows/Linux host checks, native Windows Ollama and browser checks, OS service installation, code signing, rollback between released versions |
 | D4 Cloud deployment | Container deployment tested on each major cloud; runnable Kubernetes and Terraform examples only once tested |

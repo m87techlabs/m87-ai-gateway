@@ -62,3 +62,5 @@ flowchart LR
 - [Inference API and queue testing](runbooks/inference-api-and-queueing.md): model catalog, options, bounded waiting and recovery.
 
 - [Streaming and cancellation](runbooks/streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
+
+- [Configuration recovery and storage health](runbooks/configuration-recovery.md): settings history/restore, management audit and safe storage verification.

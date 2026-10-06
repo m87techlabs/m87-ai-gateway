@@ -133,3 +133,40 @@ class BackendContract:
             assert all(old not in str(row) and new not in str(row) for row in events)
         finally:
             backend.close()
+
+    def test_configuration_revisions_and_provider_audit_survive_reopen(self, backend_factory):
+        backend = backend_factory()
+        try:
+            backend.initialize_history({"default_model": "ollama:initial"})
+            baseline = backend.list_config_revisions()[0]["revision_id"]
+            latest = backend.save_runtime_config(
+                {"default_model": "ollama:changed"},
+                "openai",
+                "synthetic-secret",
+                action="connection.updated",
+                snapshot={"default_model": "ollama:changed"},
+            )
+            backend.put_provider_key("openai", "alternate-secret", "secondary")
+            backend.delete_provider_key("openai", "secondary")
+            backend.close()
+            backend = backend_factory()
+            assert backend.config_revision(baseline) == {"default_model": "ollama:initial"}
+            assert backend.list_config_revisions()[0]["revision_id"] == latest
+            backend.save_runtime_config(
+                backend.config_revision(baseline),
+                action="configuration.restored",
+                restored_from=baseline,
+                expected_revision=latest,
+            )
+            assert backend.runtime_config() == {"default_model": "ollama:initial"}
+            assert backend.get_provider_key("openai") == "synthetic-secret"
+            events = backend.list_management_events()
+            assert {
+                "connection.updated",
+                "configuration.restored",
+                "provider_key.saved",
+                "provider_key.deleted",
+            } <= {row["action"] for row in events}
+            assert all("synthetic-secret" not in str(row) for row in events)
+        finally:
+            backend.close()

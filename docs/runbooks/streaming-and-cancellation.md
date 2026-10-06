@@ -120,7 +120,7 @@ python -m examples.chat_app.scenarios
 pytest -q tests/test_streaming.py tests/test_disconnect_lifecycle.py tests/test_request_queue.py
 ```
 
-The thirteen isolated sample scenarios now include streaming, final usage and
+The sample suite includes streaming, final usage and
 captured output. Additional tests cover all built-in adapter streams, byte-boundary
 framing, initial/terminal errors, missing DONE, invalid identities/oversized events,
 cache bypass, missing usage, strict options, credential redaction across deltas,

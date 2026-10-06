@@ -194,3 +194,9 @@ Trusted extensions can register backend implementations and reuse the
 Streaming is available in the sample chat toggle, with a Stop button and final
 provider usage. See [streaming and cancellation](docs/runbooks/streaming-and-cancellation.md)
 for SSE errors, partial capture, live checks and upgrade notes.
+
+
+Console-managed settings now have encrypted revision history and validated restore.
+Configuration/provider-key changes are audited transactionally. Storage health
+reports private-file/database/credential checks and offers explicit integrity/write
+verification. See [configuration recovery](docs/runbooks/configuration-recovery.md).

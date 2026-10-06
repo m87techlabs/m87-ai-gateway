@@ -11,10 +11,38 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Configuration recovery and storage health
+
+Verified on 2026-10-06 using private temporary stores: **300 Python tests**, **28
+console interaction tests**, lint/format (97 Python files), wheel build and
+links/fences in **54 Markdown files**. The isolated sample suite has **15 scenarios**.
+A rebuilt Linux native preview passed setup, complete/streaming inference,
+configuration restore, storage verification, lifecycle and encrypted backup/recovery,
+including persisted revision history. No live user database was opened/migrated and
+no user service or Docker container was started, stopped or rebuilt.
+
+Schema 6 preserves existing identities, provider keys, traffic, independent usage and
+management audit. Tests cover encrypted 100-entry history, baseline preservation,
+restore of controls/default/capture, current-secret preservation, confirmed changed-
+endpoint/all-alias removal, environment-binding safety, stale restore and ETag save
+rejection, transactional rollback on audit failures, missing/corrupt snapshots,
+operator-only APIs, safe key/file failures and real SQLite writer contention/recovery.
+The reversible health probe leaves keys, usage and audit unchanged. SQLite operations
+open existing files with `mode=rw`; missing running-store files are not recreated.
+Browser checks cover safe history review, explicit confirmation/removal, stale
+feedback, delayed responses after lock, ETag submission and explicit storage checks.
+Shared backend contracts now include history and provider-key audit.
+
+Manual visual browser/Windows Ollama checks, clean-host support, distinct-release
+rollback, crypto key version rotation, remote adapters/exporters and final Docker
+packaging remain deferred. Native CI builders do not establish clean-workstation
+support. Audit actor remains shared operator; bootstrap/YAML changes and cache-clear/
+log-deletion actions are outside this increment. See [recovery runbook](runbooks/configuration-recovery.md).
+
 ## Streaming and disconnect cancellation
 
 Implemented text SSE for built-in adapters and upstream HTTP cancellation (A3)
-for both response modes. Verified locally: 265 Python tests, 24 console interaction
+for both response modes. Previous batch verified locally: 265 Python tests, 24 console interaction
 tests, lint/format, wheel build and links/fences in 53 Markdown files. OpenAI Python
 2.54.0 streamed real synthetic HTTP traffic through the gateway; no cloud calls
 or stored credentials were used. The sample suite has thirteen isolated scenarios.
@@ -84,9 +112,9 @@ submission, revocation confirmation, audit project filters, safe rendering and
 late secret responses after lock. No live user database was migrated and no
 Docker container/image was started, rebuilt or replaced.
 
-Individual operator identity, provider/configuration audit, encryption/digest key
-version migration, remote adapters/export, visual browser checks and final container
-packaging remain deferred. See [key lifecycle runbook](runbooks/application-key-rotation.md).
+Provider/configuration audit is implemented by the later configuration recovery batch.
+Individual operator identity, encryption/digest key version migration, remote
+adapters/export, visual browser checks and final container packaging remain deferred. See [key lifecycle runbook](runbooks/application-key-rotation.md).
 
 ## SQLite backend foundations
 

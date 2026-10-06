@@ -10,9 +10,11 @@ release candidate needs packaging verification.
 Repository separation, explicit backend registration/configuration and independent
 usage accounting are implemented with SQLite. Encrypted provider keys, application-key
 digests, private files and encrypted backups remain available. Multiple application keys, optional replacement expiry, individual revocation and
-transactional identity audit are implemented in schema 3. Master-key version
-migration, configuration revisions, content-table separation and remote implementations
-remain planned.
+transactional identity audit are implemented in schema 3. Configuration revisions/rollback and configuration/provider-key audit are implemented
+in schema 6, along with explicit storage health and reversible write/integrity probes.
+Snapshots retain 100 encrypted console-managed settings revisions, excluding secrets.
+Master-key version migration, stable multiple connection identities, content-table
+separation and remote implementations remain planned.
 Schema 4 adds nullable queue wait/outcome and hashed user-attribution fields to traffic;
 existing keys, usage and audit remain preserved. Schema 5 adds stream/outcome,
 wire-status and partial-content fields, with schema-3/4 preservation tests.
@@ -171,8 +173,8 @@ with Grafana as an optional visualization surface. See
    idempotent accounting. Show storage/capture failures in the console. Backfill
    only from retained evidence; already deleted history cannot be reconstructed.
 3. Application/key separation, rotation/revocation and identity audit are implemented.
-   Continue configuration/secret audit and encryption/digest key-version migration.
-4. Add typed configuration revisions, stable connection IDs and atomic activation.
+   Configuration/provider-key audit is implemented; continue encryption/digest key-version migration.
+4. Validated configuration revisions and atomic activation are implemented. Add stable connection IDs and remaining audit actions.
 5. Add a durable export outbox and one exporter through the existing sink boundary.
 6. Add PostgreSQL or external secret-store adapters only with a demonstrated use case
    and a shared contract suite. Validate container/native packaging for the final
@@ -182,3 +184,22 @@ Each step needs a migration, compatibility tests and an operational runbook. The
 steps include implemented foundations and remaining planned scope. Existing user
 stores migrate only when started with the new version; development tests use
 isolated stores. Follow the [upgrade runbook](runbooks/backend-storage-testing.md).
+
+
+## Configuration recovery and storage diagnostics — implemented
+
+Schema 6 commits console settings, encrypted revision snapshots, changed local
+credentials and management audit in one transaction. Runtime activation follows
+commit without an asynchronous yield; existing requests retain arrival snapshots.
+Restore requires the current revision, validates against current adapters and
+clears cache/catalog. Changed endpoint or environment credential bindings require
+explicit removal of every affected stored alias and disable historical environment
+bindings; unchanged bindings preserve current credentials. Bootstrap and arbitrary
+file edits are outside this history. See [recovery operations](runbooks/configuration-recovery.md).
+
+Storage health checks private files, database access and matching/decryptable
+credentials. Explicit verification also checks SQLite/foreign-key integrity,
+revision encryption and a rolled-back write. It runs in a worker thread and never
+repairs the database or rotates keys. SQLite opens existing files with `mode=rw`;
+missing files fail instead of silently creating replacement stores. `/ready` remains
+configuration/read-access readiness, with upstream connectivity separate.

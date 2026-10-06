@@ -1,4 +1,4 @@
-"""Administrative identity changes, without credential values or request content."""
+"""Administrative changes, without credential values or request content."""
 
 import secrets
 import sqlite3
@@ -16,6 +16,15 @@ class SQLiteManagementAuditRepository(SQLiteRepository):
             actor TEXT NOT NULL, action TEXT NOT NULL,
             project_id TEXT, app_id TEXT, key_id TEXT
         )""")
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(management_events)")}
+        for name, kind in {
+            "provider": "TEXT",
+            "alias": "TEXT",
+            "revision_id": "INTEGER",
+            "restored_from": "INTEGER",
+        }.items():
+            if name not in columns:
+                connection.execute(f"ALTER TABLE management_events ADD COLUMN {name} {kind}")
         connection.execute(
             "CREATE INDEX IF NOT EXISTS management_created ON management_events(created_at DESC)"
         )
@@ -31,11 +40,29 @@ class SQLiteManagementAuditRepository(SQLiteRepository):
         project_id: str | None = None,
         app_id: str | None = None,
         key_id: str | None = None,
+        *,
+        provider: str | None = None,
+        alias: str | None = None,
+        revision_id: int | None = None,
+        restored_from: int | None = None,
     ) -> None:
         now = datetime.now(timezone.utc)
         connection.execute(
-            "INSERT INTO management_events VALUES (?, ?, 'operator', ?, ?, ?, ?)",
-            (secrets.token_hex(16), now.isoformat(), action, project_id, app_id, key_id),
+            "INSERT INTO management_events(event_id, created_at, actor, action, project_id, "
+            "app_id, key_id, provider, alias, revision_id, restored_from) "
+            "VALUES (?, ?, 'operator', ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                secrets.token_hex(16),
+                now.isoformat(),
+                action,
+                project_id,
+                app_id,
+                key_id,
+                provider,
+                alias,
+                revision_id,
+                restored_from,
+            ),
         )
         cutoff = now - timedelta(days=self.config.management_audit_retention_days)
         connection.execute(

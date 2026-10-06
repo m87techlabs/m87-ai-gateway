@@ -22,7 +22,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class LocalControlStore(BackendFacade):
@@ -58,7 +58,9 @@ class LocalControlStore(BackendFacade):
 
     @contextmanager
     def _connect(self):
-        connection = sqlite3.connect(self.database_path, timeout=5)
+        connection = sqlite3.connect(
+            self.database_path.resolve().as_uri() + "?mode=rw", uri=True, timeout=5
+        )
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
@@ -106,6 +108,7 @@ class LocalControlStore(BackendFacade):
                     updated_at TEXT NOT NULL, last_used_at TEXT,
                     PRIMARY KEY(provider, alias)
                 );
+                CREATE TABLE IF NOT EXISTS storage_probe (id INTEGER PRIMARY KEY);
                 CREATE TABLE IF NOT EXISTS runtime_config (
                     id INTEGER PRIMARY KEY CHECK (id = 1), value TEXT NOT NULL
                 );
@@ -117,6 +120,7 @@ class LocalControlStore(BackendFacade):
             self._ensure_columns(connection, legacy_identities=previous_version < 3)
             self.identities.migrate(connection, previous_version)
             self.management_audit.migrate(connection)
+            self.configuration.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(
@@ -164,6 +168,11 @@ class LocalControlStore(BackendFacade):
 
     def close(self) -> None:
         return None
+
+    def storage_health(self, *, verify=False):
+        from .storage_health import sqlite_storage_health
+
+        return sqlite_storage_health(self, verify=verify)
 
     def check_storage(self):
         with self._connect() as connection:

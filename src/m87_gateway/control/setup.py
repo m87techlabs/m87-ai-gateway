@@ -36,3 +36,27 @@ def activate(request, settings):
     state.response_cache = ExactResponseCache(
         settings.cache.enabled, settings.cache.ttl_seconds, settings.cache.max_entries
     )
+
+
+def managed_snapshot(settings: GatewaySettings) -> dict:
+    """Only console-managed fields; no application keys, paths or provider secrets."""
+    from m87_gateway.adapters import adapters
+
+    return {
+        "providers": {
+            name: settings.providers.for_adapter(name).model_dump() for name in adapters()
+        },
+        "default_model": settings.routing.default_model,
+        "capture_content": settings.observability.traffic_log.capture_content,
+        "controls": {
+            "cache": settings.cache.model_dump(),
+            "retry": settings.retry.model_dump(),
+            "limits": settings.limits.model_dump(),
+            "guardrails": {
+                "max_request_bytes": settings.guardrails.max_request_bytes,
+                "max_message_chars": settings.guardrails.max_message_chars,
+            },
+            "retention_days": settings.control_plane.retention_days,
+            "max_content_chars": settings.observability.traffic_log.max_content_chars,
+        },
+    }

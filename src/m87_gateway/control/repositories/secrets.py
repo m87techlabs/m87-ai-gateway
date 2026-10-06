@@ -15,6 +15,7 @@ class SQLiteSecretStore(SQLiteRepository):
         now = datetime.now(timezone.utc).isoformat()
         encrypted = self._fernet.encrypt(value.encode())
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 """INSERT INTO provider_keys
                    (provider, alias, encrypted_value, created_at, updated_at)
@@ -23,6 +24,10 @@ class SQLiteSecretStore(SQLiteRepository):
                      encrypted_value = excluded.encrypted_value,
                      updated_at = excluded.updated_at""",
                 (provider, alias, encrypted, now, now),
+            )
+
+            self.backend.management_audit.record(
+                connection, "provider_key.saved", provider=provider, alias=alias
             )
 
     def get_provider_key(self, provider: str, alias: str = "default") -> str | None:
@@ -66,4 +71,8 @@ class SQLiteSecretStore(SQLiteRepository):
             cursor = connection.execute(
                 "DELETE FROM provider_keys WHERE provider = ? AND alias = ?", (provider, alias)
             )
+            if cursor.rowcount:
+                self.backend.management_audit.record(
+                    connection, "provider_key.deleted", provider=provider, alias=alias
+                )
         return cursor.rowcount > 0

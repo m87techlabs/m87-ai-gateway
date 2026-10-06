@@ -280,6 +280,25 @@ def exercise(executable):
                 detail = call("/admin/api/logs/" + streamed[0]["request_id"], key=admin)
                 assert detail["response_content"][0]["message"]["content"] == "synthetic answer"
 
+                revisions = call("/admin/api/configuration/revisions", key=admin)
+                target = revisions["current_revision"]
+                modified = {**controls, "max_content_chars": 64}
+                call("/admin/api/controls", "PUT", modified, admin)
+                current = call("/admin/api/configuration/revisions", key=admin)["current_revision"]
+                restored = call(
+                    f"/admin/api/configuration/revisions/{target}/restore",
+                    "POST",
+                    {"expected_revision": current, "confirmation": "RESTORE"},
+                    admin,
+                )
+                assert restored["restored_from"] == target
+                assert call("/admin/api/controls", key=admin) == controls
+                assert call("/admin/api/storage/check", "POST", key=admin)["ok"]
+                audit = call("/admin/api/management-events", key=admin)["items"]
+                assert any(row["action"] == "configuration.restored" for row in audit)
+                assert "synthetic-provider-key" not in json.dumps(audit)
+                expected_revision = restored["revision_id"]
+
                 def native(*arguments):
                     result = subprocess.run(
                         [str(executable), "--data-dir", str(data_dir), *arguments],
@@ -301,6 +320,11 @@ def exercise(executable):
                 process = launch(output)
                 assert call("/ready")["status"] == "ready"
                 assert call("/admin/api/controls", key=admin) == controls
+                assert (
+                    call("/admin/api/configuration/revisions", key=admin)["current_revision"]
+                    == expected_revision
+                )
+                assert call("/admin/api/storage/check", "POST", key=admin)["ok"]
                 response = call(
                     "/v1/chat/completions",
                     "POST",
@@ -314,7 +338,7 @@ def exercise(executable):
                 native("--stop")
                 process.wait(timeout=10)
                 print(
-                    "Standalone setup, complete/streaming inference, controls, lifecycle and encrypted recovery passed"
+                    "Standalone setup, complete/streaming inference, configuration restore, storage checks, lifecycle and encrypted recovery passed"
                 )
         finally:
             if process is not None and process.poll() is None:

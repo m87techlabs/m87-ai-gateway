@@ -18,6 +18,11 @@ from m87_gateway.config.settings import CacheConfig, LimitsConfig, ProviderConfi
 from m87_gateway.adapters import adapters
 from m87_gateway.providers.factory import get_provider
 from m87_gateway.control.setup import activate, apply_overrides
+from m87_gateway.control.configuration_service import (
+    persist_configuration,
+    parse_revision,
+    revision_etag,
+)
 from m87_gateway.control.backends import Backend
 from m87_gateway.control.repositories.identities import KeyLimitError
 
@@ -136,7 +141,8 @@ class LogDeletion(BaseModel):
 
 
 @router.get("/admin/api/controls")
-async def controls(request: Request, store: AdminStore):
+async def controls(request: Request, store: AdminStore, response: Response):
+    response.headers["ETag"] = revision_etag(store)
     settings = request.app.state.settings
     return ControlsWrite(
         cache=settings.cache,
@@ -150,11 +156,22 @@ async def controls(request: Request, store: AdminStore):
 
 
 @router.put("/admin/api/controls", status_code=204)
-async def save_controls(payload: ControlsWrite, request: Request, store: AdminStore):
+async def save_controls(
+    payload: ControlsWrite,
+    request: Request,
+    store: AdminStore,
+    if_match: Annotated[str | None, Header()] = None,
+):
     saved = store.runtime_config()
     saved["controls"] = payload.overrides()
     settings = apply_overrides(request.app.state.settings, saved)
-    store.save_runtime_config(saved)
+    persist_configuration(
+        store,
+        saved,
+        settings,
+        action="controls.updated",
+        expected_revision=parse_revision(if_match),
+    )
     activate(request, settings)
     store.prune_events()
     return Response(status_code=204)
@@ -395,15 +412,34 @@ async def provider_keys(store: AdminStore):
 
 @router.put("/admin/api/provider-keys", status_code=204)
 async def put_provider_key(payload: ProviderKeyWrite, request: Request, store: AdminStore):
-    store.put_provider_key(payload.provider, payload.key, payload.alias)
+    try:
+        store.put_provider_key(payload.provider, payload.key, payload.alias)
+    except (sqlite3.Error, OSError) as exc:
+        raise GatewayError(
+            503,
+            "credential_storage_unavailable",
+            "Key was not saved. Check Storage health and retry.",
+        ) from exc
+    request.app.state.response_cache.clear()
+    request.app.state.model_catalog.clear()
     request.app.state.recorder.add_secret(payload.key)
     return Response(status_code=204)
 
 
 @router.delete("/admin/api/provider-keys/{provider}/{alias}", status_code=204)
-async def delete_provider_key(provider: str, alias: str, store: AdminStore):
-    if provider not in adapters() or not store.delete_provider_key(provider, alias):
+async def delete_provider_key(provider: str, alias: str, request: Request, store: AdminStore):
+    try:
+        removed = provider in adapters() and store.delete_provider_key(provider, alias)
+    except (sqlite3.Error, OSError) as exc:
+        raise GatewayError(
+            503,
+            "credential_storage_unavailable",
+            "Key was not removed. Check Storage health and retry.",
+        ) from exc
+    if not removed:
         raise GatewayError(404, "not_found", "Provider key was not found")
+    request.app.state.response_cache.clear()
+    request.app.state.model_catalog.clear()
     return Response(status_code=204)
 
 
@@ -435,7 +471,8 @@ class SetupWrite(BaseModel):
 
 
 @router.get("/admin/api/setup")
-async def setup(request: Request, store: AdminStore):
+async def setup(request: Request, store: AdminStore, response: Response):
+    response.headers["ETag"] = revision_etag(store)
     settings = request.app.state.settings
     keys = {item["provider"] for item in store.list_provider_keys() if item["alias"] == "default"}
     saved = store.runtime_config()
@@ -461,7 +498,11 @@ async def setup(request: Request, store: AdminStore):
 
 @router.put("/admin/api/connections/{provider}", status_code=204)
 async def save_connection(
-    provider: str, payload: ConnectionWrite, request: Request, store: AdminStore
+    provider: str,
+    payload: ConnectionWrite,
+    request: Request,
+    store: AdminStore,
+    if_match: Annotated[str | None, Header()] = None,
 ):
     if provider not in adapters():
         raise GatewayError(400, "unsupported_provider", "Unsupported model provider")
@@ -485,7 +526,16 @@ async def save_connection(
     saved.setdefault("providers", {})[provider] = config.model_dump()
     settings = apply_overrides(request.app.state.settings, saved)
     key = payload.key.get_secret_value() if payload.key else None
-    store.save_runtime_config(saved, provider, key, payload.clear_key or endpoint_changed)
+    persist_configuration(
+        store,
+        saved,
+        settings,
+        provider=provider,
+        key=key,
+        clear_key=payload.clear_key or endpoint_changed,
+        action="connection.updated",
+        expected_revision=parse_revision(if_match),
+    )
     if key:
         request.app.state.recorder.add_secret(key)
     activate(request, settings)
@@ -585,7 +635,12 @@ async def test_connection(
 
 
 @router.put("/admin/api/setup", status_code=204)
-async def save_setup(payload: SetupWrite, request: Request, store: AdminStore):
+async def save_setup(
+    payload: SetupWrite,
+    request: Request,
+    store: AdminStore,
+    if_match: Annotated[str | None, Header()] = None,
+):
     saved = store.runtime_config()
     saved.update(payload.model_dump())
     settings = apply_overrides(request.app.state.settings, saved)
@@ -593,7 +648,13 @@ async def save_setup(payload: SetupWrite, request: Request, store: AdminStore):
     config = settings.providers.for_adapter(provider)
     if not config.enabled or not (config.base_url or adapters()[provider].default_url):
         raise GatewayError(422, "provider_not_configured", "Connect the selected provider first")
-    store.save_runtime_config(saved)
+    persist_configuration(
+        store,
+        saved,
+        settings,
+        action="setup.updated",
+        expected_revision=parse_revision(if_match),
+    )
     activate(request, settings)
     return Response(status_code=204)
 

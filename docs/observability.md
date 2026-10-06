@@ -169,3 +169,14 @@ m87_gateway_streams_total counts completed/failed/cancelled streams by provider;
 m87_gateway_cancellations_total counts cancellations. Client cancellations are
 excluded from provider-error counts. Usage received before interruption remains
 charged to provider accounting. See [streaming operations](runbooks/streaming-and-cancellation.md).
+
+
+## Management and storage visibility
+
+Management audit includes configuration, controls, setup, connections, restore and
+provider-key changes with safe provider/alias/revision references. Select All projects
+to see gateway-wide actions; actor remains the shared operator role. No credential
+values, settings bodies or inference content are stored in this audit.
+Storage health provides basic access/privacy/credential checks and operator-triggered
+SQLite integrity/reversible write verification, sizes and free space. It does not
+repair data or prove upstream connectivity. See [recovery operations](runbooks/configuration-recovery.md).

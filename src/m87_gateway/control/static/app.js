@@ -9,6 +9,11 @@ let sessionGeneration = 0;
 let testerRequestId = "";
 let testerController = null;
 let connectionTestGeneration = 0;
+let currentRevision = null;
+let setupEtag = null;
+let controlsEtag = null;
+let reviewedRevision = null;
+let revisionGeneration = 0;
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -18,7 +23,7 @@ async function api(path, options = {}) {
   if (!response.ok) {
     let message = "Request failed";
     try { message = (await response.json()).error.message; } catch (_) {}
-    throw new Error(message);
+    const error = new Error(message); error.status = response.status; throw error;
   }
   if (response.status === 204) return null;
   return response;
@@ -267,8 +272,8 @@ async function loadManagementAudit() {
   const session = sessionGeneration; const scope = activeProject;
   const response = await api(scoped("/management-events", {limit: 250})); const data = await response.json();
   if (session !== sessionGeneration || scope !== activeProject || !adminKey) return;
-  table($("management-events"), ["Time", "Actor", "Action", "Project", "Application", "Key ID"], data.items, (row, item) => {
-    for (const field of ["created_at", "actor", "action", "project_id", "app_id", "key_id"]) cell(row, item[field]);
+  table($("management-events"), ["Time", "Actor", "Action", "Project", "Application", "Key ID", "Provider", "Alias", "Revision", "Restored from"], data.items, (row, item) => {
+    for (const field of ["created_at", "actor", "action", "project_id", "app_id", "key_id", "provider", "alias", "revision_id", "restored_from"]) cell(row, item[field]);
   });
 }
 
@@ -307,7 +312,8 @@ function fillConnection() {
 }
 
 async function loadSetup() {
-  const data = await (await api("/setup")).json();
+  const response = await api("/setup");
+  const data = await response.json(); setupEtag = response.headers.get("ETag");
   connections = data.connections;
   const selected = $("connection-provider").value;
   for (const id of ["connection-provider", "key-provider"]) {
@@ -328,7 +334,7 @@ async function loadSetup() {
 
 async function loadControls() {
   const session = sessionGeneration;
-  const [values, report] = await Promise.all([api("/controls").then((r) => r.json()), api("/diagnostics").then((r) => r.json())]);
+  const [values, report] = await Promise.all([api("/controls").then((r) => { controlsEtag = r.headers.get("ETag"); return r.json(); }), api("/diagnostics").then((r) => r.json())]);
   if (session !== sessionGeneration || !adminKey) return;
   const fields = {...values, ...values.cache, ...values.retry, ...values.limits};
   const form = $("controls-form");
@@ -342,7 +348,7 @@ async function loadControls() {
   table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
 }
 
-const loaders = {audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+const loaders = {history: loadHistory, storage: loadStorage, audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -358,14 +364,14 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 }));
 
 $("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); sessionGeneration += 1; adminKey = $("admin-key").value;
+  event.preventDefault(); sessionGeneration += 1; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
   try {
     const setup = await loadSetup(); await loadProjectOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
     if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { sessionGeneration += 1; appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
+$("lock").addEventListener("click", () => { sessionGeneration += 1; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); $("revision-preview").textContent = ""; $("revision-error").textContent = ""; $("configuration-revisions").replaceChildren(); $("storage-checks").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
 $("close-detail").addEventListener("click", () => $("detail").close());
 
@@ -417,7 +423,7 @@ $("connection-form").addEventListener("submit", async (event) => {
   const payload = {config: {base_url: form.get("base_url"), timeout_seconds: Number(form.get("timeout_seconds")), enabled: form.has("enabled")}, clear_key: form.has("clear_key")};
   if (form.get("key")) payload.key = form.get("key");
   try {
-    await api(`/connections/${encodeURIComponent(form.get("provider"))}`, {method: "PUT", body: JSON.stringify(payload)});
+    await api(`/connections/${encodeURIComponent(form.get("provider"))}`, {method: "PUT", headers: setupEtag ? {"If-Match": setupEtag} : {}, body: JSON.stringify(payload)});
     element.elements.key.value = ""; notice("Connection saved"); await loadSetup();
   } catch (error) { notice(error.message); }
 });
@@ -455,7 +461,7 @@ $("discover-models").addEventListener("click", async () => {
 $("setup-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget);
   try {
-    await api("/setup", {method: "PUT", body: JSON.stringify({default_model: form.get("default_model"), capture_content: form.has("capture_content")})});
+    await api("/setup", {method: "PUT", headers: setupEtag ? {"If-Match": setupEtag} : {}, body: JSON.stringify({default_model: form.get("default_model"), capture_content: form.has("capture_content")})});
     notice("Defaults saved. Create an application key next."); await loadSetup();
   } catch (error) { notice(error.message); }
 });
@@ -500,7 +506,7 @@ $("controls-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const number = (name) => Number(form.get(name));
   const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), max_content_chars: number("max_content_chars")};
   const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
-  try { await api("/controls", {method: "PUT", body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
+  try { await api("/controls", {method: "PUT", headers: controlsEtag ? {"If-Match": controlsEtag} : {}, body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
   catch (error) { notice(error.message); }
   finally { button.disabled = false; }
 });
@@ -516,4 +522,67 @@ $("delete-logs").addEventListener("click", async () => {
     const data = await (await api("/logs", {method: "DELETE", body: JSON.stringify({confirmation: "DELETE", project_id: project || null})})).json();
     notice(`${data.deleted} records deleted`); await loadLogs();
   } catch (error) { notice(error.message); }
+});
+
+
+async function loadHistory() {
+  const session = sessionGeneration;
+  const data = await (await api("/configuration/revisions")).json();
+  if (session !== sessionGeneration || !adminKey) return;
+  currentRevision = data.current_revision;
+  $("revision-status").textContent = `Current revision: ${currentRevision ?? "—"}. History applies across all projects.`;
+  table($("configuration-revisions"), ["Revision", "Time", "Change", "Restored from", ""], data.items, (row, item) => {
+    for (const field of ["revision_id", "created_at", "action", "restored_from"]) cell(row, item[field]);
+    const action = cell(row, ""); const button = document.createElement("button"); button.type = "button"; button.textContent = "Review and restore";
+    button.addEventListener("click", async () => {
+      const generation = ++revisionGeneration; button.disabled = true;
+      try {
+        const detail = await (await api(`/configuration/revisions/${item.revision_id}`)).json();
+        if (session !== sessionGeneration || generation !== revisionGeneration || !adminKey) return;
+        reviewedRevision = {id: item.revision_id, expected: data.current_revision};
+        $("revision-title").textContent = `Restore revision ${item.revision_id}`;
+        $("revision-scope").textContent = detail.scope;
+        $("revision-preview").textContent = JSON.stringify(detail.settings, null, 2);
+        $("revision-credential-warning").textContent = detail.changed_provider_bindings.length ? `Credentials will be removed for: ${detail.changed_provider_bindings.join(", ")}. Re-enter keys in Setup after restoring.` : "Current credentials will be preserved. Old keys are never restored.";
+        $("revision-clear-credentials").checked = false;
+        $("revision-clear-credentials").disabled = !detail.changed_provider_bindings.length;
+        $("revision-confirmation").value = ""; $("revision-error").textContent = "";
+        $("revision-dialog").showModal();
+      } catch (error) { notice(error.message); }
+      finally { button.disabled = false; }
+    });
+    action.append(button);
+  });
+}
+
+function renderStorage(report) {
+  $("storage-status").textContent = `${report.ok ? "Healthy" : "Needs attention"} · ${report.backend} · ${report.verified ? "Integrity and write verification requested" : "Basic checks"}`;
+  const bytes = (value) => value == null ? "unknown" : `${(value / 1048576).toFixed(2)} MiB`;
+  $("storage-sizes").textContent = `Database: ${bytes(report.database_bytes)} · WAL: ${bytes(report.wal_bytes)} · Disk free: ${bytes(report.free_disk_bytes)} · Schema: ${report.schema_version ?? "unknown"}`;
+  table($("storage-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
+  $("storage-warnings").textContent = (report.warnings || []).join(" ");
+}
+
+async function loadStorage() {
+  const session = sessionGeneration;
+  const report = await (await api("/storage")).json();
+  if (session === sessionGeneration && adminKey) renderStorage(report);
+}
+
+$("verify-storage").addEventListener("click", async () => {
+  const session = sessionGeneration; $("verify-storage").disabled = true;
+  try { const report = await (await api("/storage/check", {method: "POST"})).json(); if (session === sessionGeneration && adminKey) renderStorage(report); }
+  catch (error) { notice(error.message); }
+  finally { $("verify-storage").disabled = false; }
+});
+$("revision-close").addEventListener("click", () => { reviewedRevision = null; revisionGeneration++; $("revision-dialog").close(); });
+$("revision-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); if (!reviewedRevision || $("revision-confirmation").value !== "RESTORE") return;
+  const session = sessionGeneration; const revision = reviewedRevision; $("revision-restore").disabled = true;
+  try {
+    await api(`/configuration/revisions/${revision.id}/restore`, {method: "POST", body: JSON.stringify({expected_revision: revision.expected, confirmation: "RESTORE", clear_changed_credentials: $("revision-clear-credentials").checked})});
+    if (session !== sessionGeneration || !adminKey) return;
+    $("revision-dialog").close(); reviewedRevision = null; notice("Settings restored and cache cleared. Check Setup and readiness."); await loadSetup(); await loadHistory();
+  } catch (error) { if (session === sessionGeneration && adminKey) $("revision-error").textContent = error.message; }
+  finally { $("revision-restore").disabled = false; }
 });

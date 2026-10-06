@@ -34,6 +34,9 @@ async function consoleFixture(t) {
   const event = {request_id: "fixture-request", created_at: "2026-10-02T12:00:00Z", project_id: "alpha", app_id: "sample-app", routed_model: "ollama:small", status_code: 200, total_tokens: 13, latency_ms: 12, cache_status: "disabled", provider_attempts: 1};
   let controls = {cache: {enabled: false, ttl_seconds: 300, max_entries: 1000}, retry: {max_attempts: 1, backoff_ms: 100}, limits: {max_concurrent_requests: 64}, max_request_bytes: 262144, max_message_chars: 65536, retention_days: 30, max_content_chars: 16384};
   const applicationKeys = [{key_id: "key-old", app_id: "sample-app", key_prefix: "fixture", created_at: "2026-10-05T12:00:00Z", expires_at: null, revoked_at: null, active: true}];
+  const revisions = [{revision_id: 2, created_at: "2026-10-06", action: "controls.updated", restored_from: null}, {revision_id: 1, created_at: "2026-10-06", action: "configuration.baseline", restored_from: null}];
+  let restoreFailure = false; let deferredRevision = false; let pendingRevision = null;
+  const storage = {backend: "sqlite", ok: true, verified: false, schema_version: 6, database_bytes: 1048576, wal_bytes: 0, free_disk_bytes: 10485760, checks: [{name: "Private files", ok: true, message: "OK"}], warnings: []};
   let deferredKeyIssue = false; let pendingKeyIssue = null;
   const requests = [];
   let pendingChat = null;
@@ -72,12 +75,26 @@ async function consoleFixture(t) {
     if (url.pathname.includes("/apps/") && url.pathname.includes("/keys/") && method === "DELETE") {
       const key = applicationKeys.find((item) => url.pathname.endsWith(item.key_id)); key.active = false; key.revoked_at = "2026-10-05T14:00:00Z"; return response(null, 204);
     }
+    if (url.pathname.endsWith("/configuration/revisions")) return response({items: revisions, current_revision: revisions[0].revision_id});
+    if (url.pathname.endsWith("/configuration/revisions/1/restore")) {
+      if (restoreFailure) return response({error: {message: "Configuration changed; refresh history"}}, 409);
+      assert.equal(body.confirmation, "RESTORE"); assert.equal(body.expected_revision, 2);
+      revisions.unshift({revision_id: 3, created_at: "2026-10-06", action: "configuration.restored", restored_from: 1});
+      return response({revision_id: 3, restored_from: 1});
+    }
+    if (url.pathname.endsWith("/configuration/revisions/1")) {
+      const value = {revision_id: 1, settings: {default_model: "ollama:<img src=x>"}, changed_provider_bindings: ["openai"], scope: "Settings only; credentials excluded."};
+      if (deferredRevision) return new Promise((resolve) => { pendingRevision = () => resolve(response(value)); });
+      return response(value);
+    }
+    if (url.pathname.endsWith("/storage/check")) return response({...storage, verified: true, ok: false, checks: [...storage.checks, {name: "Database write", ok: false, message: "Check disk <img src=x>"}]});
+    if (url.pathname.endsWith("/storage")) return response(storage);
     if (url.pathname.endsWith("/management-events")) return response({items: [{created_at: "2026-10-05", actor: "operator", action: "application_key.issued", project_id: "alpha", app_id: "<img src=x>", key_id: "key-new"}]});
-    if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls); }
+    if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls, 200, {ETag: '"2"'}); }
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
     if (url.pathname.endsWith("/cache/clear")) return response(null, 204);
     if (url.pathname.endsWith("/limits")) { Object.assign(apps[0], body); return response(null, 204); }
-    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, capability_matrix: {text_chat: true, streaming: true, tools: false, generation_parameters: ["top_p", "seed"], response_formats: ["text", "json_object"]}, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]});
+    if (url.pathname.endsWith("/setup")) return response({default_model: "ollama:small", capture_content: false, connections: [{provider: "ollama", label: "Ollama", configured: true, capability_matrix: {text_chat: true, streaming: true, tools: false, generation_parameters: ["top_p", "seed"], response_formats: ["text", "json_object"]}, config: {base_url: "http://localhost:11434", timeout_seconds: 60, enabled: true}}]}, 200, {ETag: '"2"'});
     if (url.pathname.endsWith("/projects")) {
       if (method === "POST") { projects.push({...body, app_count: 0}); return response(body, 201); }
       return response({items: projects});
@@ -106,7 +123,7 @@ async function consoleFixture(t) {
   await until(() => !$("console").hidden);
   return {window, $, submit, requests, setEvent: (fields) => Object.assign(event, fields), deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
     deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail,
-    deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue};
+    deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue, failRestore: () => { restoreFailure = true; }, deferRevision: () => { deferredRevision = true; }, revisionPending: () => pendingRevision};
 }
 
 test("project selection scopes dashboard, usage, logs and export and renders charts", async (t) => {
@@ -237,6 +254,7 @@ test("controls edit persistent values and show readiness, then clear response ca
   submit("controls-form");
   await until(() => requests.some((r) => r.path.endsWith("/controls") && r.method === "PUT"));
   const request = requests.find((r) => r.path.endsWith("/controls") && r.method === "PUT");
+  assert.equal(request.headers["If-Match"], '"2"');
   assert.equal(request.body.limits.max_concurrent_requests, 8);
   assert.equal(request.body.limits.queue_max_depth, 4);
   assert.equal(request.body.limits.queue_max_depth_per_app, 2);
@@ -369,4 +387,61 @@ test("stream details distinguish wire status, cancellation and partial captured 
   assert.match(text, /Partial outputYes/);
   assert.match(text, /<script>partial output/);
   assert.equal($("detail-body").querySelectorAll("script").length, 0);
+});
+
+
+test("configuration review renders safely and restores with explicit confirmation", async (t) => {
+  const {$, window, submit, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="history"]').click();
+  await until(() => $("configuration-revisions").querySelectorAll("button").length === 2);
+  $("configuration-revisions").querySelectorAll("button")[1].click();
+  await until(() => $("revision-dialog").hasAttribute("open"));
+  assert.match($("revision-preview").textContent, /<img src=x>/);
+  assert.equal($("revision-preview").querySelector("img"), null);
+  assert.match($("revision-credential-warning").textContent, /openai/);
+  assert.equal($("revision-clear-credentials").checked, false);
+  submit("revision-form");
+  assert.equal(requests.filter((item) => item.path.endsWith("/restore")).length, 0);
+  $("revision-confirmation").value = "RESTORE"; $("revision-clear-credentials").checked = true;
+  submit("revision-form");
+  await until(() => $("revision-status").textContent.includes("3"));
+  const sent = requests.find((item) => item.path.endsWith("/restore"));
+  assert.equal(sent.body.clear_changed_credentials, true);
+  assert.equal(sent.body.expected_revision, 2);
+  assert.equal($("revision-dialog").hasAttribute("open"), false);
+});
+
+test("stale restore stays open with actionable feedback", async (t) => {
+  const {$, window, submit, failRestore} = await consoleFixture(t);
+  window.document.querySelector('[data-view="history"]').click();
+  await until(() => $("configuration-revisions").querySelectorAll("button").length === 2);
+  $("configuration-revisions").querySelectorAll("button")[1].click();
+  await until(() => $("revision-dialog").hasAttribute("open"));
+  failRestore(); $("revision-confirmation").value = "RESTORE"; submit("revision-form");
+  await until(() => $("revision-error").textContent.includes("refresh history"));
+  assert.equal($("revision-dialog").hasAttribute("open"), true);
+  assert.equal($("revision-restore").disabled, false);
+});
+
+test("a delayed revision cannot reopen the review after lock", async (t) => {
+  const {$, window, deferRevision, revisionPending} = await consoleFixture(t);
+  window.document.querySelector('[data-view="history"]').click();
+  await until(() => $("configuration-revisions").querySelectorAll("button").length === 2);
+  deferRevision(); $("configuration-revisions").querySelectorAll("button")[1].click();
+  await until(() => revisionPending()); $("lock").click(); revisionPending()(); await delay(20);
+  assert.equal($("revision-dialog").hasAttribute("open"), false);
+  assert.equal($("revision-preview").textContent, "");
+});
+
+test("storage verification is explicit and reports safe failure guidance", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="storage"]').click();
+  await until(() => $("storage-status").textContent.includes("Healthy"));
+  assert.match($("storage-sizes").textContent, /1.00 MiB/);
+  assert.equal(requests.filter((item) => item.path.endsWith("/storage/check")).length, 0);
+  $("verify-storage").click();
+  await until(() => $("storage-status").textContent.includes("Needs attention"));
+  assert.match($("storage-checks").textContent, /Check disk <img src=x>/);
+  assert.equal($("storage-checks").querySelector("img"), null);
+  assert.equal(requests.find((item) => item.path.endsWith("/storage/check")).method, "POST");
 });

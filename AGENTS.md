@@ -104,8 +104,15 @@ repositories and an explicit trusted backend registry are implemented.
 Schema 2 introduced independent usage; schema 3 separates application metadata
 from multiple credential digests and adds transactional identity management audit.
 Overlap, optional replacement expiry, individual revocation and a ten-active-key
-bound are implemented. Actor is the shared operator role. Configuration/secret
-audit, individual operator identity and master-key version migration remain planned.
+bound are implemented. Actor is the shared operator role. Schema 6 adds encrypted bounded configuration
+history, validated rollback with stale revision rejection and transactional
+configuration/connection/provider-key audit. Restore preserves current credentials
+for unchanged bindings; changed endpoints/environment bindings require explicit
+removal of all affected aliases and never revive old credentials. Console saves
+use ETag preconditions; older clients may omit them. Storage health has safe basic
+checks and explicit integrity/reversible write probes. Bootstrap/YAML changes,
+cache-clear/log-deletion audit, individual operator identity and crypto key versions
+remain planned. Only isolated stores are migrated during development.
 Schema 2 separates content-free usage records from traffic; usage retention defaults
 to 365 days, traffic to 30. Duplicate IDs preserve first usage attribution, and
 traffic deletion leaves accounting intact. Upgrade backfills only retained events.

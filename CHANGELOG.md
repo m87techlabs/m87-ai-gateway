@@ -8,6 +8,13 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Schema-6 encrypted configuration history, validated rollback, ETag save/restore
+  preconditions and transactional settings/connection/provider-key management audit.
+- Configuration history and Storage health console pages, safe basic checks,
+  explicit integrity/reversible write verification and missing-store protection.
+- Current-credential preservation, confirmed changed-binding credential removal,
+  15 sample acceptance scenarios and native revision/recovery smoke checks.
+
 - Text SSE streaming for built-in providers, usage chunks, bounded parsing/capture,
   terminal errors, cache/retry bypass and full-lifecycle admission.
 - Single-owner disconnect monitoring, upstream HTTP cancellation, final outcome

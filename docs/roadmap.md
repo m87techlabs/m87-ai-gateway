@@ -57,7 +57,7 @@ in metrics, process arguments, generated manifests, or default logs.
 - [x] Bound parsing/capture, redact credentials across deltas and flag partial output.
 - [x] Cancel upstream HTTP on client disconnect in both response modes; test direct
   and sample-to-gateway TCP cleanup, slot release and one final event (A3).
-- [x] Add sample streaming/Stop UI, thirteen HTTP scenarios, SDK streaming tests,
+- [x] Add sample streaming/Stop UI, streaming HTTP scenarios, SDK streaming tests,
   final-outcome metrics and schema-5 data preservation contracts.
 - [x] Extend native bundle smoke to exercise streamed inference and captured output.
 - Record live Ollama/OpenAI/vLLM and Worker/tunnel/proxy evidence for A1; local
@@ -85,6 +85,23 @@ See [operating/testing procedures](runbooks/inference-api-and-queueing.md) and
 remain in [backlog](backlog.md). Queue admission and response caching remain local
 to one process. Live provider/model compatibility is a separate release gate.
 
+## Configuration recovery and storage health — implemented
+
+- [x] Keep 100 encrypted console-managed settings snapshots; validate restores and
+  reject stale restore/save preconditions before activation.
+- [x] Commit revisions/settings/credential changes and management audit together.
+- [x] Preserve current credentials for unchanged bindings; require explicit removal
+  for changed endpoints/bindings and never restore historical secrets.
+- [x] Add Configuration history/Storage health UI, safe diagnostics, reversible
+  write/integrity checks and missing-file failure without replacement.
+- [x] Extend the sample suite to 15 scenarios and native smoke with restore,
+  storage checks and encrypted recovery of revisions.
+- Verify visual browser/Windows Ollama, clean-host/cross-version rollback and final
+  Docker packaging separately. Crypto key versions and stable connection IDs remain planned.
+
+See [recovery runbook](runbooks/configuration-recovery.md) and
+[validation](validation.md#configuration-recovery-and-storage-health).
+
 ## Current priority: backend foundations — in progress
 
 Native source development takes priority. Keep existing Docker packaging files and
@@ -99,10 +116,13 @@ Follow [backend architecture](backend-architecture.md):
 - Separate captured content from metadata and add remaining service boundaries.
 - [x] Separate applications and keys; add overlap rotation, expiry, revocation and
   transactional identity audit with console controls and shared tests.
-- Define encryption/digest key versions and audit configuration/provider-key changes.
-- Add configuration revisions, stable provider connection identities and atomic activation.
+- [x] Audit configuration, control, connection and provider-key changes transactionally.
+- Define encryption/digest key versions and remaining management audit actions.
+- [x] Add encrypted bounded configuration revisions, validated restore, ETag preconditions and atomic activation.
+- Add stable provider connection identities for multiple connections of one adapter.
 - [x] Preserve usage through log deletion, with separate retention and duplicate-delivery protection.
-- Extend management audit, storage health and bounded durable exporter delivery.
+- [x] Add safe storage health, explicit integrity/write verification and schema-5 preservation migration.
+- Extend remaining management audit actions and bounded durable exporter delivery.
 - Add optional PostgreSQL/Vault/export adapters after the local contracts are tested.
 
 Checked items are implemented; the remaining items are planned. Existing Docker

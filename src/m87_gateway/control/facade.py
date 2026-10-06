@@ -27,8 +27,8 @@ class BackendFacade:
     def runtime_config(self) -> dict:
         return self.configuration.runtime_config()
 
-    def save_runtime_config(self, value: dict, provider=None, key=None, clear_key=False):
-        return self.configuration.save_runtime_config(value, provider, key, clear_key)
+    def save_runtime_config(self, value: dict, provider=None, key=None, clear_key=False, **options):
+        return self.configuration.save_runtime_config(value, provider, key, clear_key, **options)
 
     def emit(self, event: dict[str, Any]) -> None:
         return self.traffic.emit(event)
@@ -142,3 +142,12 @@ class BackendFacade:
 
     def list_management_events(self, limit: int = 100, project_id: str | None = None):
         return self.management_audit.list_management_events(limit, project_id)
+
+    def initialize_history(self, snapshot: dict):
+        return self.configuration.initialize_history(snapshot)
+
+    def list_config_revisions(self, limit: int = 100):
+        return self.configuration.list_config_revisions(limit)
+
+    def config_revision(self, revision_id: int):
+        return self.configuration.config_revision(revision_id)

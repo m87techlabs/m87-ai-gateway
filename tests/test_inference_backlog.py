@@ -214,7 +214,9 @@ def test_schema_migration_preserves_keys_usage_and_audit(tmp_path, version):
     assert upgraded.list_management_events() == audit
     assert upgraded.get_event("migration-event")["queue_wait_ms"] is None
     with sqlite3.connect(config.database_path) as database:
-        assert database.execute("PRAGMA user_version").fetchone()[0] == 5
+        from m87_gateway.control.store import SCHEMA_VERSION
+
+        assert database.execute("PRAGMA user_version").fetchone()[0] == SCHEMA_VERSION
     upgraded.close()
 
 

@@ -202,3 +202,13 @@ stream defaults false. With stream true, include_usage requests the final SSE
 usage chunk; absent provider counts remain null. stream_options requires stream
 true and accepts include_usage only. Streams bypass cache/retry and retain
 admission until completion or disconnect. See [stream lifecycle and errors](runbooks/streaming-and-cancellation.md).
+
+
+## Managed configuration revisions
+
+Console-managed provider/default/capture/controls changes create encrypted revisions
+and management audit. The console sends ETag preconditions to reject stale saves;
+API clients can pass `If-Match` from Setup/Controls GET responses. Restores require
+`expected_revision` and `RESTORE`, preserve current credentials for unchanged bindings,
+and explicitly remove credentials for changed bindings. History retains 100 snapshots
+and excludes bootstrap, application keys, logs and usage. See [recovery runbook](runbooks/configuration-recovery.md).

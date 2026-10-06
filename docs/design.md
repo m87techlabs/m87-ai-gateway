@@ -257,3 +257,11 @@ Streaming responses prefetch one validated chunk, retain admission during transf
 and always close the upstream iterator. Wire HTTP status and final outcome are
 recorded separately when failures/cancellation follow HTTP 200. See the
 [streaming lifecycle](runbooks/streaming-and-cancellation.md).
+
+
+Configuration recovery now uses encrypted bounded settings history and transactional
+management audit. Restore validates current adapters and endpoint/credential bindings,
+requires the current revision, and activates after commit. Credentials remain current
+or are explicitly removed; old secrets are never revived. Source adapters must satisfy
+the expanded repository and storage-health contracts. See [backend architecture](backend-architecture.md)
+and [recovery operations](runbooks/configuration-recovery.md).

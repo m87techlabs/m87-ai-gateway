@@ -511,6 +511,63 @@ def exercise():
                         "passed": True,
                     }
                 )
+                revisions = operator.get("/admin/api/configuration/revisions").json()
+                target = revisions["current_revision"]
+                changed_controls = {**controls, "max_content_chars": 64}
+                operator.put("/admin/api/controls", json=changed_controls).raise_for_status()
+                current = operator.get("/admin/api/configuration/revisions").json()[
+                    "current_revision"
+                ]
+                restored = operator.post(
+                    f"/admin/api/configuration/revisions/{target}/restore",
+                    json={"expected_revision": current, "confirmation": "RESTORE"},
+                )
+                restored.raise_for_status()
+                assert operator.get("/admin/api/controls").json() == controls
+                assert (
+                    operator.post(
+                        f"/admin/api/configuration/revisions/{target}/restore",
+                        json={"expected_revision": current, "confirmation": "RESTORE"},
+                    ).status_code
+                    == 409
+                )
+                with serving(sample_app(Settings(gateway_url=url, app_key=app_key))) as sample_url:
+                    with httpx.Client(base_url=sample_url, timeout=10, trust_env=False) as browser:
+                        response = browser.post(
+                            "/api/chat",
+                            json={
+                                "messages": [
+                                    {"role": "user", "content": "Synthetic restored configuration"}
+                                ]
+                            },
+                        )
+                        assert response.status_code == 200
+                        assert response.json()["usage"]["total_tokens"] == 6
+                events = operator.get("/admin/api/management-events").json()["items"]
+                assert any(
+                    event["action"] == "configuration.restored" and event["restored_from"] == target
+                    for event in events
+                )
+                assert app_key not in json.dumps(events)
+                results.append(
+                    {
+                        "scenario": "Configuration restore, stale revision rejection and sample recovery",
+                        "passed": True,
+                    }
+                )
+                usage_before = operator.get("/admin/api/overview").json()
+                events_before = operator.get("/admin/api/management-events").json()
+                storage = operator.post("/admin/api/storage/check").json()
+                assert storage["ok"] and storage["verified"]
+                assert operator.get("/admin/api/overview").json() == usage_before
+                assert operator.get("/admin/api/management-events").json() == events_before
+                assert restarted.state.control_store.authenticate_app_key(app_key)
+                results.append(
+                    {
+                        "scenario": "Storage verification preserves keys, usage and management audit",
+                        "passed": True,
+                    }
+                )
                 path = "/admin/api/apps/scenario-app/keys"
                 existing = operator.get(path).json()["items"][0]
                 issued = operator.post(path, json={"expires_in_days": 30})

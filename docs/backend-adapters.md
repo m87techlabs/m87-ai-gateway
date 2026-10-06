@@ -69,7 +69,7 @@ A factory accepts `ControlPlaneConfig` and returns a backend with:
   implementing the corresponding repository protocols;
 - the compatibility methods in those protocols, normally delegated by inheriting
   `BackendFacade`;
-- `config`, `check_storage()` and `close()` for existing runtime lifecycle callers.
+- `config`, `check_storage()`, `storage_health(verify=False)` and `close()` for existing runtime lifecycle callers.
 
 Factories for registered extensions are checked for these method/attribute
 contracts. These checks establish interface presence; the shared behavioral tests
@@ -127,3 +127,19 @@ Application policies now live in `applications`; digests and independent key
 lifecycle timestamps live in `app_keys`. Backend extensions must implement the
 key lifecycle and management-audit contracts as well. See
 [rotation acceptance](runbooks/application-key-rotation.md).
+
+
+Configuration extensions must implement `initialize_history`, `list_config_revisions`,
+`config_revision` and transactional save options (`snapshot`, `action`, `restored_from`,
+`expected_revision`, `clear_providers`). Preserve atomic settings/revision/credential/
+audit writes and stale revision rejection. Store only safe console-managed snapshots;
+exclude secrets, application keys, bootstrap paths and operator credentials. Initial
+history must not rewrite bootstrap/runtime overrides. The shared suite now exercises
+revision reopen/restore and provider-key audit. SQLite-specific failure, encryption,
+bounds and migration cases live in `tests/test_configuration_history.py`.
+
+Storage extensions return safe check names/status/actions, backend identity and
+optional size information. Explicit verification must be reversible, preserve keys/
+usage/audit and never expose raw database errors, secrets or filesystem paths.
+These new methods extend the development-preview interface; third-party source
+adapters must update before registration succeeds. See [recovery operations](runbooks/configuration-recovery.md).
