@@ -180,3 +180,15 @@ values, settings bodies or inference content are stored in this audit.
 Storage health provides basic access/privacy/credential checks and operator-triggered
 SQLite integrity/reversible write verification, sizes and free space. It does not
 repair data or prove upstream connectivity. See [recovery operations](runbooks/configuration-recovery.md).
+
+
+## Local logging showcase
+
+Schema 7 separates exchange content from traffic metadata and usage. Logs now
+provide exact request/application/outcome filters, deterministic cursor paging,
+readable input/output with captured JSON, separate token counts and explicit capture
+states. Metadata-only exports are the default; content requires explicit inclusion.
+Content retention defaults to 30 days and is independent of metadata/usage.
+`/admin/api/logging-health` reports private destination write failures/recovery even
+when metrics are disabled. Process counters reset on restart; recording remains best
+effort. See [showcase runbook](runbooks/logging-showcase.md) and [logging plan](logging-plan.md).

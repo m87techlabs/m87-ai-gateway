@@ -34,6 +34,7 @@ async function consoleFixture(t) {
   const event = {request_id: "fixture-request", created_at: "2026-10-02T12:00:00Z", project_id: "alpha", app_id: "sample-app", routed_model: "ollama:small", status_code: 200, total_tokens: 13, latency_ms: 12, cache_status: "disabled", provider_attempts: 1};
   let controls = {cache: {enabled: false, ttl_seconds: 300, max_entries: 1000}, retry: {max_attempts: 1, backoff_ms: 100}, limits: {max_concurrent_requests: 64}, max_request_bytes: 262144, max_message_chars: 65536, retention_days: 30, max_content_chars: 16384};
   const applicationKeys = [{key_id: "key-old", app_id: "sample-app", key_prefix: "fixture", created_at: "2026-10-05T12:00:00Z", expires_at: null, revoked_at: null, active: true}];
+  let paginatedLogs = false; let loggingDegraded = false;
   const revisions = [{revision_id: 2, created_at: "2026-10-06", action: "controls.updated", restored_from: null}, {revision_id: 1, created_at: "2026-10-06", action: "configuration.baseline", restored_from: null}];
   let restoreFailure = false; let deferredRevision = false; let pendingRevision = null;
   const storage = {backend: "sqlite", ok: true, verified: false, schema_version: 6, database_bytes: 1048576, wal_bytes: 0, free_disk_bytes: 10485760, checks: [{name: "Private files", ok: true, message: "OK"}], warnings: []};
@@ -89,6 +90,8 @@ async function consoleFixture(t) {
     }
     if (url.pathname.endsWith("/storage/check")) return response({...storage, verified: true, ok: false, checks: [...storage.checks, {name: "Database write", ok: false, message: "Check disk <img src=x>"}]});
     if (url.pathname.endsWith("/storage")) return response(storage);
+    if (url.pathname.endsWith("/logging-health")) return response({ok: !loggingDegraded, capture_enabled: true, traffic_retention_days: 30, content_retention_days: 30, usage_retention_days: 365, items: [{destination: "control_store", last_write_ok: !loggingDegraded, successful_writes: 2, failed_writes: loggingDegraded ? 1 : 0}], scope: "Best effort"});
+    if (url.pathname.endsWith("/logs/content")) return response({deleted: 1});
     if (url.pathname.endsWith("/management-events")) return response({items: [{created_at: "2026-10-05", actor: "operator", action: "application_key.issued", project_id: "alpha", app_id: "<img src=x>", key_id: "key-new"}]});
     if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls, 200, {ETag: '"2"'}); }
     if (url.pathname.endsWith("/diagnostics")) return response({ready: true, default_model: "ollama:small", active_requests: 0, checks: [{name: "Default provider", ok: true}]});
@@ -107,7 +110,11 @@ async function consoleFixture(t) {
     if (url.pathname.includes("/apps/") && url.pathname.endsWith("/models")) { apps[0].allowed_models = body.allowed_models; return response(null, 204); }
     if (url.pathname.endsWith("/overview")) return response({requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12});
     if (url.pathname.endsWith("/usage")) return response({series: [{bucket: "2026-10-02T12:00:00Z", requests: 1, total_tokens: 13}], by_app: [{app_id: "sample-app", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}], by_model: [{model: "ollama:small", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}]});
-    if (url.pathname.endsWith("/logs")) return method === "DELETE" ? response({deleted: 1}) : response({items: [event]});
+    if (url.pathname.endsWith("/logs")) {
+      if (method === "DELETE") return response({deleted: 1});
+      if (paginatedLogs && !url.searchParams.get("request_id")) return url.searchParams.has("cursor") ? response({items: [{...event, request_id: "older-request"}], next_cursor: null}) : response({items: [event], next_cursor: "fixture-next"});
+      return response({items: url.searchParams.get("request_id") && url.searchParams.get("request_id") !== event.request_id ? [] : [event]});
+    }
     if (url.pathname.endsWith("/logs/export")) return response([event]);
     if (url.pathname.endsWith("/logs/fixture-request")) {
       if (deferredDetail) return new Promise((resolve) => { pendingDetail = () => resolve(response(event)); });
@@ -123,7 +130,7 @@ async function consoleFixture(t) {
   await until(() => !$("console").hidden);
   return {window, $, submit, requests, setEvent: (fields) => Object.assign(event, fields), deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
     deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail,
-    deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue, failRestore: () => { restoreFailure = true; }, deferRevision: () => { deferredRevision = true; }, revisionPending: () => pendingRevision};
+    deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue, pageLogs: () => { paginatedLogs = true; }, degradeLogging: () => { loggingDegraded = true; }, failRestore: () => { restoreFailure = true; }, deferRevision: () => { deferredRevision = true; }, revisionPending: () => pendingRevision};
 }
 
 test("project selection scopes dashboard, usage, logs and export and renders charts", async (t) => {
@@ -444,4 +451,45 @@ test("storage verification is explicit and reports safe failure guidance", async
   assert.match($("storage-checks").textContent, /Check disk <img src=x>/);
   assert.equal($("storage-checks").querySelector("img"), null);
   assert.equal(requests.find((item) => item.path.endsWith("/storage/check")).method, "POST");
+});
+
+
+test("logs search, paging and exports keep project filters and explicit content choice", async (t) => {
+  const {$, window, submit, requests, pageLogs} = await consoleFixture(t);
+  pageLogs(); $("project-filter").value = "alpha"; $("project-filter").dispatchEvent(new window.Event("change"));
+  window.document.querySelector('[data-view="logs"]').click();
+  await until(() => !$("log-older").disabled);
+  $("log-older").click(); await until(() => $("log-page-status").textContent.includes("Page 2"));
+  assert.match($("logs").textContent, /older-reques/);
+  assert.equal(requests.find((item) => item.query.get("cursor") === "fixture-next").query.get("project_id"), "alpha");
+  $("log-newer").click(); await until(() => $("log-page-status").textContent.includes("Page 1"));
+  $("log-request-id").value = "fixture-request"; $("log-app-id").value = "sample-app"; $("log-status").value = "success"; submit("log-filter-form");
+  await until(() => requests.some((item) => item.query.get("request_id") === "fixture-request"));
+  assert.equal($("log-newer").disabled, true);
+  $("export").dispatchEvent(new window.MouseEvent("click", {bubbles: true, cancelable: true})); await until(() => requests.some((item) => item.path.endsWith("/export")));
+  let sent = requests.filter((item) => item.path.endsWith("/export")).at(-1);
+  assert.equal(sent.query.get("include_content"), "false"); assert.equal(sent.query.get("request_id"), "fixture-request");
+  $("export-content").checked = true; $("export").dispatchEvent(new window.MouseEvent("click", {bubbles: true, cancelable: true})); await until(() => requests.filter((item) => item.path.endsWith("/export")).length === 2);
+  sent = requests.filter((item) => item.path.endsWith("/export")).at(-1);
+  assert.equal(sent.query.get("include_content"), "true"); assert.equal(sent.query.get("project_id"), "alpha"); assert.equal(sent.query.get("app_id"), "sample-app");
+});
+
+for (const [status, expected] of [["disabled", "disabled for this request"], ["expired", "expired under its retention"], ["deleted", "deleted by an operator"], ["unknown", "older record"]]) {
+  test(`log detail explains ${status} input without fabricating content`, async (t) => {
+    const {$, window, setEvent} = await consoleFixture(t);
+    setEvent({request_content: null, request_content_status: status, response_content: null, response_content_status: "not_produced"});
+    window.document.querySelector('[data-view="logs"]').click(); await until(() => $("logs").querySelector("tr[data-id]"));
+    $("logs").querySelector("tr[data-id]").click(); await until(() => $("detail").hasAttribute("open"));
+    assert.ok($("detail-body").textContent.includes(expected)); assert.match($("detail-body").textContent, /No output was captured/);
+  });
+}
+
+test("logging failure is visible and content deletion requires confirmation", async (t) => {
+  const {$, window, requests, degradeLogging} = await consoleFixture(t);
+  degradeLogging(); window.document.querySelector('[data-view="logs"]').click();
+  await until(() => $("logging-status").textContent.includes("needs attention"));
+  assert.match($("logging-destinations").textContent, /Failed/);
+  window.confirm = () => false; $("delete-content").click(); assert.equal(requests.some((item) => item.path.endsWith("/logs/content")), false);
+  window.confirm = () => true; $("delete-content").click(); await until(() => requests.some((item) => item.path.endsWith("/logs/content")));
+  const sent = requests.find((item) => item.path.endsWith("/logs/content")); assert.equal(sent.body.confirmation, "DELETE"); assert.equal(sent.method, "DELETE");
 });

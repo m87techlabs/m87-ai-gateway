@@ -64,3 +64,7 @@ flowchart LR
 - [Streaming and cancellation](runbooks/streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
 
 - [Configuration recovery and storage health](runbooks/configuration-recovery.md): settings history/restore, management audit and safe storage verification.
+
+- [Logging showcase](runbooks/logging-showcase.md): sample request links, capture/search/retention/export and recording health.
+
+- [Logging development plan](logging-plan.md): current priority, remaining development and exporter/ecosystem stages.

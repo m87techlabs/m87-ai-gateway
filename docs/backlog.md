@@ -20,6 +20,11 @@ The authenticated inference API exposes `GET /v1/models` and
 `/ready` and `/metrics` provide operational endpoints. Supported fields are
 documented in [configuration](configuration.md#chat-generation-parameters).
 
+Logging is the current development focus. Local showcase/content separation/search/
+recording-health work is implemented; next logging work is **O2 durable remote delivery**,
+then **O1 dashboards/alerts** and **O3/O4 tracing/performance**. Other priorities remain
+recorded below. See [logging plan](logging-plan.md).
+
 ## Priority summary
 
 | Priority | Item | Area | Size |
@@ -220,7 +225,7 @@ never blocks traffic.
 
 **Why:** application-key lifecycle, configuration/provider-key audit, encrypted
 settings history, atomic activation and rollback are implemented. Crypto key versions
-and remaining actions such as cache clearing and log deletion still need coverage.
+and cache-clear audit and crypto key versions still need coverage. Explicit content/log deletion is now audited.
 
 **Scope:** versioned master/digest keys with re-encryption, remaining management
 actions and stable connection identities for multiple connections of one adapter.
@@ -307,7 +312,7 @@ Worker/tunnel path still need recorded live evidence in [validation](validation.
 
 | Item | Scope |
 | --- | --- |
-| D1 Backend storage | Store captured content separately from metadata; PostgreSQL and Vault adapters behind the existing contracts |
+| D1 Backend storage | Content encryption/access roles; PostgreSQL and Vault adapters behind the existing contracts |
 | D2 Managed ecosystem services | Service profiles, container-engine detection, lifecycle controls for Grafana/Prometheus/log storage/Vault, backups and recovery (see [ecosystem](ecosystem.md)) |
 | D3 Workstation release gates | Clean Windows/Linux host checks, native Windows Ollama and browser checks, OS service installation, code signing, rollback between released versions |
 | D4 Cloud deployment | Container deployment tested on each major cloud; runnable Kubernetes and Terraform examples only once tested |

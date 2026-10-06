@@ -65,3 +65,10 @@ Do not restore broadly readable permissions to make startup succeed.
 Keep a small size/backup count for local tests and stop project containers when
 the session ends. Rotation is based on size, not time. A later central log sink
 must define time retention and access controls before content is exported.
+
+
+The included console now supports request-ID search/paging, readable input/output,
+explicit capture states and recording health. SQLite content has independent retention
+and content-only deletion; JSONL retains its separate size-rotation policy. Exports
+omit content by default. Use [logging showcase](logging-showcase.md) for the current
+local demonstration and failure/recovery checks.

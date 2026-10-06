@@ -3,6 +3,12 @@ const $ = (id) => document.getElementById(id);
 let history = [];
 let busy = false;
 let controller = null;
+let gatewayConsole = null;
+function setRequestId(value) {
+  $("request-id").textContent = value || "Unavailable";
+  const link = $("gateway-log"); link.hidden = true; link.removeAttribute("href");
+  if (gatewayConsole && value && value.length <= 128) { const url = new URL("/admin", gatewayConsole); url.searchParams.set("request_id", value); link.href = url.href; link.hidden = false; }
+}
 $("stop").addEventListener("click", () => controller?.abort());
 window.addEventListener("pagehide", () => controller?.abort());
 
@@ -57,6 +63,7 @@ function bubble(role, content) {
 }
 function resetDetails() {
   for (const id of ["input-tokens", "output-tokens", "total-tokens", "latency", "response-model", "request-id", "cache-status", "retry-after"]) $(id).textContent = "—";
+  $("gateway-log").hidden = true; $("gateway-log").removeAttribute("href");
   $("error").hidden = true;
 }
 $("clear").addEventListener("click", () => {
@@ -90,12 +97,12 @@ $("chat-form").addEventListener("submit", async (event) => {
   let assistant = null;
   try {
     const response = await fetch(streaming ? "/api/chat/stream" : "/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages}), signal: controller.signal});
-    $("request-id").textContent = response.headers.get("x-request-id") || "Unavailable";
+    setRequestId(response.headers.get("x-request-id"));
     const result = streaming && response.ok ? await readStream(response, (text) => {
       assistant ||= bubble("assistant", ""); assistant.querySelector("p").textContent = text;
     }) : await response.json();
     if (streaming) result.latency_ms = Math.round(performance.now() - started);
-    $("request-id").textContent = result.request_id || "Unavailable";
+    setRequestId(result.request_id);
     $("cache-status").textContent = result.cache_status || "—";
     $("retry-after").textContent = result.retry_after == null ? "—" : `${result.retry_after} seconds`;
     if (!response.ok) throw new Error(result.error || "Request failed. Check the gateway logs.");
@@ -125,5 +132,7 @@ $("chat-form").addEventListener("submit", async (event) => {
 fetch("/api/status").then((response) => response.json()).then((result) => {
   $("status").textContent = result.gateway_reachable ? "Gateway reachable · Ready to chat" : "Gateway unavailable · Start the gateway and check its URL";
   $("model").textContent = `Model: ${result.model}`;
+  try { const url = new URL(result.gateway_url); if (["http:", "https:"].includes(url.protocol)) gatewayConsole = url.origin; } catch (_) {}
+  if (!["—", "Unavailable"].includes($("request-id").textContent)) setRequestId($("request-id").textContent);
   $("gateway").textContent = `Gateway: ${result.gateway_url || "Unknown"}`;
 }).catch(() => { $("status").textContent = "Could not check gateway status"; });

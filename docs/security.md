@@ -41,8 +41,8 @@ before collecting other content.
 
 ## Current limits
 
-Concurrency limits, budgets, JWT, response policy checks, distributed
-coordination, and remote log export are not implemented. Preserve existing
+Per-process rate/concurrency limits and bounded queues are implemented. Budgets,
+JWT, response policies, distributed coordination and remote log export remain planned. Preserve existing
 application/origin controls when testing this gateway alongside another service.
 The metrics endpoint has no app-key auth and belongs on a private operator network.
 
@@ -57,3 +57,9 @@ See [configuration changes](runbooks/configuration-changes.md),
 [incident response](runbooks/incident-response.md). Report vulnerabilities through
 [SECURITY.md](../SECURITY.md). Public release also requires the existing history
 and artifact privacy review.
+
+
+Captured text now uses a separate SQLite table and independent retention. Operator
+search/detail/export APIs remain privileged. Exports omit content by default and
+explicit content/log deletion is audited; independent usage remains. Logical deletion
+does not securely erase WAL/free pages/backups/downloaded files. See [logging showcase](runbooks/logging-showcase.md).

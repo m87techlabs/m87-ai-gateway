@@ -21,6 +21,8 @@ def apply_overrides(settings: GatewaySettings, saved: dict) -> GatewaySettings:
             data[section].update(controls[section])
     if "retention_days" in controls:
         data["control_plane"]["retention_days"] = controls["retention_days"]
+    if "content_retention_days" in controls:
+        data["control_plane"]["content_retention_days"] = controls["content_retention_days"]
     if "max_content_chars" in controls:
         data["observability"]["traffic_log"]["max_content_chars"] = controls["max_content_chars"]
     return GatewaySettings.model_validate(data)
@@ -57,6 +59,7 @@ def managed_snapshot(settings: GatewaySettings) -> dict:
                 "max_message_chars": settings.guardrails.max_message_chars,
             },
             "retention_days": settings.control_plane.retention_days,
+            "content_retention_days": settings.control_plane.content_retention_days,
             "max_content_chars": settings.observability.traffic_log.max_content_chars,
         },
     }

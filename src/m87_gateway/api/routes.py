@@ -144,6 +144,8 @@ def prepare(
 ):
     """Validate and snapshot the connection and cache before a possible queue wait."""
     audit = request.state.audit
+    audit["capture_enabled"] = settings.observability.traffic_log.capture_content
+    request.state.capture_limit = settings.observability.traffic_log.max_content_chars
     try:
         selected = select_model(payload.model, app_context, settings, payload.task)
     except ModelNotAllowedError as exc:
@@ -173,6 +175,9 @@ def prepare(
         if control_store is not None
         else get_provider(provider_name, settings)
     )
+    provider_key = getattr(provider, "api_key", None)
+    if isinstance(provider_key, str) and provider_key:
+        request.app.state.recorder.add_secret(provider_key)
     return provider, selected, request.app.state.response_cache
 
 

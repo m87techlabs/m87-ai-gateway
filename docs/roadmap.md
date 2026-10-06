@@ -102,7 +102,21 @@ to one process. Live provider/model compatibility is a separate release gate.
 See [recovery runbook](runbooks/configuration-recovery.md) and
 [validation](validation.md#configuration-recovery-and-storage-health).
 
-## Current priority: backend foundations — in progress
+## Current priority: logging showcase — local stage implemented
+
+Logging is the primary showcase: sample request → gateway → inference → searchable
+input/output, tokens and outcome. See [logging plan](logging-plan.md) for the staged
+sequence and remaining development scope.
+
+- [x] Schema-7 separate content storage, independent retention/read expiry and audited deletion.
+- [x] Exact request/application/outcome search, deterministic paging and clear capture states.
+- [x] Readable input/output, raw JSON, separate tokens and sample-to-console request links.
+- [x] Metadata-only default export and explicit content inclusion, with recording health.
+- [x] Extend sample acceptance to 16 scenarios and native logging/recovery smoke.
+- Add bounded durable outbox and optional sanitized exporters, then dashboards/alerts
+  and managed observability profiles. Live/manual release evidence remains separate.
+
+## Backend foundations — in progress
 
 Native source development takes priority. Keep existing Docker packaging files and
 helpers, with explicit packaging CI when a functional release candidate is ready.
@@ -113,7 +127,8 @@ Follow [backend architecture](backend-architecture.md):
 - [x] Extract five SQLite repositories behind a compatibility facade.
 - [x] Add named backend configuration/registration and reusable behavioral contracts.
 - [x] Migrate retained traffic to independent usage records; verify key preservation.
-- Separate captured content from metadata and add remaining service boundaries.
+- [x] Separate captured content from metadata and add independent retention.
+- Add remaining service boundaries and optional content encryption/access roles.
 - [x] Separate applications and keys; add overlap rotation, expiry, revocation and
   transactional identity audit with console controls and shared tests.
 - [x] Audit configuration, control, connection and provider-key changes transactionally.

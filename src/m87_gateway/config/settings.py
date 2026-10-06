@@ -220,6 +220,7 @@ class ControlPlaneConfig(ConfigModel):
     master_key_path: str = Field(default="var/lib/m87-gateway/master.key", min_length=1)
     admin_api_key_env: str = "GATEWAY_ADMIN_API_KEY"
     retention_days: int = Field(default=30, ge=1, le=3650)
+    content_retention_days: int = Field(default=30, ge=1, le=3650)
 
     @field_validator("admin_api_key_env")
     @classmethod
@@ -372,6 +373,7 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
             "control_plane",
             "management_audit_retention_days",
         ),
+        "GATEWAY_CONTENT_RETENTION_DAYS": ("control_plane", "content_retention_days"),
         "GATEWAY_USAGE_RETENTION_DAYS": ("control_plane", "usage_retention_days"),
         "GATEWAY_CONTROL_PLANE_DATABASE_PATH": ("control_plane", "database_path"),
         "GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH": ("control_plane", "master_key_path"),

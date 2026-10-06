@@ -170,3 +170,29 @@ class BackendContract:
             assert all("synthetic-secret" not in str(row) for row in events)
         finally:
             backend.close()
+
+    def test_content_deletion_keeps_metadata_usage_and_search(self, backend_factory):
+        backend = backend_factory()
+        try:
+            backend.emit(
+                exchange(
+                    "content-contract",
+                    request_content='[{"role":"user","content":"synthetic input"}]',
+                    capture_enabled=True,
+                )
+            )
+            assert (
+                backend.list_events(request_id="content-contract")[0]["request_id"]
+                == "content-contract"
+            )
+            assert backend.get_event("content-contract")["request_content_status"] == "captured"
+            assert backend.delete_content("default") == 1
+            assert backend.get_event("content-contract")["request_content_status"] == "deleted"
+            assert backend.overview()["total_tokens"] == 10
+            assert "synthetic input" not in str(backend.export_events(include_content=False))
+            backend.close()
+            backend = backend_factory()
+            assert backend.get_event("content-contract")["request_content"] is None
+            assert backend.overview()["total_tokens"] == 10
+        finally:
+            backend.close()

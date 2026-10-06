@@ -299,6 +299,35 @@ def exercise(executable):
                 assert "synthetic-provider-key" not in json.dumps(audit)
                 expected_revision = restored["revision_id"]
 
+                request_id = streamed[0]["request_id"]
+                found = call("/admin/api/logs?request_id=" + request_id, key=admin)["items"]
+                assert len(found) == 1
+                assert (
+                    call("/admin/api/logs/" + request_id, key=admin)["response_content_status"]
+                    == "captured"
+                )
+                assert (
+                    "request_content"
+                    not in call("/admin/api/logs/export?request_id=" + request_id, key=admin)[0]
+                )
+                assert call(
+                    "/admin/api/logs/export?include_content=true&request_id=" + request_id,
+                    key=admin,
+                )[0]["request_content"]
+                assert call("/admin/api/logging-health", key=admin)["ok"]
+                before = call("/admin/api/overview", key=admin)
+                call(
+                    "/admin/api/logs/content",
+                    "DELETE",
+                    {"confirmation": "DELETE", "project_id": "bundle-project"},
+                    admin,
+                )
+                assert (
+                    call("/admin/api/logs/" + request_id, key=admin)["response_content_status"]
+                    == "deleted"
+                )
+                assert call("/admin/api/overview", key=admin) == before
+
                 def native(*arguments):
                     result = subprocess.run(
                         [str(executable), "--data-dir", str(data_dir), *arguments],
@@ -338,7 +367,7 @@ def exercise(executable):
                 native("--stop")
                 process.wait(timeout=10)
                 print(
-                    "Standalone setup, complete/streaming inference, configuration restore, storage checks, lifecycle and encrypted recovery passed"
+                    "Standalone setup, complete/streaming inference, configuration restore, logging showcase, storage checks, lifecycle and encrypted recovery passed"
                 )
         finally:
             if process is not None and process.poll() is None:

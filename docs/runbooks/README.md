@@ -51,3 +51,5 @@ flowchart TD
 - [Streaming and cancellation](streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
 
 - [Configuration recovery and storage health](configuration-recovery.md): settings history/restore, management audit and safe storage verification.
+
+- [Logging showcase](logging-showcase.md): sample request links, capture/search/retention/export and recording health.

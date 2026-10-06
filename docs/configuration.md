@@ -212,3 +212,13 @@ API clients can pass `If-Match` from Setup/Controls GET responses. Restores requ
 `expected_revision` and `RESTORE`, preserve current credentials for unchanged bindings,
 and explicitly remove credentials for changed bindings. History retains 100 snapshots
 and excludes bootstrap, application keys, logs and usage. See [recovery runbook](runbooks/configuration-recovery.md).
+
+
+## Exchange content retention and log queries
+
+`control_plane.content_retention_days` defaults to 30 and is editable in Controls
+or with `GATEWAY_CONTENT_RETENTION_DAYS`. Schema 7 stores captured text separately;
+read expiry and pruning enforce content retention, and metadata deletion cascades.
+Usage remains independent. Logs support exact request/application/outcome filters
+and opaque cursors. Operator exports now default to metadata; request content with
+`include_content=true`. See [logging showcase](runbooks/logging-showcase.md).

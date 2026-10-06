@@ -200,3 +200,9 @@ Console-managed settings now have encrypted revision history and validated resto
 Configuration/provider-key changes are audited transactionally. Storage health
 reports private-file/database/credential checks and offers explicit integrity/write
 verification. See [configuration recovery](docs/runbooks/configuration-recovery.md).
+
+
+Logging is the current product priority. The sample links to its request in Logs,
+with input/output, separate tokens, search/paging and recording health. Content has
+independent retention; exports omit it by default. See [logging showcase](docs/runbooks/logging-showcase.md)
+and [remaining logging plan](docs/logging-plan.md).

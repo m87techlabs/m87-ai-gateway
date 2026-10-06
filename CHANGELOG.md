@@ -8,6 +8,12 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Schema-7 separate captured content, independent retention/read expiry and audited
+  project content/log deletion preserving usage.
+- Log search/paging, readable input/output, separate token counts, explicit capture
+  states, recording-health counters and sample request-to-console links.
+- Sixteen sample scenarios and packaged logging/backup recovery smoke.
+
 - Schema-6 encrypted configuration history, validated rollback, ETag save/restore
   preconditions and transactional settings/connection/provider-key management audit.
 - Configuration history and Storage health console pages, safe basic checks,
@@ -99,6 +105,11 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 - Close backup SQLite connections before removing temporary snapshots on Windows.
 
 ### Security
+
+### Changed
+
+- Operator JSON exports omit captured content by default; include_content=true
+  explicitly includes retained content. Repository compatibility exports remain unchanged.
 
 ## [0.1.0] - Historical scaffold
 

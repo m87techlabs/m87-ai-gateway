@@ -24,6 +24,7 @@ from m87_gateway.control.configuration_service import (
     revision_etag,
 )
 from m87_gateway.control.backends import Backend
+from m87_gateway.control.log_queries import decode_cursor, encode_cursor
 from m87_gateway.control.repositories.identities import KeyLimitError
 
 STATIC_DIR = Path(__file__).with_name("static")
@@ -123,6 +124,7 @@ class ControlsWrite(BaseModel):
     max_message_chars: int = Field(ge=1, le=1048576)
     max_request_bytes: int = Field(ge=1, le=10485760)
     retention_days: int = Field(ge=1, le=3650)
+    content_retention_days: int = Field(default=30, ge=1, le=3650)
     max_content_chars: int = Field(ge=1, le=65536)
 
     def overrides(self):
@@ -151,6 +153,7 @@ async def controls(request: Request, store: AdminStore, response: Response):
         max_message_chars=settings.guardrails.max_message_chars,
         max_request_bytes=settings.guardrails.max_request_bytes,
         retention_days=settings.control_plane.retention_days,
+        content_retention_days=settings.control_plane.content_retention_days,
         max_content_chars=settings.observability.traffic_log.max_content_chars,
     )
 
@@ -275,10 +278,20 @@ async def logs(
     app_id: str | None = Query(default=None, max_length=100),
     status: str | None = Query(default=None, pattern=r"^(success|error)$"),
     project_id: ProjectFilter = None,
+    request_id: str | None = Query(default=None, min_length=1, max_length=128),
+    cursor: str | None = Query(default=None, max_length=512),
 ):
-    return {
-        "items": store.list_events(limit=limit, app_id=app_id, status=status, project_id=project_id)
-    }
+    rows = store.list_events(
+        limit=limit + 1,
+        app_id=app_id,
+        status=status,
+        project_id=project_id,
+        request_id=request_id,
+        before=decode_cursor(cursor),
+    )
+    more = len(rows) > limit
+    items = rows[:limit]
+    return {"items": items, "next_cursor": encode_cursor(items[-1]) if more else None}
 
 
 @router.get("/admin/api/logs/export")
@@ -286,13 +299,41 @@ async def export_logs(
     store: AdminStore,
     limit: int = Query(default=1000, ge=1, le=10000),
     project_id: ProjectFilter = None,
+    app_id: str | None = Query(default=None, max_length=100),
+    status: str | None = Query(default=None, pattern=r"^(success|error)$"),
+    request_id: str | None = Query(default=None, min_length=1, max_length=128),
+    include_content: bool = False,
 ):
-    body = json.dumps(store.export_events(limit=limit, project_id=project_id), indent=2)
+    body = json.dumps(
+        store.export_events(
+            limit=limit,
+            project_id=project_id,
+            app_id=app_id,
+            status=status,
+            request_id=request_id,
+            include_content=include_content,
+        ),
+        indent=2,
+    )
     return Response(
         body,
         media_type="application/json",
         headers={"Content-Disposition": 'attachment; filename="gateway-events.json"'},
     )
+
+
+@router.get("/admin/api/logging-health")
+async def logging_health(request: Request, store: AdminStore):
+    report = request.app.state.recorder.health()
+    report["traffic_retention_days"] = store.config.retention_days
+    report["content_retention_days"] = store.config.content_retention_days
+    report["usage_retention_days"] = store.config.usage_retention_days
+    return report
+
+
+@router.delete("/admin/api/logs/content")
+async def remove_log_content(payload: LogDeletion, store: AdminStore):
+    return {"deleted": store.delete_content(payload.project_id)}
 
 
 @router.get("/admin/api/logs/{request_id}")

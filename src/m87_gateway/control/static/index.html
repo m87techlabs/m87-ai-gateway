@@ -124,6 +124,7 @@
           <label>Cache lifetime in seconds<input name="ttl_seconds" type="number" min="1" max="86400" required></label>
           <label>Maximum cached responses<input name="max_entries" type="number" min="1" max="100000" required></label>
           <label>SQLite log retention in days<input name="retention_days" type="number" min="1" max="3650" required><small>Older records are removed on save, restart, and subsequent request logging. Usage has separate retention and survives log deletion.</small></label>
+          <label>Captured content retention in days<input name="content_retention_days" type="number" min="1" max="3650" value="30" required><small>Content can expire earlier than request metadata. Metadata deletion also removes its content. Usage is retained separately.</small></label>
           <label>Captured characters per input/output record<input name="max_content_chars" type="number" min="1" max="65536" required><small>Gateway-wide capture is enabled in Setup. Redaction happens before truncation.</small></label>
           <button type="submit">Save controls</button>
           <button id="clear-cache" type="button" class="secondary">Clear response cache</button>
@@ -152,7 +153,18 @@
       <section id="view-logs" class="view" hidden>
         <div class="panel">
           <div class="panel-head"><div><h3>Request logs</h3><p>Token usage, status, latency, and opted-in payloads.</p></div><div><a class="button" id="export" href="#">Export JSON</a><button id="delete-logs" type="button" class="danger">Delete selected project logs</button></div></div>
-          <div id="logs"></div>
+          <p id="logging-status" role="status"></p><div id="logging-destinations"></div>
+          <form id="log-filter-form" class="form-panel">
+            <label>Request ID<input id="log-request-id" name="request_id" maxlength="128" placeholder="Paste the sample request ID"></label>
+            <label>Application<input id="log-app-id" name="app_id" maxlength="100" placeholder="All applications"></label>
+            <label>Outcome<select id="log-status" name="status"><option value="">All outcomes</option><option value="success">Successful</option><option value="error">Failed or cancelled</option></select></label>
+            <button type="submit">Search logs</button><button id="log-reset" type="button" class="secondary">Clear filters</button>
+          </form>
+          <label class="check"><input id="export-content" type="checkbox">Include captured input/output in JSON export</label>
+          <p class="muted">Exports default to metadata and include up to 1,000 newest records matching the current project and search filters. Content exports can contain sensitive text.</p>
+          <div id="logs"></div><p id="log-page-status"></p>
+          <button id="log-newer" type="button" class="secondary" disabled>Newer results</button><button id="log-older" type="button" class="secondary" disabled>Older results</button>
+          <button id="delete-content" type="button" class="danger">Delete captured content</button>
         </div>
       </section>
 

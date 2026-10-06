@@ -11,9 +11,31 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Logging showcase and content lifecycle
+
+Verified on 2026-10-06 using isolated temporary stores: **316 Python tests**, **34
+console/sample interaction tests**, lint/format (99 Python files), wheel build and
+links/fences in **56 Markdown files**. The sample suite has **16 HTTP scenarios**.
+A rebuilt Linux standalone preview passed capture, exact request search, metadata-only
+and explicit-content exports, recording health, content deletion with preserved usage,
+streaming, configuration restore, storage checks, lifecycle and encrypted recovery.
+
+Schema 7 tests preserve existing keys, traffic, usage and audit while separating
+retained content. Checks cover atomic rollback, independent expiry, project deletion,
+stable tied-timestamp paging, bounded invalid cursors, capture states, safe failure/
+recovery counters and operator-only APIs. Browser tests cover filters, paging,
+explicit export choice, missing-content explanations and confirmed deletion.
+
+Live Ollama inference, manual visual browser review, clean-host packaging, remote
+exporters, crash/disk-failure durability and final Docker packaging remain deferred.
+No live user database or running service was changed. Local recording remains best
+effort; health counters reset on restart. Back up before the schema-7 upgrade; older
+binaries reject the newer database. Follow [logging showcase](runbooks/logging-showcase.md)
+and [the staged plan](logging-plan.md).
+
 ## Configuration recovery and storage health
 
-Verified on 2026-10-06 using private temporary stores: **300 Python tests**, **28
+Previous batch verified on 2026-10-06 using private temporary stores: **300 Python tests**, **28
 console interaction tests**, lint/format (97 Python files), wheel build and
 links/fences in **54 Markdown files**. The isolated sample suite has **15 scenarios**.
 A rebuilt Linux native preview passed setup, complete/streaming inference,

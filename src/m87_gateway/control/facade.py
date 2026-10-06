@@ -54,18 +54,25 @@ class BackendFacade:
         app_id: str | None = None,
         status: str | None = None,
         project_id: str | None = None,
+        request_id: str | None = None,
+        before: tuple[str, str] | None = None,
     ) -> list[dict[str, Any]]:
         return self.traffic.list_events(
-            limit=limit, app_id=app_id, status=status, project_id=project_id
+            limit=limit,
+            app_id=app_id,
+            status=status,
+            project_id=project_id,
+            request_id=request_id,
+            before=before,
         )
 
     def get_event(self, request_id: str) -> dict[str, Any] | None:
         return self.traffic.get_event(request_id)
 
     def export_events(
-        self, limit: int = 1000, project_id: str | None = None
+        self, limit: int = 1000, project_id: str | None = None, **options
     ) -> list[dict[str, Any]]:
-        return self.traffic.export_events(limit, project_id)
+        return self.traffic.export_events(limit, project_id, **options)
 
     def create_app_key(
         self,
@@ -151,3 +158,6 @@ class BackendFacade:
 
     def config_revision(self, revision_id: int):
         return self.configuration.config_revision(revision_id)
+
+    def delete_content(self, project_id=None):
+        return self.traffic.delete_content(project_id)

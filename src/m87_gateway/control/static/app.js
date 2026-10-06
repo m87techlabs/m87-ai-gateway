@@ -9,6 +9,12 @@ let sessionGeneration = 0;
 let testerRequestId = "";
 let testerController = null;
 let connectionTestGeneration = 0;
+let detailGeneration = 0;
+let logGeneration = 0;
+let logPage = 0;
+let logCursors = [null];
+let logNextCursor = null;
+let logFilterKey = "";
 let currentRevision = null;
 let setupEtag = null;
 let controlsEtag = null;
@@ -64,15 +70,17 @@ function notice(message) {
 }
 
 function renderLogs(target, rows, limit) {
-  table(target, ["Time", "Project", "App", "Model", "Status", "Tokens", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
+  table(target, ["Request ID", "Time", "Project", "App", "Model", "Status", "Input tokens", "Output tokens", "Total tokens", "Outcome", "Capture", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
     row.dataset.id = item.request_id;
+    const requestCell = cell(row, `${item.request_id.slice(0, 12)}…`); requestCell.title = item.request_id;
     cell(row, new Date(item.created_at).toLocaleString());
     cell(row, item.project_id);
     cell(row, item.app_id);
     cell(row, item.routed_model || item.model);
     const status = cell(row, item.status_code);
     status.className = `status ${item.status_code >= 400 ? "error" : ""}`;
-    cell(row, item.total_tokens);
+    cell(row, item.prompt_tokens); cell(row, item.completion_tokens); cell(row, item.total_tokens);
+    cell(row, item.request_outcome); cell(row, item.capture_enabled == null ? "Unknown" : item.capture_enabled ? "Enabled" : "Disabled");
     cell(row, item.latency_ms == null ? null : `${item.latency_ms} ms`);
     cell(row, item.cache_status || "disabled");
     cell(row, item.provider_attempts ?? 0);
@@ -102,12 +110,24 @@ async function loadOverview() {
   renderLogs($("recent"), logs.items, 8);
 }
 
-async function loadLogs() {
-  const scope = activeProject;
+function logFilters() {
+  return Object.fromEntries(["request_id", "app_id", "status"].map((name) => [name, $("log-filter-form").elements[name].value.trim()]).filter(([,value]) => value));
+}
+
+async function loadLogs(cursor = null, page = 0) {
+  const scope = activeProject; const session = sessionGeneration; const generation = ++logGeneration;
+  const filters = logFilters(); const key = JSON.stringify([scope, filters]);
+  if (key !== logFilterKey) { cursor = null; page = 0; }
   $("delete-logs").textContent = scope ? "Delete selected project logs" : "Delete all logs";
-  const response = await api(scoped("/logs", {limit: 250}));
-  const data = await response.json();
-  if (scope === activeProject && adminKey) renderLogs($("logs"), data.items, 250);
+  const [response, healthResponse] = await Promise.all([api(scoped("/logs", {limit: 250, ...filters, ...(cursor ? {cursor} : {})})), api("/logging-health")]);
+  const data = await response.json(); const health = await healthResponse.json();
+  if (session !== sessionGeneration || generation !== logGeneration || scope !== activeProject || !adminKey) return;
+  logFilterKey = key; logPage = page; if (page === 0) logCursors = [null]; logCursors[page] = cursor; logNextCursor = data.next_cursor || null;
+  renderLogs($("logs"), data.items, 250);
+  $("log-page-status").textContent = `Page ${page + 1} · ${data.items.length} records. Refresh to see newly completed requests.`;
+  $("log-newer").disabled = page === 0; $("log-older").disabled = !logNextCursor;
+  $("logging-status").textContent = `${health.ok ? "Recording destinations healthy" : "Recording needs attention — check Storage health"} · Gateway capture ${health.capture_enabled ? "enabled" : "disabled"} · Metadata ${health.traffic_retention_days} days · Content ${health.content_retention_days} days · Usage ${health.usage_retention_days} days. ${health.scope}`;
+  table($("logging-destinations"), ["Destination", "Last write", "Successful writes", "Failed writes"], health.items, (row, item) => { cell(row, item.destination); cell(row, item.last_write_ok == null ? "No writes yet" : item.last_write_ok ? "OK" : "Failed"); cell(row, item.successful_writes); cell(row, item.failed_writes); });
 }
 
 function scoped(path, values = {}) {
@@ -167,15 +187,15 @@ async function loadProjects() {
 }
 
 async function showDetail(requestId) {
-  const session = sessionGeneration;
+  const session = sessionGeneration; const generation = ++detailGeneration;
   const response = await api(`/logs/${encodeURIComponent(requestId)}`);
   const item = await response.json();
-  if (session !== sessionGeneration || !adminKey) return;
+  if (session !== sessionGeneration || generation !== detailGeneration || !adminKey) return;
   const body = $("detail-body");
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["HTTP status", item.http_status_code], ["Response mode", item.streaming ? "Streaming" : "Complete response"], ["Outcome", item.request_outcome], ["Partial output", item.response_content_partial ? "Yes" : "No"], ["Tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["HTTP status", item.http_status_code], ["Response mode", item.streaming ? "Streaming" : "Complete response"], ["Outcome", item.request_outcome], ["Partial output", item.response_content_partial ? "Yes" : "No"], ["Input tokens", item.prompt_tokens], ["Output tokens", item.completion_tokens], ["Total tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";
@@ -184,12 +204,23 @@ async function showDetail(requestId) {
   body.append(grid);
   [["LLM input", item.request_content], ["LLM output", item.response_content]].forEach(([label, value]) => {
     const title = document.createElement("h3"); title.textContent = label;
-    const pre = document.createElement("pre"); pre.textContent = value == null ? "Content was not recorded for this exchange. Gateway capture applies to new requests." : JSON.stringify(value, null, 2);
-    body.append(title, pre);
+    const status = label === "LLM input" ? item.request_content_status : item.response_content_status;
+    const explanations = {disabled: "Gateway content capture was disabled for this request. Enable it in Setup for new requests.", expired: "Captured content expired under its retention policy. Request metadata and usage remain.", deleted: "Captured content was deleted by an operator. Request metadata and usage remain.", not_captured: "The request was rejected before content capture. Inspect status, policy and error above.", not_produced: "No output was captured. Inference may have failed or stopped before producing output.", unknown: "This older record has no capture-policy evidence. Missing content cannot be recovered."};
+    const pre = document.createElement("pre");
+    pre.textContent = value == null ? (explanations[status] || "Content was not recorded for this exchange. Gateway capture applies to new requests.") : readableContent(value);
+    if (value != null) { const raw = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Captured JSON"; const json = document.createElement("pre"); json.textContent = JSON.stringify(value, null, 2); raw.append(summary, json); body.append(title, pre, raw); }
+    else body.append(title, pre);
     const truncated = label === "LLM input" ? item.request_content_truncated : item.response_content_truncated;
+    if (label === "LLM output" && item.response_content_partial) { const note = document.createElement("p"); note.className = "muted"; note.textContent = "Partial output: the request ended before a complete response."; body.append(note); }
     if (truncated) { const note = document.createElement("p"); note.className = "muted"; note.textContent = "Content was truncated at the configured capture limit."; body.append(note); }
   });
   $("detail").showModal();
+}
+
+function readableContent(value) {
+  if (typeof value === "string") return value;
+  if (!Array.isArray(value)) return JSON.stringify(value, null, 2);
+  return value.map((item) => { const message = item.message || item; return `${message.role || "assistant"}:\n${message.content ?? message.refusal ?? JSON.stringify(item, null, 2)}`; }).join("\n\n");
 }
 
 async function loadApps() {
@@ -338,7 +369,7 @@ async function loadControls() {
   if (session !== sessionGeneration || !adminKey) return;
   const fields = {...values, ...values.cache, ...values.retry, ...values.limits};
   const form = $("controls-form");
-  for (const name of ["max_concurrent_requests", "max_request_bytes", "max_message_chars", "max_attempts", "backoff_ms", "ttl_seconds", "max_entries", "retention_days", "max_content_chars"]) form.elements[name].value = fields[name];
+  for (const name of ["max_concurrent_requests", "max_request_bytes", "max_message_chars", "max_attempts", "backoff_ms", "ttl_seconds", "max_entries", "retention_days", "content_retention_days", "max_content_chars"]) form.elements[name].value = fields[name] ?? (name === "content_retention_days" ? 30 : "");
   form.elements.cache_enabled.checked = values.cache.enabled;
   form.elements.queue_enabled.checked = (fields.queue_max_depth || 0) > 0;
   form.elements.queue_max_depth.value = fields.queue_max_depth || 64;
@@ -364,16 +395,17 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 }));
 
 $("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); sessionGeneration += 1; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
+  event.preventDefault(); sessionGeneration += 1; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
   try {
     const setup = await loadSetup(); await loadProjectOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
-    if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
+    if (requestedLog) document.querySelector('[data-view="logs"]').click();
+    else if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { sessionGeneration += 1; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); $("revision-preview").textContent = ""; $("revision-error").textContent = ""; $("configuration-revisions").replaceChildren(); $("storage-checks").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
+$("lock").addEventListener("click", () => { sessionGeneration += 1; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); $("revision-preview").textContent = ""; $("revision-error").textContent = ""; $("configuration-revisions").replaceChildren(); $("storage-checks").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
-$("close-detail").addEventListener("click", () => $("detail").close());
+$("close-detail").addEventListener("click", () => { detailGeneration++; $("detail").close(); });
 
 $("app-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const session = sessionGeneration;
@@ -469,7 +501,7 @@ $("setup-form").addEventListener("submit", async (event) => {
 $("export").addEventListener("click", async (event) => {
   event.preventDefault();
   try {
-    const response = await api(scoped("/logs/export")); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "gateway-events.json"; link.click(); URL.revokeObjectURL(url);
+    const response = await api(scoped("/logs/export", {...logFilters(), include_content: $("export-content").checked})); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "gateway-events.json"; link.click(); URL.revokeObjectURL(url);
   } catch (error) { notice(error.message); }
 });
 
@@ -504,7 +536,7 @@ $("tester-detail").addEventListener("click", async () => {
 
 $("controls-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const number = (name) => Number(form.get(name));
-  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), max_content_chars: number("max_content_chars")};
+  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), content_retention_days: number("content_retention_days"), max_content_chars: number("max_content_chars")};
   const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
   try { await api("/controls", {method: "PUT", headers: controlsEtag ? {"If-Match": controlsEtag} : {}, body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
   catch (error) { notice(error.message); }
@@ -586,3 +618,17 @@ $("revision-form").addEventListener("submit", async (event) => {
   } catch (error) { if (session === sessionGeneration && adminKey) $("revision-error").textContent = error.message; }
   finally { $("revision-restore").disabled = false; }
 });
+
+
+$("log-filter-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await loadLogs(); } catch (error) { notice(error.message); } });
+$("log-reset").addEventListener("click", async () => { $("log-filter-form").reset(); try { await loadLogs(); } catch (error) { notice(error.message); } });
+$("log-older").addEventListener("click", async () => { try { await loadLogs(logNextCursor, logPage + 1); } catch (error) { notice(error.message); } });
+$("log-newer").addEventListener("click", async () => { try { await loadLogs(logCursors[logPage - 1], logPage - 1); } catch (error) { notice(error.message); } });
+$("delete-content").addEventListener("click", async () => {
+  const project = activeProject;
+  if (!window.confirm(`Delete captured input/output for ${project || "ALL projects"}? Search filters do not narrow deletion. Request metadata and usage remain. Separate JSONL files and in-flight requests are unaffected.`)) return;
+  try { const data = await (await api("/logs/content", {method: "DELETE", body: JSON.stringify({confirmation: "DELETE", project_id: project || null})})).json(); notice(`${data.deleted} content records deleted`); await loadLogs(); }
+  catch (error) { notice(error.message); }
+});
+const requestedLog = new URLSearchParams(window.location.search).get("request_id");
+if (requestedLog && requestedLog.length <= 128) $("log-request-id").value = requestedLog;

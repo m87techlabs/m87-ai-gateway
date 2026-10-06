@@ -96,8 +96,7 @@ delete records include safe provider/alias/revision references. Existing identit
 changes remain available. Actor identifies the shared `operator` role. Records
 exclude credential values, settings bodies and inference content. Retention uses
 `management_audit_retention_days`; history separately retains 100 revisions.
-Individual operator identity, crypto key versions and audit for cache-clear/log-
-deletion actions remain planned. This audit is local and is not tamper-proof.
+Individual operator identity, crypto key versions and audit for cache-clear actions remain planned; explicit log/content deletion is now audited. This audit is local and is not tamper-proof.
 
 Open **Storage health** for basic checks. Choose **Verify integrity and write access**
 when investigating storage or validating an upgrade. Verification runs off the API

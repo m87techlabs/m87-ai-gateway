@@ -55,6 +55,8 @@ class TrafficMiddleware:
         is_chat = scope["path"] == "/v1/chat/completions" and scope["method"] == "POST"
         runtime = scope["app"].state
         settings = runtime.settings
+        audit["capture_enabled"] = settings.observability.traffic_log.capture_content
+        state["capture_limit"] = settings.observability.traffic_log.max_content_chars
 
         async def tracked_send(message):
             nonlocal status, response_started, wire_status
@@ -171,4 +173,5 @@ class TrafficMiddleware:
                     audit,
                     state.get("request_content"),
                     state.get("response_content"),
+                    state.get("capture_limit"),
                 )

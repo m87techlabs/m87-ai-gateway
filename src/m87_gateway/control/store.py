@@ -22,7 +22,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 class LocalControlStore(BackendFacade):
@@ -50,6 +50,9 @@ class LocalControlStore(BackendFacade):
             {
                 **config.model_dump(),
                 "retention_days": controls.get("retention_days", config.retention_days),
+                "content_retention_days": controls.get(
+                    "content_retention_days", config.content_retention_days
+                ),
             }
         )
         self.prune_events()
@@ -121,6 +124,7 @@ class LocalControlStore(BackendFacade):
             self.identities.migrate(connection, previous_version)
             self.management_audit.migrate(connection)
             self.configuration.migrate(connection)
+            self.traffic.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(
@@ -133,6 +137,10 @@ class LocalControlStore(BackendFacade):
     def _ensure_columns(connection: sqlite3.Connection, legacy_identities: bool = True) -> None:
         migrations = {
             "events": {
+                "capture_enabled": "INTEGER",
+                "request_content_recorded": "INTEGER NOT NULL DEFAULT 0",
+                "response_content_recorded": "INTEGER NOT NULL DEFAULT 0",
+                "content_deleted": "INTEGER NOT NULL DEFAULT 0",
                 "streaming": "INTEGER NOT NULL DEFAULT 0",
                 "request_outcome": "TEXT",
                 "http_status_code": "INTEGER",

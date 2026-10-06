@@ -4,6 +4,8 @@ import os
 import re
 import stat
 import sys
+import threading
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Protocol
@@ -104,6 +106,18 @@ class AuditRecorder:
             else None
         )
         self.sinks = [sink for sink in (self.sink, control_sink) if sink is not None]
+        self._health_lock = threading.Lock()
+        self._sink_health = {
+            id(sink): {
+                "destination": "private_jsonl" if sink is self.sink else "control_store",
+                "successful_writes": 0,
+                "failed_writes": 0,
+                "last_write_ok": None,
+                "last_success_at": None,
+                "last_failure_at": None,
+            }
+            for sink in self.sinks
+        }
 
     def add_secret(self, value: str) -> None:
         if value not in self.secrets:
@@ -120,13 +134,19 @@ class AuditRecorder:
             return {key: self.redact(item) for key, item in value.items()}
         return value
 
-    def content(self, value) -> tuple[str, bool]:
+    def content(self, value, max_content_chars=None) -> tuple[str, bool]:
         # Redact before truncation so a boundary cannot reveal a partial known credential.
         serialized = json.dumps(self.redact(value), ensure_ascii=False)
-        limit = self.settings.observability.traffic_log.max_content_chars
+        limit = (
+            max_content_chars
+            if max_content_chars is not None
+            else self.settings.observability.traffic_log.max_content_chars
+        )
         return serialized[:limit], len(serialized) > limit
 
-    def record(self, metadata: dict, request_content=None, response_content=None) -> None:
+    def record(
+        self, metadata: dict, request_content=None, response_content=None, max_content_chars=None
+    ) -> None:
         event = self.redact(metadata)
         # These public identities come from server-side app configuration, not request content.
         # Credential-shaped names must remain stable for project/accounting queries.
@@ -146,12 +166,14 @@ class AuditRecorder:
             ("response_content", response_content),
         ):
             if value is not None:
-                stored[name], was_truncated = self.content(value)
+                stored[name], was_truncated = self.content(value, max_content_chars)
                 stored[f"{name}_truncated"] = was_truncated or bool(event.get(f"{name}_truncated"))
         for sink in self.sinks:
             try:
                 sink.emit(stored)
+                self._record_health(sink, True)
             except Exception:
+                self._record_health(sink, False)
                 if self.settings.observability.prometheus_metrics:
                     self.metrics.log_errors.inc()
                 self.logger.error(
@@ -162,6 +184,25 @@ class AuditRecorder:
                         }
                     )
                 )
+
+    def _record_health(self, sink, ok):
+        with self._health_lock:
+            item = self._sink_health[id(sink)]
+            item["last_write_ok"] = ok
+            item["successful_writes" if ok else "failed_writes"] += 1
+            item["last_success_at" if ok else "last_failure_at"] = datetime.now(
+                timezone.utc
+            ).isoformat()
+
+    def health(self) -> dict:
+        with self._health_lock:
+            items = [dict(item) for item in self._sink_health.values()]
+        return {
+            "ok": bool(items) and all(item["last_write_ok"] is not False for item in items),
+            "capture_enabled": self.settings.observability.traffic_log.capture_content,
+            "items": items,
+            "scope": "Last completed write per destination; process counters reset on restart. Delivery remains best effort.",
+        }
 
     def close(self) -> None:
         for sink in self.sinks:

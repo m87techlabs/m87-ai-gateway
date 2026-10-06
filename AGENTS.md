@@ -76,7 +76,7 @@ Root `docker-start.sh`, `docker-stop.sh` and `docker-status.sh` manage only the
 fixed gateway Compose project, check Docker/Compose/engine requirements, and
 preserve data on stop. Host Python is unnecessary. Default resume preserves the
 existing image/port; --build, --update and --port are explicit startup overrides.
-Current priority is backend architecture and native source development. Keep Docker
+Current priority is the logging showcase and native source development. Keep Docker
 files/helpers available but defer further container work. Container build/publication
 is an explicit CI workflow_dispatch package_container option; routine main pushes
 run source/docs/native checks without rebuilding Docker. Packaging verification
@@ -111,7 +111,7 @@ for unchanged bindings; changed endpoints/environment bindings require explicit
 removal of all affected aliases and never revive old credentials. Console saves
 use ETag preconditions; older clients may omit them. Storage health has safe basic
 checks and explicit integrity/reversible write probes. Bootstrap/YAML changes,
-cache-clear/log-deletion audit, individual operator identity and crypto key versions
+cache-clear audit, individual operator identity and crypto key versions
 remain planned. Only isolated stores are migrated during development.
 Schema 2 separates content-free usage records from traffic; usage retention defaults
 to 365 days, traffic to 30. Duplicate IDs preserve first usage attribution, and
@@ -119,6 +119,15 @@ traffic deletion leaves accounting intact. Upgrade backfills only retained event
 Shared tests in tests/backend_contracts.py must be reused by new adapters.
 Remote stores/exporters remain optional and planned. Preserve current keys/data with explicit migrations; do not claim these
 remaining planned features are implemented or silently move user data.
+
+Logging is the current product priority; docs/logging-plan.md records remaining
+work and staged delivery. Schema 7 separates exchange_content from traffic metadata
+and usage, with independent content retention and audited project content/log deletion.
+Request-ID/application/outcome search, cursor paging, readable messages/raw JSON,
+explicit missing/partial states, metadata-only default exports and recording-health
+counters are implemented. Sample links to operator-authenticated request search.
+Local recording remains best effort; outbox/exporters/Grafana profiles are planned.
+Never claim crash durability or secure erasure from logical SQLite deletion.
 
 Use these pages as the lasting source of project context:
 

@@ -70,6 +70,7 @@ control_plane:
   master_key_path: "var/lib/m87-gateway/master.key"
   admin_api_key_env: "GATEWAY_ADMIN_API_KEY"
   retention_days: 30
+  content_retention_days: 30
 
 cache:
   enabled: false

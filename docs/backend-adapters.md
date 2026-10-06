@@ -143,3 +143,13 @@ optional size information. Explicit verification must be reversible, preserve ke
 usage/audit and never expose raw database errors, secrets or filesystem paths.
 These new methods extend the development-preview interface; third-party source
 adapters must update before registration succeeds. See [recovery operations](runbooks/configuration-recovery.md).
+
+
+Traffic extensions now accept request_id/before cursor filters and include_content
+export options, supply explicit per-field capture status in detail, and implement
+project-scoped delete_content. Preserve metadata/content/usage write atomicity,
+independent read-time content expiry, deterministic (created_at, request_id) order,
+and audited deletion without removing usage. The shared suite includes content
+lifecycle/search/export privacy/reopen. SQLite migration and failure tests live in
+`tests/test_logging_showcase.py`. These extend the preview interface; registered
+third-party backends must update their implementation and contracts.

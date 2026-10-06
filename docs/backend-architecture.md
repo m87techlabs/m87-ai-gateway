@@ -13,8 +13,7 @@ digests, private files and encrypted backups remain available. Multiple applicat
 transactional identity audit are implemented in schema 3. Configuration revisions/rollback and configuration/provider-key audit are implemented
 in schema 6, along with explicit storage health and reversible write/integrity probes.
 Snapshots retain 100 encrypted console-managed settings revisions, excluding secrets.
-Master-key version migration, stable multiple connection identities, content-table
-separation and remote implementations remain planned.
+Master-key version migration, stable multiple connection identities, content encryption/access roles and remote implementations remain planned.
 Schema 4 adds nullable queue wait/outcome and hashed user-attribution fields to traffic;
 existing keys, usage and audit remain preserved. Schema 5 adds stream/outcome,
 wire-status and partial-content fields, with schema-3/4 preservation tests.
@@ -27,7 +26,7 @@ repositories behind a compatibility facade. SQLite uses WAL,
 private files and a schema version. Provider secrets use Fernet; application keys
 use an HMAC digest derived from the same local master key. Operator access uses a
 separate bootstrap key file. Captured request/response text is bounded and redacted
-but is not individually encrypted in the event table. Filesystem privacy is the
+in the separate exchange_content table, without individual content encryption. Filesystem privacy is the
 current local access boundary.
 
 The recorder already has an `EventSink` interface. Writes run through a thread pool
@@ -124,8 +123,8 @@ Use distinct record types even when stored in the same SQLite database:
 | Management audit | Key/configuration/project changes and actor identity | No raw secrets; defined retention and restricted operator access |
 
 Traffic retains its existing 30-day default; independent usage defaults to 365
-days. Identity management audit also defaults to 365 days; content-specific
-retention is still planned. Add content encryption and content access roles as
+days. Content-specific retention is implemented with a 30-day default, independently
+configurable. Identity management audit defaults to 365 days. Add content encryption and content access roles as
 explicit features; current event bodies have filesystem protection and redaction.
 
 Usage records need unique request/attempt identifiers for duplicate prevention.
@@ -168,9 +167,8 @@ with Grafana as an optional visualization surface. See
 
 1. Repository extraction is implemented. Continue service boundaries behind the
    existing SQLite facade; preserve behavior, data and keys.
-2. Independent usage records are implemented; captured content remains in traffic.
-   Continue separating traffic/content with independent retention and
-   idempotent accounting. Show storage/capture failures in the console. Backfill
+2. Independent content and usage records, content retention and recording health
+   are implemented. Continue content encryption/access roles and durable export. Backfill
    only from retained evidence; already deleted history cannot be reconstructed.
 3. Application/key separation, rotation/revocation and identity audit are implemented.
    Configuration/provider-key audit is implemented; continue encryption/digest key-version migration.
@@ -203,3 +201,10 @@ revision encryption and a rolled-back write. It runs in a worker thread and neve
 repairs the database or rotates keys. SQLite opens existing files with `mode=rw`;
 missing files fail instead of silently creating replacement stores. `/ready` remains
 configuration/read-access readiness, with upstream connectivity separate.
+
+
+Schema 7 moves retained content into exchange_content in the migration transaction.
+Traffic/content/usage emit together, metadata deletion cascades to content, and
+explicit content deletion preserves metadata and usage with transactional audit.
+Legacy content columns remain empty for compatibility. Read-time expiry prevents
+exposing expired text between prune runs. See [logging showcase](runbooks/logging-showcase.md).

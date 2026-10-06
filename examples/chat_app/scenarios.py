@@ -568,6 +568,63 @@ def exercise():
                         "passed": True,
                     }
                 )
+                operator.put(
+                    "/admin/api/controls", json={**controls, "max_content_chars": 4096}
+                ).raise_for_status()
+                with serving(sample_app(Settings(gateway_url=url, app_key=app_key))) as sample_url:
+                    with httpx.Client(base_url=sample_url, timeout=10, trust_env=False) as browser:
+                        response = browser.post(
+                            "/api/chat",
+                            json={
+                                "messages": [
+                                    {"role": "user", "content": "Synthetic logging showcase"}
+                                ]
+                            },
+                        )
+                        response.raise_for_status()
+                        request_id = response.json()["request_id"]
+                for _ in range(50):
+                    found = operator.get(
+                        "/admin/api/logs", params={"request_id": request_id}
+                    ).json()["items"]
+                    if found:
+                        break
+                    time.sleep(0.02)
+                assert len(found) == 1 and found[0]["total_tokens"] == 6
+                detail = operator.get(f"/admin/api/logs/{request_id}").json()
+                assert detail["request_content_status"] == "captured"
+                assert detail["response_content_status"] == "captured"
+                assert "Synthetic logging showcase" in str(detail["request_content"])
+                assert "synthetic answer" in str(detail["response_content"])
+                metadata = operator.get(
+                    "/admin/api/logs/export", params={"request_id": request_id}
+                ).json()
+                assert "request_content" not in metadata[0]
+                content_export = operator.get(
+                    "/admin/api/logs/export",
+                    params={"request_id": request_id, "include_content": True},
+                ).json()
+                assert content_export[0]["request_content"] == detail["request_content"]
+                usage_before = operator.get("/admin/api/overview").json()
+                response = operator.request(
+                    "DELETE",
+                    "/admin/api/logs/content",
+                    json={"confirmation": "DELETE", "project_id": "default"},
+                )
+                response.raise_for_status()
+                assert (
+                    operator.get(f"/admin/api/logs/{request_id}").json()["request_content_status"]
+                    == "deleted"
+                )
+                assert operator.get("/admin/api/overview").json() == usage_before
+                health = operator.get("/admin/api/logging-health").json()
+                assert health["ok"] and health["items"][0]["successful_writes"] > 0
+                results.append(
+                    {
+                        "scenario": "Sample log lookup, safe export, content deletion and recording health",
+                        "passed": True,
+                    }
+                )
                 path = "/admin/api/apps/scenario-app/keys"
                 existing = operator.get(path).json()["items"][0]
                 issued = operator.post(path, json={"expires_in_days": 30})

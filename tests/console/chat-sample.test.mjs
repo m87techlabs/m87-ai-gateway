@@ -46,6 +46,10 @@ test("chat renders text safely, forwards history, and clears the conversation", 
   assert.equal($("total-tokens").textContent, "13");
   assert.equal($("cache-status").textContent, "HIT");
   assert.equal($("request-id").textContent, "sample-request");
+  assert.equal($("gateway-log").hidden, false);
+  const logUrl = new URL($("gateway-log").href);
+  assert.equal(logUrl.origin, "http://127.0.0.1:8181"); assert.equal(logUrl.pathname, "/admin"); assert.equal(logUrl.searchParams.get("request_id"), "sample-request");
+  assert.equal($("gateway-log").rel, "noopener noreferrer");
   assert.equal($("messages").querySelectorAll("script").length, 0);
   assert.ok($("messages").textContent.includes("<script>"));
   send("Follow-up");
@@ -53,6 +57,7 @@ test("chat renders text safely, forwards history, and clears the conversation", 
   assert.deepEqual(requests[1].messages.map((m) => m.role), ["user", "assistant", "user"]);
   $("clear").click();
   assert.equal($("messages").textContent, "");
+  assert.equal($("gateway-log").hidden, true);
   assert.equal($("request-id").textContent, "—");
   send("Fresh question");
   await until(() => !$("send").disabled);
