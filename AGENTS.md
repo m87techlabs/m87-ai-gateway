@@ -166,6 +166,20 @@ Preserve the historical `v0.1.0` tag and choose a new version for the completed 
 `docs/roadmap.md` and `docs/lifecycle.md` define current release gates; references
 to the original v0.1.0 MVP below describe the baseline requirements to complete.
 
+## M87 ecosystem knowledge: use Horizon
+
+Documentation for every M87 Tech Labs repo (m87-playground, m87-ai-gateway,
+homelab-docker, m87-infra, …) is indexed by **Horizon**, available to agents as
+the `horizon` MCP server (`search_docs`, `get_document`, `list_sources`, `ask`).
+
+- For context outside this repo — how other M87 apps do auth, secrets, CI or
+  deployment; Cloudflare resources; homelab and infra setup; design decisions —
+  search Horizon before reading other repositories, and cite the `repo/path`.
+- Read files directly for this repo, for code and config (Horizon indexes
+  Markdown), and for docs not yet pushed. Verify against code before editing.
+- If Horizon is not available, say so and fall back to reading the repos.
+- Keep this repo's docs current: Horizon answers from them.
+
 ## Project identity
 
 Repository: `m87-ai-gateway`
