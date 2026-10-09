@@ -53,7 +53,8 @@ additional storage package is required.
 Unknown adapter identifiers fail before creating a SQLite database or master key. The local launcher may already
 have prepared its operator key and lifecycle files.
 Configuration accepts identifiers, never Python module paths or executable code.
-Only SQLite is bundled; PostgreSQL, Vault and remote exporters remain planned.
+Only SQLite is bundled; its optional metadata outbox/webhook exporter is implemented.
+PostgreSQL, Vault, Loki and OTLP implementations remain planned.
 
 ## Trusted source extensions
 
@@ -96,7 +97,7 @@ backend retains an optional `provider_secret_values()` compatibility hook for
 startup redaction. A future remote secret implementation must register resolved
 credentials with redaction before use and test that path, without bulk-reading a
 remote vault. Standalone Vault substitution, secret references, master-key version
-migration and outbox exporters are subsequent milestones. Do not mix stores in a
+migration and further exporter adapters are subsequent milestones. Do not mix stores in a
 way that silently breaks the configuration/credential transaction.
 
 ## Shared testing contract
@@ -153,3 +154,14 @@ and audited deletion without removing usage. The shared suite includes content
 lifecycle/search/export privacy/reopen. SQLite migration and failure tests live in
 `tests/test_logging_showcase.py`. These extend the preview interface; registered
 third-party backends must update their implementation and contracts.
+
+## Optional delivery outbox
+
+Export-enabled startup requires `backend.export_outbox` implementing `DeliveryOutbox`
+in `m87_gateway.logging.outbox`: configure, transactional enqueue, claim, complete and
+health. SQLite supplies it independently of the six core repository contracts.
+Metadata enqueue must commit with traffic/usage; persistent leases, delivery IDs,
+retry/expiry/capacity counters and destination binding must survive restart. Existing
+backends work with export disabled. Reuse the failure/restart cases in
+`tests/test_log_export.py` and follow [export operations](runbooks/log-export.md).
+Exporter extensions use a separate trusted registry; configuration never imports code.

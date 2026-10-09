@@ -117,7 +117,7 @@ Schema 2 separates content-free usage records from traffic; usage retention defa
 to 365 days, traffic to 30. Duplicate IDs preserve first usage attribution, and
 traffic deletion leaves accounting intact. Upgrade backfills only retained events.
 Shared tests in tests/backend_contracts.py must be reused by new adapters.
-Remote stores/exporters remain optional and planned. Preserve current keys/data with explicit migrations; do not claim these
+Remote stores and further exporter integrations remain optional and planned. Preserve current keys/data with explicit migrations; do not claim these
 remaining planned features are implemented or silently move user data.
 
 Logging is the current product priority; docs/logging-plan.md records remaining
@@ -126,7 +126,12 @@ and usage, with independent content retention and audited project content/log de
 Request-ID/application/outcome search, cursor paging, readable messages/raw JSON,
 explicit missing/partial states, metadata-only default exports and recording-health
 counters are implemented. Sample links to operator-authenticated request search.
-Local recording remains best effort; outbox/exporters/Grafana profiles are planned.
+Schema 8 adds an optional bounded metadata outbox and webhook exporter. Traffic, usage
+and enqueue share a transaction; stable IDs, leases, persisted retries/counters, expiry
+and destination binding support restart recovery and receiver deduplication. Both
+launchers accept GATEWAY_LOG_EXPORT_* variables. Local recording before commit remains
+best effort. Loki/OTLP, UI export configuration, remote content and Grafana are planned.
+See docs/runbooks/log-export.md; preserve queue state and document backup replay.
 Never claim crash durability or secure erasure from logical SQLite deletion.
 
 Use these pages as the lasting source of project context:

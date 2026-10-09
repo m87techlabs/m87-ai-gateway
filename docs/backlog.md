@@ -21,7 +21,8 @@ The authenticated inference API exposes `GET /v1/models` and
 documented in [configuration](configuration.md#chat-generation-parameters).
 
 Logging is the current development focus. Local showcase/content separation/search/
-recording-health work is implemented; next logging work is **O2 durable remote delivery**,
+recording-health work is implemented. **O2** now has a bounded metadata outbox and
+webhook delivery; remaining logging work is Loki/OTLP and UI export configuration,
 then **O1 dashboards/alerts** and **O3/O4 tracing/performance**. Other priorities remain
 recorded below. See [logging plan](logging-plan.md).
 
@@ -264,6 +265,11 @@ alert rules and a runbook.
 documented failure exercise.
 
 ### O2 Remote log exporters
+
+**Status: partial.** Schema-8 transactional metadata outbox, webhook adapter, stable IDs,
+persisted lease/retry/capacity/expiry counters, restart recovery and a deduplicating
+receiver example are implemented. Loki/OTLP, UI settings and remote content policy
+remain planned. See [metadata export](runbooks/log-export.md).
 
 **Scope:** an exporter interface with OTLP logs, Loki and webhook implementations,
 bounded durable delivery (an outbox with retry), and sanitized events by default.

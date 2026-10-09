@@ -8,6 +8,11 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Schema-8 transactional metadata outbox and optional webhook adapter with stable
+  delivery IDs, persisted leases/retries, capacity/expiry and destination binding.
+- Persistent export health in Logs, native/source environment settings, a private
+  deduplicating receiver example and outage/restart/native delivery checks.
+
 - Schema-7 separate captured content, independent retention/read expiry and audited
   project content/log deletion preserving usage.
 - Log search/paging, readable input/output, separate token counts, explicit capture

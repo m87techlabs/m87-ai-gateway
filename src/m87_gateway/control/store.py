@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+from time import time
 from datetime import datetime, timezone
 from contextlib import contextmanager
 from pathlib import Path
@@ -17,12 +18,13 @@ from .repositories.identities import SQLiteIdentityRepository
 from .repositories.secrets import SQLiteSecretStore
 from .repositories.traffic import SQLiteTrafficRepository
 from .repositories.usage import SQLiteUsageRepository
+from m87_gateway.logging.outbox import SQLiteDeliveryOutbox
 
 from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class LocalControlStore(BackendFacade):
@@ -38,6 +40,7 @@ class LocalControlStore(BackendFacade):
         self.secrets = SQLiteSecretStore(self)
         self.traffic = SQLiteTrafficRepository(self)
         self.usage_repository = SQLiteUsageRepository(self)
+        self.export_outbox = SQLiteDeliveryOutbox(self)
         self.database_path = Path(config.database_path)
         self.master_key_path = Path(config.master_key_path)
         _prepare_private_file(self.database_path)
@@ -126,6 +129,8 @@ class LocalControlStore(BackendFacade):
             self.configuration.migrate(connection)
             self.traffic.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
+            self.export_outbox.migrate(connection)
+            self.export_outbox._prune(connection, time())
             connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             connection.execute(
                 "INSERT OR IGNORE INTO projects VALUES ('default', 'Default project', ?)",

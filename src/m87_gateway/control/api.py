@@ -325,6 +325,7 @@ async def export_logs(
 @router.get("/admin/api/logging-health")
 async def logging_health(request: Request, store: AdminStore):
     report = request.app.state.recorder.health()
+    report["export"] = request.app.state.log_export.health()
     report["traffic_retention_days"] = store.config.retention_days
     report["content_retention_days"] = store.config.content_retention_days
     report["usage_retention_days"] = store.config.usage_retention_days
@@ -729,6 +730,12 @@ async def destinations(request: Request, store: AdminStore):
                 "type": "metrics",
                 "enabled": settings.observability.prometheus_metrics,
                 "target": "/metrics",
+            },
+            {
+                "name": "Remote log export",
+                "type": "sanitized metadata webhook",
+                "enabled": settings.observability.log_export.enabled,
+                "target": "Startup configuration; delivery status in Logs",
             },
         ]
     }

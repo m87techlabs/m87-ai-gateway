@@ -31,6 +31,13 @@ class Inference(BaseHTTPRequestHandler):
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if self.path == "/events":
+            assert self.headers["Authorization"] == "Bearer synthetic-export-token"
+            assert self.headers["Idempotency-Key"] == body["delivery_id"]
+            with self.server.delivery_lock:
+                self.server.deliveries.setdefault(body["delivery_id"], body)
+            self.reply({"accepted": True})
+            return
         assert body["model"] == "synthetic-model"
         assert self.headers["Authorization"] == "Bearer synthetic-provider-key"
         if body.get("stream"):
@@ -91,12 +98,23 @@ def exercise(executable):
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
         inference = ThreadingHTTPServer(("127.0.0.1", 0), Inference)
+        inference.deliveries = {}
+        inference.delivery_lock = threading.Lock()
         worker = threading.Thread(target=inference.serve_forever, daemon=True)
         worker.start()
         base_url = f"http://127.0.0.1:{port}"
         environ = dict(os.environ)
         for name in ("GATEWAY_ADMIN_API_KEY", "PYTHONPATH", "PYTHONHOME"):
             environ.pop(name, None)
+        environ.update(
+            {
+                "GATEWAY_LOG_EXPORT_ENABLED": "true",
+                "GATEWAY_LOG_EXPORT_ENDPOINT": f"http://127.0.0.1:{inference.server_port}/events",
+                "GATEWAY_LOG_EXPORT_API_KEY_ENV": "EXAMPLE_EXPORT_TOKEN",
+                "GATEWAY_LOG_EXPORT_POLL_SECONDS": "0.1",
+                "EXAMPLE_EXPORT_TOKEN": "synthetic-export-token",
+            }
+        )
         process = None
 
         def call(path, method="GET", body=None, key=None):
@@ -315,6 +333,23 @@ def exercise(executable):
                     key=admin,
                 )[0]["request_content"]
                 assert call("/admin/api/logging-health", key=admin)["ok"]
+                for _ in range(100):
+                    with inference.delivery_lock:
+                        delivered = next(
+                            (
+                                value
+                                for value in inference.deliveries.values()
+                                if value["event"]["request_id"] == request_id
+                            ),
+                            None,
+                        )
+                    if delivered:
+                        break
+                    time.sleep(0.05)
+                assert delivered and delivered["event"]["total_tokens"] == 6
+                assert "request_content" not in delivered["event"]
+                assert "response_content" not in delivered["event"]
+                assert call("/admin/api/logging-health", key=admin)["export"]["enabled"]
                 before = call("/admin/api/overview", key=admin)
                 call(
                     "/admin/api/logs/content",

@@ -63,3 +63,15 @@ Captured text now uses a separate SQLite table and independent retention. Operat
 search/detail/export APIs remain privileged. Exports omit content by default and
 explicit content/log deletion is audited; independent usage remains. Logical deletion
 does not securely erase WAL/free pages/backups/downloaded files. See [logging showcase](runbooks/logging-showcase.md).
+
+## Remote metadata delivery boundary
+
+Optional webhook delivery exports only allowlisted redacted metadata. Captured
+input/output and hashed user attribution stay local. Endpoint selection is trusted
+operator bootstrap configuration; redirects and proxy environment variables are
+ignored, TLS verification remains enabled, and bearer tokens are resolved from the
+configured environment variable without persistence. Use HTTPS for remote collectors.
+Health output excludes endpoints/tokens and raw remote errors. Pending deliveries
+survive backup/restore and may replay; receiver deduplication is mandatory. Local
+log deletion does not erase pending metadata or recall receiver records. See
+[export operations](runbooks/log-export.md).

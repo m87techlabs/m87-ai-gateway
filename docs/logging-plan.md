@@ -37,16 +37,20 @@ flowchart LR
     Console --> Usage
 ```
 
-## Stage 2: durable optional export — planned
+## Stage 2: durable optional export — webhook implemented, integrations partial
 
-Add a bounded SQLite outbox and exporter contract, then implement one exporter at a
-time. Start with a testable webhook or Loki destination; OTLP follows its own adapter
-and operations contract. Default exports contain sanitized metadata. Content export
-needs an explicit setting and tested access/retention. Define delivery IDs,
-at-least-once semantics, retry/backoff, capacity/expiry, restart recovery and failure
-visibility. Remote failures must not block inference indefinitely or grow memory/disk
-without bounds. Test crashes, disk failures, duplicate delivery and outages before
-making durability claims. Current local sinks remain best effort.
+Schema 8 adds a bounded metadata outbox in the traffic/usage transaction. An optional
+webhook worker implements stable delivery IDs, leasing, persisted capped backoff,
+capacity/expiry, destination binding and safe health counters. Pending metadata and
+counters survive restart; deliveries interrupted before acknowledgement may repeat.
+A loopback receiver example demonstrates receiver deduplication. Native/source
+launchers accept export environment settings. See [metadata export](runbooks/log-export.md).
+
+Loki/OTLP adapters, UI configuration, explicit remote content policy and correlated
+tracing remain planned. Tests cover process exit after commit, leases/retries, storage
+unavailability and outages; real power loss, disk exhaustion/corruption and live
+collector behavior require separate evidence. Local recording before commit remains
+best effort. Docker/Grafana services remain deferred.
 
 ## Stage 3: observability ecosystem — planned
 

@@ -152,7 +152,8 @@ event detail, bounded JSON export, key operations, and a destination inventory.
 The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and
 must be recorded at that layer. Streaming, embeddings, traces,
-cost estimation, and remote exporters remain planned.
+cost estimation, Loki/OTLP and remote content export remain planned. Optional sanitized
+metadata webhook delivery is implemented.
 
 
 ## Stream and cancellation outcomes
@@ -192,3 +193,13 @@ Content retention defaults to 30 days and is independent of metadata/usage.
 `/admin/api/logging-health` reports private destination write failures/recovery even
 when metrics are disabled. Process counters reset on restart; recording remains best
 effort. See [showcase runbook](runbooks/logging-showcase.md) and [logging plan](logging-plan.md).
+
+## Persistent metadata webhook export
+
+An optional bounded SQLite outbox stores allowlisted redacted metadata alongside the
+traffic/usage transaction. A background webhook worker uses stable delivery IDs,
+leases and persisted backoff; failures do not wait on inference. Queue counts and
+last success/failure times appear in Logs and `/admin/api/logging-health`, without
+endpoints or credentials. Input/output remain local. At-least-once delivery within
+capacity/expiry requires receiver deduplication. See [export runbook](runbooks/log-export.md)
+for the example receiver, both launcher configurations and backup/replay boundaries.

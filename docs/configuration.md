@@ -222,3 +222,15 @@ read expiry and pruning enforce content retention, and metadata deletion cascade
 Usage remains independent. Logs support exact request/application/outcome filters
 and opaque cursors. Operator exports now default to metadata; request content with
 `include_content=true`. See [logging showcase](runbooks/logging-showcase.md).
+
+## Metadata export bootstrap
+
+`observability.log_export` configures optional sanitized metadata webhook delivery.
+Defaults: disabled, adapter `webhook`, max_pending 5000, retention_hours 168,
+timeout_seconds 5, poll_seconds 1, retry_seconds 2, max_retry_seconds 300. Enabled
+export requires a persistent control plane and endpoint. `api_key_env` names an
+optional privately supplied bearer token; credentials are not stored in config.
+Each field accepts `GATEWAY_LOG_EXPORT_<UPPERCASE_FIELD>` in source and native/local
+launchers. The local launcher does not load YAML. Changes require restart, and
+console configuration is planned. Captured content cannot be enabled for this exporter.
+See [metadata export](runbooks/log-export.md) for examples and policy boundaries.

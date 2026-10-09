@@ -50,6 +50,18 @@ providers:
 observability:
   json_logs: true
   prometheus_metrics: true
+  log_export:
+    # Optional sanitized metadata delivery; requires control_plane.enabled.
+    enabled: false
+    adapter: webhook
+    endpoint: null
+    api_key_env: null
+    max_pending: 5000
+    retention_hours: 168
+    timeout_seconds: 5
+    poll_seconds: 1
+    retry_seconds: 2
+    max_retry_seconds: 300
   traffic_log:
     # Set a private path to enable a rotating JSONL traffic file.
     path: null

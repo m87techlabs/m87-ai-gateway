@@ -205,10 +205,42 @@ class TrafficLogConfig(ConfigModel):
     backup_count: int = Field(default=3, ge=1, le=20)
 
 
+class LogExportConfig(ConfigModel):
+    enabled: bool = False
+    adapter: str = Field(default="webhook", pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    endpoint: str | None = Field(default=None, repr=False, max_length=2048)
+    api_key_env: str | None = None
+    max_pending: int = Field(default=5000, ge=1, le=100000)
+    retention_hours: int = Field(default=168, ge=1, le=2160)
+    timeout_seconds: float = Field(default=5, gt=0, le=30)
+    poll_seconds: float = Field(default=1, ge=0.1, le=60)
+    retry_seconds: float = Field(default=2, ge=0.1, le=300)
+    max_retry_seconds: float = Field(default=300, ge=0.1, le=3600)
+
+    _key_env = field_validator("api_key_env")(ProviderConfig.valid_env_name.__func__)
+
+    @field_validator("endpoint")
+    @classmethod
+    def valid_endpoint(cls, value):
+        ProviderConfig.valid_url(value)
+        if value is not None and urlsplit(value).username is not None:
+            raise ValueError("Log export endpoint cannot contain credentials")
+        return value  # Preserve the receiver's exact path, including a trailing slash.
+
+    @model_validator(mode="after")
+    def valid_export(self):
+        if self.enabled and not self.endpoint:
+            raise ValueError("Enabled log export requires an endpoint")
+        if self.max_retry_seconds < self.retry_seconds:
+            raise ValueError("Maximum export retry delay must cover the initial delay")
+        return self
+
+
 class ObservabilityConfig(ConfigModel):
     json_logs: bool = True
     prometheus_metrics: bool = True
     traffic_log: TrafficLogConfig = Field(default_factory=TrafficLogConfig)
+    log_export: LogExportConfig = Field(default_factory=LogExportConfig)
 
 
 class ControlPlaneConfig(ConfigModel):
@@ -282,6 +314,8 @@ class GatewaySettings(ConfigModel):
         if len({app.api_key for app in apps}) != len(apps):
             raise ValueError("App keys must be unique")
         traffic = self.observability.traffic_log
+        if self.observability.log_export.enabled and not self.control_plane.enabled:
+            raise ValueError("Log export requires a persistent control-plane backend")
         if traffic.capture_content and not traffic.path and not self.control_plane.enabled:
             raise ValueError("Content capture requires the local database or traffic log path")
         return self
@@ -361,6 +395,8 @@ def _find_default_config_path() -> Path | None:
 
 
 def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]) -> None:
+    for field, value in log_export_environment(environ).items():
+        _set_if_present(data, ("observability", "log_export", field), value)
     for variable, path in {
         "GATEWAY_NAME": ("gateway", "name"),
         "GATEWAY_ENVIRONMENT": ("gateway", "environment"),
@@ -434,6 +470,31 @@ def _parse_bool(name: str, value: str) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     raise ValueError(f"{name} must be true or false")
+
+
+def log_export_environment(environ) -> dict:
+    """Shared export overrides for source configuration and the standalone launcher."""
+    values = {}
+    for field in (
+        "enabled",
+        "adapter",
+        "endpoint",
+        "api_key_env",
+        "max_pending",
+        "retention_hours",
+        "timeout_seconds",
+        "poll_seconds",
+        "retry_seconds",
+        "max_retry_seconds",
+    ):
+        variable = "GATEWAY_LOG_EXPORT_" + field.upper()
+        if variable in environ:
+            values[field] = (
+                _parse_bool(variable, environ[variable])
+                if field == "enabled"
+                else environ[variable]
+            )
+    return values
 
 
 def _set_if_present(data: dict[str, Any], path: tuple[str, ...], value: Any) -> None:

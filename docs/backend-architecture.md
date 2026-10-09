@@ -31,8 +31,9 @@ current local access boundary.
 
 The recorder already has an `EventSink` interface. Writes run through a thread pool
 and are best effort: a failed sink increments an error metric and emits a safe
-failure notice. Remote export, durable delivery queues and accounting guarantees
-are not implemented. Usage is stored independently in schema-2 `usage_records`,
+failure notice. Schema 8 adds a bounded transactional metadata outbox and optional
+webhook delivery with restart recovery; remote content, Loki/OTLP and strict accounting
+remain planned. Usage is stored independently in schema-2 `usage_records`,
 without captured content; deleting traffic does not change those aggregates.
 Traffic/usage writes share a transaction, and repeated request IDs do not add usage.
 Usage retention defaults to 365 days independently of 30-day traffic retention.
@@ -168,12 +169,14 @@ with Grafana as an optional visualization surface. See
 1. Repository extraction is implemented. Continue service boundaries behind the
    existing SQLite facade; preserve behavior, data and keys.
 2. Independent content and usage records, content retention and recording health
-   are implemented. Continue content encryption/access roles and durable export. Backfill
+   are implemented. Metadata outbox/webhook delivery is implemented; continue content
+   encryption/access roles and remaining export adapters. Backfill
    only from retained evidence; already deleted history cannot be reconstructed.
 3. Application/key separation, rotation/revocation and identity audit are implemented.
    Configuration/provider-key audit is implemented; continue encryption/digest key-version migration.
 4. Validated configuration revisions and atomic activation are implemented. Add stable connection IDs and remaining audit actions.
-5. Add a durable export outbox and one exporter through the existing sink boundary.
+5. Schema-8 metadata outbox/webhook delivery is implemented. Add Loki/OTLP and UI
+   configuration after exercising the contracts and documented delivery semantics.
 6. Add PostgreSQL or external secret-store adapters only with a demonstrated use case
    and a shared contract suite. Validate container/native packaging for the final
    functional scope before publishing a release.
@@ -208,3 +211,13 @@ Traffic/content/usage emit together, metadata deletion cascades to content, and
 explicit content deletion preserves metadata and usage with transactional audit.
 Legacy content columns remain empty for compatibility. Read-time expiry prevents
 exposing expired text between prune runs. See [logging showcase](runbooks/logging-showcase.md).
+
+## Optional metadata delivery
+
+Schema 8 adds `log_outbox` and persistent `log_export_counters` to the same private
+database. Enqueue participates in the traffic/usage transaction; a separate worker
+claims rows with persisted leases. Capacity drops the newest export while preserving
+the local exchange. Metadata is allowlisted, redacted and limited to 16 KiB per row.
+Retries retain a delivery ID; receiver deduplication is required. Destination changes
+hold existing records rather than rerouting them. Backups include pending deliveries.
+See [metadata export](runbooks/log-export.md) for expiry, replay and deletion boundaries.

@@ -128,6 +128,8 @@ async function loadLogs(cursor = null, page = 0) {
   $("log-newer").disabled = page === 0; $("log-older").disabled = !logNextCursor;
   $("logging-status").textContent = `${health.ok ? "Recording destinations healthy" : "Recording needs attention — check Storage health"} · Gateway capture ${health.capture_enabled ? "enabled" : "disabled"} · Metadata ${health.traffic_retention_days} days · Content ${health.content_retention_days} days · Usage ${health.usage_retention_days} days. ${health.scope}`;
   table($("logging-destinations"), ["Destination", "Last write", "Successful writes", "Failed writes"], health.items, (row, item) => { cell(row, item.destination); cell(row, item.last_write_ok == null ? "No writes yet" : item.last_write_ok ? "OK" : "Failed"); cell(row, item.successful_writes); cell(row, item.failed_writes); });
+  const delivery = health.export;
+  $("export-status").textContent = delivery ? `${delivery.enabled ? `Remote ${delivery.adapter} export enabled` : "Remote export disabled"} · ${delivery.delivery_state || "Status unknown"} · Metadata only · ${delivery.pending ?? "Unknown"} pending · ${delivery.delivered ?? 0} delivered · ${delivery.failed_attempts ?? 0} failed attempts · ${delivery.dropped ?? 0} dropped · ${delivery.expired ?? 0} expired · ${delivery.held_for_other_destination ?? 0} held for another destination. ${delivery.storage_ok ? "Queue storage accessible." : "Queue storage needs attention."} ${delivery.scope}` : "Remote export status unavailable.";
 }
 
 function scoped(path, values = {}) {

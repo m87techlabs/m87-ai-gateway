@@ -90,7 +90,7 @@ async function consoleFixture(t) {
     }
     if (url.pathname.endsWith("/storage/check")) return response({...storage, verified: true, ok: false, checks: [...storage.checks, {name: "Database write", ok: false, message: "Check disk <img src=x>"}]});
     if (url.pathname.endsWith("/storage")) return response(storage);
-    if (url.pathname.endsWith("/logging-health")) return response({ok: !loggingDegraded, capture_enabled: true, traffic_retention_days: 30, content_retention_days: 30, usage_retention_days: 365, items: [{destination: "control_store", last_write_ok: !loggingDegraded, successful_writes: 2, failed_writes: loggingDegraded ? 1 : 0}], scope: "Best effort"});
+    if (url.pathname.endsWith("/logging-health")) return response({ok: !loggingDegraded, capture_enabled: true, traffic_retention_days: 30, content_retention_days: 30, usage_retention_days: 365, items: [{destination: "control_store", last_write_ok: !loggingDegraded, successful_writes: 2, failed_writes: loggingDegraded ? 1 : 0}], scope: "Best effort", export: {enabled: true, adapter: "webhook", delivery_state: "retrying", pending: 3, delivered: 2, failed_attempts: 1, dropped: 1, expired: 0, held_for_other_destination: 1, storage_ok: !loggingDegraded, scope: "Receiver must deduplicate delivery_id."}});
     if (url.pathname.endsWith("/logs/content")) return response({deleted: 1});
     if (url.pathname.endsWith("/management-events")) return response({items: [{created_at: "2026-10-05", actor: "operator", action: "application_key.issued", project_id: "alpha", app_id: "<img src=x>", key_id: "key-new"}]});
     if (url.pathname.endsWith("/controls")) { if (method === "PUT") { controls = body; return response(null, 204); } return response(controls, 200, {ETag: '"2"'}); }
@@ -492,4 +492,17 @@ test("logging failure is visible and content deletion requires confirmation", as
   window.confirm = () => false; $("delete-content").click(); assert.equal(requests.some((item) => item.path.endsWith("/logs/content")), false);
   window.confirm = () => true; $("delete-content").click(); await until(() => requests.some((item) => item.path.endsWith("/logs/content")));
   const sent = requests.find((item) => item.path.endsWith("/logs/content")); assert.equal(sent.body.confirmation, "DELETE"); assert.equal(sent.method, "DELETE");
+});
+
+
+test("logs show persistent metadata export backlog and recovery guidance", async (t) => {
+  const {window, $, degradeLogging} = await consoleFixture(t);
+  window.document.querySelector('[data-view="logs"]').click();
+  await until(() => $("export-status").textContent.includes("3 pending"));
+  assert.match($("export-status").textContent, /Metadata only/);
+  assert.match($("export-status").textContent, /retrying/);
+  assert.match($("export-status").textContent, /1 held for another destination/);
+  assert.match($("export-status").textContent, /deduplicate/);
+  degradeLogging(); $("refresh").click();
+  await until(() => $("export-status").textContent.includes("Queue storage needs attention"));
 });

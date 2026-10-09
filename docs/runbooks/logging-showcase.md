@@ -130,3 +130,11 @@ when required; do not regenerate keys or grant broad permissions. Local recordin
 remains best effort. Durable outbox delivery, Loki/OTLP/webhook exporters, traces and
 managed Grafana services are planned in [logging plan](../logging-plan.md).
 Record live Ollama/browser/tunnel/Docker results separately in [validation](../validation.md).
+
+## Optional remote metadata showcase
+
+Current startup uses schema 8, which also adds the bounded metadata delivery queue.
+Back up before upgrading; older binaries require their matching backup for rollback.
+Follow [metadata webhook export](log-export.md) to demonstrate outage/restart recovery
+with a local receiver. Input/output stay in the local viewer; remote content export
+and Loki/OTLP integrations remain planned.

@@ -144,3 +144,7 @@ Live Windows Ollama, visual browser review, clean-host distribution, cross-versi
 rollback and final Docker packaging remain separate manual/release checks. Record
 results in [validation](../validation.md); automated synthetic checks do not establish
 those environments.
+
+Current startup uses schema 8, preserving the schema-6 configuration foundations.
+Backups also contain pending metadata deliveries, which may replay after restore.
+Review [export recovery](log-export.md#delivery-and-storage-boundaries) when export is enabled.

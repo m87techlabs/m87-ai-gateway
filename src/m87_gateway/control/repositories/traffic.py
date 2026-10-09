@@ -132,6 +132,7 @@ class SQLiteTrafficRepository(SQLiteRepository):
                     ),
                 )
             self.backend.usage_repository.record(connection, event)
+            self.backend.export_outbox.enqueue(connection, event)
         tighten_sqlite_files(self.database_path)
         self.prune_events()
         self.backend.usage_repository.prune_usage()

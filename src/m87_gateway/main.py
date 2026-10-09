@@ -18,6 +18,7 @@ from m87_gateway.control.setup import apply_overrides, managed_snapshot
 from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
+from m87_gateway.logging.exporters import ExportService
 from m87_gateway.metrics import GatewayMetrics
 from m87_gateway.model_catalog import ModelCatalog
 
@@ -55,6 +56,11 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             application.state.recorder = AuditRecorder(
                 active, application.state.metrics, application.state.control_store
             )
+            application.state.log_export = ExportService(
+                active.observability.log_export,
+                application.state.control_store,
+                application.state.recorder,
+            )
         except Exception:
             raise RuntimeError(
                 "Gateway configuration or traffic log initialization failed"
@@ -64,10 +70,14 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             return application.state.settings
 
         application.dependency_overrides[get_settings] = active_settings
+        application.state.log_export.start()
         try:
             yield
         finally:
-            application.state.recorder.close()
+            try:
+                await application.state.log_export.close()
+            finally:
+                application.state.recorder.close()
 
     application = FastAPI(
         title="M87 AI Gateway",

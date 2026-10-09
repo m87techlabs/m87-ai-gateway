@@ -206,3 +206,10 @@ Logging is the current product priority. The sample links to its request in Logs
 with input/output, separate tokens, search/paging and recording health. Content has
 independent retention; exports omit it by default. See [logging showcase](docs/runbooks/logging-showcase.md)
 and [remaining logging plan](docs/logging-plan.md).
+
+### Optional metadata delivery
+
+The gateway includes a bounded SQLite metadata queue and optional webhook exporter.
+Retries and pending deliveries survive restart; receivers deduplicate delivery IDs.
+Input/output stay local. Try the [receiver example and outage showcase](docs/runbooks/log-export.md).
+Loki/OTLP and export configuration in the console remain planned.

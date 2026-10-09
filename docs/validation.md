@@ -11,9 +11,35 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Metadata outbox and webhook export
+
+Verified on 2026-10-09 with isolated temporary stores: **333 Python tests**, **35
+console/sample interaction tests**, lint/format (105 Python files), a wheel build
+and links/fences in **58 Markdown files**. The rebuilt Linux standalone preview
+passed synthetic inference, local metadata webhook delivery, capture/search/exports,
+configuration restore, storage checks, lifecycle and encrypted backup/recovery.
+The existing sample suite retains its 16 scenarios; exporter cases use a separate
+loopback receiver and include a complete app/gateway/provider request.
+
+Tests cover schema-7 preservation, process exit after commit, transaction rollback,
+capacity/size drops without lost local exchanges, retries, lease/restart recovery,
+stale acknowledgements, destination binding, expiry, missing/invalid credentials,
+redaction, redirect rejection, total deadlines, storage outage recovery, shutdown,
+receiver deduplication and operator-only health. Console tests show persistent
+pending/delivered/failure/drop/expiry/held counts and queue-storage failure guidance.
+
+Delivery is at least once after local commit within capacity/expiry policy; receiver
+deduplication is required. Local logging before commit remains best effort. Real
+power loss, disk exhaustion/corruption, live collectors, Windows workstation/Ollama
+interaction, visual browser review, clean hosts and final Docker packaging are deferred.
+Loki/OTLP, remote content and UI export configuration remain planned. Native CI builder
+checks do not establish clean-workstation support. No live database or existing
+service/container was changed. Back up before schema 8; restored pending metadata
+may replay to its matching configured destination. See [export runbook](runbooks/log-export.md).
+
 ## Logging showcase and content lifecycle
 
-Verified on 2026-10-06 using isolated temporary stores: **316 Python tests**, **34
+Previous batch verified on 2026-10-06 using isolated temporary stores: **316 Python tests**, **34
 console/sample interaction tests**, lint/format (99 Python files), wheel build and
 links/fences in **56 Markdown files**. The sample suite has **16 HTTP scenarios**.
 A rebuilt Linux standalone preview passed capture, exact request search, metadata-only

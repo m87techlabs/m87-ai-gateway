@@ -113,7 +113,9 @@ sequence and remaining development scope.
 - [x] Readable input/output, raw JSON, separate tokens and sample-to-console request links.
 - [x] Metadata-only default export and explicit content inclusion, with recording health.
 - [x] Extend sample acceptance to 16 scenarios and native logging/recovery smoke.
-- Add bounded durable outbox and optional sanitized exporters, then dashboards/alerts
+- [x] Add bounded schema-8 metadata outbox and optional webhook delivery, with stable
+  IDs, persisted leases/retries, capacity/expiry, destination binding and receiver tests.
+- Add Loki/OTLP, UI export configuration, then dashboards/alerts
   and managed observability profiles. Live/manual release evidence remains separate.
 
 ## Backend foundations — in progress
@@ -137,7 +139,7 @@ Follow [backend architecture](backend-architecture.md):
 - Add stable provider connection identities for multiple connections of one adapter.
 - [x] Preserve usage through log deletion, with separate retention and duplicate-delivery protection.
 - [x] Add safe storage health, explicit integrity/write verification and schema-5 preservation migration.
-- Extend remaining management audit actions and bounded durable exporter delivery.
+- Extend remaining management audit actions and remaining remote exporter integrations.
 - Add optional PostgreSQL/Vault/export adapters after the local contracts are tested.
 
 Checked items are implemented; the remaining items are planned. Existing Docker

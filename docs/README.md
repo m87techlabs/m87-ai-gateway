@@ -68,3 +68,5 @@ flowchart LR
 - [Logging showcase](runbooks/logging-showcase.md): sample request links, capture/search/retention/export and recording health.
 
 - [Logging development plan](logging-plan.md): current priority, remaining development and exporter/ecosystem stages.
+
+- [Metadata webhook export](runbooks/log-export.md): bounded queue, retries, receiver example and delivery recovery.
