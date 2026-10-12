@@ -44,7 +44,8 @@ Managed application rate/concurrency limits can be edited without key replacemen
 and local storage; it does not establish upstream connectivity. The chat sample's
 isolated `python -m examples.chat_app.scenarios` suite exercises the HTTP flow and
 failure/recovery without Docker or changes to a running gateway. Keep limits/cache
-scoped to one process; budget/shared enforcement and remote delivery remain planned.
+scoped to one process; budget/shared enforcement remain planned. Optional metadata
+webhook delivery is implemented separately below.
 
 Backlog batch A2/A4/P2/R3 adds an authenticated model catalog, bounded generation
 parameters, adapter capabilities in Setup, and optional process-local queueing.
@@ -143,6 +144,11 @@ Use these pages as the lasting source of project context:
 - `docs/lifecycle.md`: development, publication, compatibility, and retirement.
 - `docs/stack.md`: technology choices and deployment targets.
 - `docs/runbooks/`: repeatable procedures for implemented operational workflows.
+
+Every implemented operator workflow must have a discoverable runbook or how-to in
+`docs/runbooks/`, with prerequisites, commands, success checks, troubleshooting,
+recovery and shutdown. Link it from the runbook index and related feature page.
+Conversation summaries supplement these durable instructions.
 
 Keep existing files and entry points. Update related docs and runbooks with behavior
 changes. Use Mermaid diagrams where a flow, boundary, or lifecycle is easier to

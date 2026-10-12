@@ -9,6 +9,7 @@ gates in the lifecycle guide.
 
 | Page | Purpose |
 | --- | --- |
+| [Everyday operations](runbooks/daily-operations.md) | Start/stop/status, sample setup, logging showcase and troubleshooting |
 | [Quickstart](quickstart.md) | Run the current gateway and send a request |
 | [Portable workstation preview](runbooks/workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
 | [Guided setup](runbooks/guided-setup.md) | Launch, connect a provider in the console, and create an application key |

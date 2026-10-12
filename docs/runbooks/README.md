@@ -8,7 +8,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | --- | --- |
 | [Local development](local-development.md) | Installing, testing, or starting a development instance |
 | [Portable workstation preview](workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
-| [Guided setup](guided-setup.md) | Start the included console, configure inference, or build the experimental Linux executable |
+| [Guided setup](guided-setup.md) | Start the included console, configure inference, or use the source/native preview |
 | [Gateway controls acceptance](gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
 | [Projects and usage](projects-and-usage.md) | Create projects, inspect usage, move applications, and use the API tester |
 | [Windows/WSL flow lab](windows-wsl-flow-lab.md) | Exercise browser, relay, gateway, and Windows Ollama without Docker |
@@ -22,36 +22,37 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Incident response](incident-response.md) | Requests fail broadly or credentials may be exposed |
 | [Release](release.md) | Preparing, publishing, or rolling back a version |
 
+## Additional operational procedures
+
+| Runbook | Use when |
+| --- | --- |
+| [Everyday gateway and sample how-to](daily-operations.md) | Start/stop/status, configure a sample, showcase logs and resolve common errors |
+| [Backend storage acceptance](backend-storage-testing.md) | Verify repository contracts, migrations and independent retention |
+| [Application-key rotation](application-key-rotation.md) | Replace keys with overlap/expiry, revoke credentials and inspect audit |
+| [Inference API and queueing](inference-api-and-queueing.md) | Test model catalog, generation options and bounded admission |
+| [Streaming and cancellation](streaming-and-cancellation.md) | Test streaming, Stop, partial capture and cancellation |
+| [Configuration recovery and storage health](configuration-recovery.md) | Review/restore settings and investigate private-store failures |
+| [Logging showcase](logging-showcase.md) | Inspect input/output, tokens, capture states, search, exports and deletion |
+| [Metadata webhook export](log-export.md) | Configure the receiver, test outages/restarts and recover pending delivery |
+
 ## Runbook standard
 
-Each procedure must state its trigger, prerequisites, steps, success checks, and
-recovery path. Update it in the same change as the behavior it describes.
-Cloud-specific deployment, data migration, backup, and restore runbooks will be
-added when those capabilities exist.
+Every implemented operator workflow needs a runbook or how-to in this directory,
+linked here and from the related feature documentation. Keep setup, commands,
+prerequisites, success checks, troubleshooting, recovery and stop instructions in
+these pages; chat updates are summaries. Update the procedure with its implementation.
+Preserve existing pages and link to shared procedures instead of duplicating them.
+Distinguish source, native and Docker commands, data directories and verification.
+Document unimplemented integrations as planned and deferred tests in
+[validation](../validation.md). Never include actual keys or personal workstation details.
 
 ```mermaid
 flowchart TD
-    Start[Operational task] --> Setup{New deployment?}
-    Setup -->|Yes| Deploy[Local or container setup]
-    Setup -->|No| Change{Planned change?}
-    Change -->|Yes| Config[Configuration or release runbook]
-    Change -->|No| Impact{Broad impact or exposed credentials?}
-    Impact -->|Yes| Incident[Incident response]
-    Impact -->|No| Provider[Provider troubleshooting]
+    Task[Operational task] --> Daily[Everyday how-to]
+    Daily --> Local[Setup and sample]
+    Daily --> Logs[Logging showcase]
+    Logs --> Export[Metadata export and receiver]
+    Daily --> Trouble[Provider troubleshooting]
+    Trouble --> Recovery[Storage recovery or incident response]
+    Daily --> Upgrade[Backup, upgrade and release]
 ```
-
-- [Backend storage acceptance](backend-storage-testing.md): repository contracts,
-  independent usage, schema upgrades and future external-adapter gates.
-
-- [Application-key rotation](application-key-rotation.md): key overlap, expiry,
-  revocation and management audit.
-
-- [Inference API and queueing](inference-api-and-queueing.md): catalog, parameter mapping, admission/recovery and test commands.
-
-- [Streaming and cancellation](streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
-
-- [Configuration recovery and storage health](configuration-recovery.md): settings history/restore, management audit and safe storage verification.
-
-- [Logging showcase](logging-showcase.md): sample request links, capture/search/retention/export and recording health.
-
-- [Metadata webhook export](log-export.md): bounded queue, retries, receiver example and delivery recovery.

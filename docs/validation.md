@@ -11,6 +11,14 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Operational documentation review
+
+On 2026-10-12, added the everyday operations how-to, consolidated runbook navigation,
+and corrected stale webhook/schema status. Documentation links/fences were checked
+across 59 Markdown files, and the diff was checked for whitespace errors. This batch
+changes documentation only; existing source/native verification is recorded below.
+No gateway, receiver, inference service or Docker instance was started or changed.
+
 ## Metadata outbox and webhook export
 
 Verified on 2026-10-09 with isolated temporary stores: **333 Python tests**, **35

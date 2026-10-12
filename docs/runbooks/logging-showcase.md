@@ -8,7 +8,7 @@ access, an application key and a reachable supported inference backend. Docker i
 unnecessary for the local showcase. Keep provider secrets in the gateway.
 
 Before upgrading an existing instance, create an encrypted offline backup using the
-[workstation runbook](workstation-distribution.md). Schema 7 moves existing retained
+[workstation runbook](workstation-distribution.md). Current schema 8 includes the schema-7 migration of retained
 content into `exchange_content`, preserves metadata/usage/keys/configuration/audit,
 and leaves legacy content columns empty. Older binaries reject the new schema;
 rollback uses a compatible backup restored into a fresh destination. Tests do not
@@ -127,8 +127,8 @@ and encrypted backup/recovery.
 On a write failure, inspect **Storage health**, available disk, owner-only permissions
 and competing writers. Preserve failed-store evidence and use encrypted recovery
 when required; do not regenerate keys or grant broad permissions. Local recording
-remains best effort. Durable outbox delivery, Loki/OTLP/webhook exporters, traces and
-managed Grafana services are planned in [logging plan](../logging-plan.md).
+remains best effort before commit. Metadata outbox/webhook delivery is implemented;
+Loki/OTLP, remote content, traces and managed Grafana services remain planned in [logging plan](../logging-plan.md).
 Record live Ollama/browser/tunnel/Docker results separately in [validation](../validation.md).
 
 ## Optional remote metadata showcase
