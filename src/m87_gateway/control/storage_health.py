@@ -27,17 +27,17 @@ def sqlite_storage_health(backend, *, verify=False):
             checks.append({"name": name, "ok": True, "code": "ok", "message": "OK"})
 
     def private_files():
-        for path in (
-            backend.database_path,
-            backend.master_key_path,
-            Path(f"{backend.database_path}-wal"),
-            Path(f"{backend.database_path}-shm"),
-        ):
-            if path.exists():
-                check_private(path)
-        # Missing database/key must fail rather than create an empty replacement.
-        backend.database_path.stat()
-        backend.master_key_path.stat()
+        # Required files must exist and remain private; mode=rw never recreates them.
+        check_private(backend.database_path)
+        check_private(backend.master_key_path)
+        # Pin a WAL reader while inspecting sidecars. The export worker otherwise
+        # closes its last connection between exists/stat/Windows ACL checks.
+        with backend._connect() as connection:
+            connection.execute("PRAGMA user_version").fetchone()
+            for suffix in ("-wal", "-shm"):
+                path = Path(f"{backend.database_path}{suffix}")
+                if path.exists():
+                    check_private(path)
 
     def key_health():
         key = backend.master_key_path.read_bytes().strip()
@@ -56,9 +56,9 @@ def sqlite_storage_health(backend, *, verify=False):
         with backend._connect() as connection:
             sizes["schema_version"] = connection.execute("PRAGMA user_version").fetchone()[0]
             sizes["journal_mode"] = connection.execute("PRAGMA journal_mode").fetchone()[0]
-        sizes["database_bytes"] = backend.database_path.stat().st_size
-        wal = Path(f"{backend.database_path}-wal")
-        sizes["wal_bytes"] = wal.stat().st_size if wal.exists() else 0
+            sizes["database_bytes"] = backend.database_path.stat().st_size
+            wal = Path(f"{backend.database_path}-wal")
+            sizes["wal_bytes"] = wal.stat().st_size if wal.exists() else 0
         sizes["free_disk_bytes"] = shutil.disk_usage(backend.database_path.parent).free
 
     def integrity():

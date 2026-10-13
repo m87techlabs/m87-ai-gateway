@@ -6,6 +6,12 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Pin SQLite sidecars during storage-health permission/size checks so background
+  export polling cannot remove them mid-check. Native smoke reports safe diagnostics
+  and cleans up its owned Windows server on failure.
+
 ### Added
 
 - Log export console with destination/authentication/bounds configuration, encrypted

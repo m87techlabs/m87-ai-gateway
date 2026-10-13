@@ -490,3 +490,33 @@ def test_restore_credential_removal_rolls_back_on_audit_failure(store, monkeypat
     assert store.runtime_config()["default_model"] == "ollama:current"
     assert store.list_management_events() == before
     assert store.list_config_revisions() == revisions
+
+
+def test_storage_sidecar_checks_keep_database_connection_open(store, monkeypatch):
+    from m87_gateway.control import storage_health
+
+    original_connect = store._connect
+    original_check = storage_health.check_private
+    active = 0
+    checked = []
+
+    @contextmanager
+    def tracked_connect():
+        nonlocal active
+        with original_connect() as connection:
+            active += 1
+            try:
+                yield connection
+            finally:
+                active -= 1
+
+    def tracked_check(path):
+        if str(path).endswith(("-wal", "-shm")):
+            assert active > 0  # A reader pins sidecars against last-connection cleanup.
+            checked.append(path)
+        original_check(path)
+
+    monkeypatch.setattr(store, "_connect", tracked_connect)
+    monkeypatch.setattr(storage_health, "check_private", tracked_check)
+    assert store.storage_health(verify=True)["ok"]
+    assert len(checked) == 2

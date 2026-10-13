@@ -13,7 +13,7 @@ controls when to stop Docker Desktop itself.
 
 ## Console export configuration — 2026-10-12
 
-Verified with temporary stores and synthetic endpoints: **347 Python tests**, **40
+Verified with temporary stores and synthetic endpoints: **348 Python tests**, **40
 console/sample interaction tests**, lint/format (**107 Python files**), a wheel build
 and links/fences in **60 Markdown files**. The rebuilt Linux standalone preview passed
 saved receiver credentials, non-saving connection tests, metadata delivery, encrypted
@@ -25,6 +25,11 @@ preservation including pending delivery, encrypted tokens, destination/source bi
 confirmation, hot enable/disable, stale writes and audit rollback, history credential
 removal, old revisions, backup tampering, operator-only APIs and safe probe failures.
 Browser tests cover password clearing, ETags, unsaved probes and stale/locked drafts.
+Initial hosted Windows smoke failed its post-restore storage check while a delivery
+worker was polling. Storage checks now pin a SQLite reader while inspecting ephemeral
+WAL/SHM permissions and size, preserving the required database/key checks. A regression
+test verifies that lifetime; smoke failures now report safe check names and stop the
+owned server before terminating a Windows one-file launcher.
 
 No existing gateway store, inference service or Docker instance was changed. Manual
 visual review, Windows workstation/Ollama, live receivers, clean-host installation,

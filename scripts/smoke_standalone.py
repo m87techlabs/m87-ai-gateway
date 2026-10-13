@@ -314,7 +314,8 @@ def exercise(executable):
                 )
                 assert restored["restored_from"] == target
                 assert call("/admin/api/controls", key=admin) == controls
-                assert call("/admin/api/storage/check", "POST", key=admin)["ok"]
+                report = call("/admin/api/storage/check", "POST", key=admin)
+                assert report["ok"], report["checks"]
                 audit = call("/admin/api/management-events", key=admin)["items"]
                 assert any(row["action"] == "configuration.restored" for row in audit)
                 assert "synthetic-provider-key" not in json.dumps(audit)
@@ -413,7 +414,8 @@ def exercise(executable):
                     call("/admin/api/configuration/revisions", key=admin)["current_revision"]
                     == expected_revision
                 )
-                assert call("/admin/api/storage/check", "POST", key=admin)["ok"]
+                report = call("/admin/api/storage/check", "POST", key=admin)
+                assert report["ok"], report["checks"]
                 assert call("/admin/api/log-export", key=admin)["has_stored_key"]
                 assert call("/admin/api/log-export", key=admin)["config"]["enabled"]
                 response = call(
@@ -433,8 +435,26 @@ def exercise(executable):
                 )
         finally:
             if process is not None and process.poll() is None:
-                process.terminate()
-                process.wait(timeout=10)
+                # Stop the owned server before terminating a one-file launcher:
+                # on Windows the launcher and server are separate processes.
+                try:
+                    subprocess.run(
+                        [str(executable), "--data-dir", str(data_dir), "--stop"],
+                        env=environ,
+                        capture_output=True,
+                        timeout=40,
+                    )
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    if os.name == "nt":
+                        subprocess.run(
+                            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                            capture_output=True,
+                            timeout=10,
+                        )
+                    else:
+                        process.terminate()
+                    process.wait(timeout=10)
             inference.shutdown()
             inference.server_close()
             worker.join(timeout=5)
