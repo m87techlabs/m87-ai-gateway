@@ -36,6 +36,7 @@
         <button class="nav" data-view="storage">Storage health</button>
         <button class="nav" data-view="keys">Provider keys</button>
         <button class="nav" data-view="destinations">Destinations</button>
+        <button class="nav" data-view="export">Log export</button>
       </nav>
       <button id="lock" class="secondary">Lock console</button>
     </aside>
@@ -223,7 +224,7 @@
         <form id="revision-form" class="form-panel">
           <h3 id="revision-title">Review configuration</h3><p id="revision-scope"></p>
           <pre id="revision-preview"></pre>
-          <label class="check"><input id="revision-clear-credentials" type="checkbox">Remove stored credentials and environment bindings for changed providers</label>
+          <label class="check"><input id="revision-clear-credentials" type="checkbox">Remove credentials for changed provider/export bindings and disable affected log export</label>
           <p id="revision-credential-warning"></p>
           <label>Type RESTORE to activate these settings<input id="revision-confirmation" required pattern="RESTORE" autocomplete="off"></label>
           <p id="revision-error" role="alert"></p>
@@ -233,6 +234,35 @@
       </dialog>
 
       <section id="view-destinations" class="view" hidden><div class="panel"><h3>Log and metric destinations</h3><div id="destinations"></div></div></section>
+      <section id="view-export" class="view" hidden>
+        <div class="panel form-panel">
+          <h3>Configure log export</h3>
+          <p>Send sanitized request metadata to a receiver. LLM input/output stays in local Logs. Settings apply across all projects.</p>
+          <form id="export-form">
+            <fieldset id="export-fields" disabled>
+              <label class="check"><input name="enabled" type="checkbox">Enable metadata export</label>
+              <label>Adapter<select name="adapter"></select></label>
+              <label>Receiver endpoint<input name="endpoint" type="url" maxlength="2048" placeholder="https://collector.example.com/events"></label>
+              <label>Authentication<select name="authentication"><option value="none">No authentication</option><option value="stored">Credential stored in gateway</option><option value="environment">Environment variable</option></select></label>
+              <label>New bearer token<input name="key" type="password" maxlength="4096" autocomplete="new-password" placeholder="Leave empty to keep the saved token"></label>
+              <label>Token environment variable<input name="api_key_env" autocomplete="off" placeholder="GATEWAY_EXPORT_TOKEN"></label>
+              <p id="export-credential-status" class="muted"></p>
+              <label class="check"><input name="clear_key" type="checkbox">Confirm removal of the previous saved credential when saving</label>
+              <p class="muted">Changing destination or credential binding requires a new token or explicit removal. Test sends one synthetic event and saves nothing. Pending records remain bound to their original destination.</p>
+              <label>Maximum pending records<input name="max_pending" type="number" min="1" max="100000" required></label>
+              <label>Queue retention (hours)<input name="retention_hours" type="number" min="1" max="2160" required></label>
+              <label>Request timeout (seconds)<input name="timeout_seconds" type="number" min="0.1" max="30" step="0.1" required></label>
+              <label>Queue poll interval (seconds)<input name="poll_seconds" type="number" min="0.1" max="60" step="0.1" required></label>
+              <label>Initial retry delay (seconds)<input name="retry_seconds" type="number" min="0.1" max="300" step="0.1" required></label>
+              <label>Maximum retry delay (seconds)<input name="max_retry_seconds" type="number" min="0.1" max="3600" step="0.1" required></label>
+              <button id="export-save" type="submit">Save export settings</button>
+              <button id="export-test" type="button" class="secondary">Test connection</button>
+            </fieldset>
+          </form>
+          <p id="export-config-status" role="status"></p>
+          <p id="export-test-status" role="status">Test sends one synthetic event without saving.</p>
+        </div>
+      </section>
     </main>
   </div>
 

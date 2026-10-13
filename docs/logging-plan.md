@@ -17,7 +17,7 @@ SQLite application must deliver this without installing external services.
 - Metadata-only exports by default; explicit captured-content inclusion.
 - Project-scoped content deletion preserving metadata/usage, and audited content/log deletion.
 - Recording health showing failed/successful destination writes and recovery.
-- Sample request link, 16 isolated HTTP scenarios and extended native package smoke.
+- Sample request link, 17 isolated HTTP scenarios and extended native package smoke.
 
 Follow [logging showcase](runbooks/logging-showcase.md). Automated synthetic evidence
 and remaining live/manual checks are recorded in [validation](validation.md).
@@ -46,7 +46,11 @@ counters survive restart; deliveries interrupted before acknowledgement may repe
 A loopback receiver example demonstrates receiver deduplication. Native/source
 launchers accept export environment settings. See [metadata export](runbooks/log-export.md).
 
-Loki/OTLP adapters, UI configuration, explicit remote content policy and correlated
+Schema 9 adds UI configuration, encrypted destination-bound tokens, atomic saves,
+non-saving connection tests and hot worker changes. The sample suite demonstrates
+the complete export path. See [console setup](runbooks/configure-log-export.md).
+
+Loki/OTLP adapters, explicit remote content policy and correlated
 tracing remain planned. Tests cover process exit after commit, leases/retries, storage
 unavailability and outages; real power loss, disk exhaustion/corruption and live
 collector behavior require separate evidence. Local recording before commit remains

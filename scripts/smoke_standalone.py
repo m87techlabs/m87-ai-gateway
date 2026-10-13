@@ -104,6 +104,9 @@ def exercise(executable):
         worker.start()
         base_url = f"http://127.0.0.1:{port}"
         environ = dict(os.environ)
+        for name in tuple(environ):
+            if name.startswith("GATEWAY_LOG_EXPORT_"):
+                environ.pop(name)
         for name in ("GATEWAY_ADMIN_API_KEY", "PYTHONPATH", "PYTHONHOME"):
             environ.pop(name, None)
         environ.update(
@@ -362,6 +365,25 @@ def exercise(executable):
                     == "deleted"
                 )
                 assert call("/admin/api/overview", key=admin) == before
+                export = call("/admin/api/log-export", key=admin)["config"]
+                export.update(use_stored_key=True, api_key_env=None)
+                assert call(
+                    "/admin/api/log-export/test",
+                    "POST",
+                    {"config": export, "key": "synthetic-export-token"},
+                    admin,
+                )["ok"]
+                assert not call("/admin/api/log-export", key=admin)["has_stored_key"]
+                call(
+                    "/admin/api/log-export",
+                    "PUT",
+                    {"config": export, "key": "synthetic-export-token"},
+                    admin,
+                )
+                assert call("/admin/api/log-export", key=admin)["has_stored_key"]
+                expected_revision = call("/admin/api/configuration/revisions", key=admin)[
+                    "current_revision"
+                ]
 
                 def native(*arguments):
                     result = subprocess.run(
@@ -379,6 +401,9 @@ def exercise(executable):
                 archive = Path(temporary) / "backups" / "gateway.backup"
                 native("--backup", str(archive))
                 assert b"synthetic-provider-key" not in archive.read_bytes()
+                assert b"synthetic-export-token" not in archive.read_bytes()
+                environ.pop("EXAMPLE_EXPORT_TOKEN", None)
+                environ["GATEWAY_LOG_EXPORT_ENABLED"] = "false"
                 data_dir = Path(temporary) / "restored"
                 native("--restore", str(archive))
                 process = launch(output)
@@ -389,6 +414,8 @@ def exercise(executable):
                     == expected_revision
                 )
                 assert call("/admin/api/storage/check", "POST", key=admin)["ok"]
+                assert call("/admin/api/log-export", key=admin)["has_stored_key"]
+                assert call("/admin/api/log-export", key=admin)["config"]["enabled"]
                 response = call(
                     "/v1/chat/completions",
                     "POST",

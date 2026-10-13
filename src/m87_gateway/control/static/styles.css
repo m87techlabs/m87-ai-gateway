@@ -7,3 +7,5 @@
 .dashboard-panel{margin-bottom:20px}.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.charts svg{display:block;width:100%;height:auto}.requests-bar{fill:var(--cyan)}.tokens-bar{fill:var(--lime)}.charts .muted{font-size:11px;overflow-wrap:anywhere}.panel{overflow:auto}button:disabled{opacity:.5;cursor:wait}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.split,.charts{grid-template-columns:1fr}.app{grid-template-columns:190px 1fr}.header-actions{flex-wrap:wrap}}
 @media(max-width:650px){.app{display:block}aside{position:static;height:auto;padding:18px}nav{grid-template-columns:repeat(2,minmax(0,1fr));margin:15px 0}.app aside>.secondary{margin-top:10px}main{padding:22px 16px}header{align-items:flex-start;flex-wrap:wrap}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cards article{padding:14px}.cards strong{font-size:24px}.detail-grid{grid-template-columns:1fr}.panel{padding:16px}table{font-size:12px}}
+
+#export-fields{border:0;padding:0;margin:0;min-width:0}#export-form .check{display:flex;align-items:center;gap:10px}#export-form input[type=checkbox]{width:auto}

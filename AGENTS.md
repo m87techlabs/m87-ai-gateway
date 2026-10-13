@@ -131,7 +131,11 @@ Schema 8 adds an optional bounded metadata outbox and webhook exporter. Traffic,
 and enqueue share a transaction; stable IDs, leases, persisted retries/counters, expiry
 and destination binding support restart recovery and receiver deduplication. Both
 launchers accept GATEWAY_LOG_EXPORT_* variables. Local recording before commit remains
-best effort. Loki/OTLP, UI export configuration, remote content and Grafana are planned.
+best effort. Schema 9 adds console-managed export settings and destination-bound
+encrypted receiver credentials. Saves hot-activate workers after atomic config/key/history/audit
+commit. Draft probes send synthetic metadata without saving or queueing. Changed history
+bindings clear credentials and disable export; older snapshots preserve current settings.
+Loki/OTLP, remote content and Grafana remain planned. See docs/runbooks/configure-log-export.md.
 See docs/runbooks/log-export.md; preserve queue state and document backup replay.
 Never claim crash durability or secure erasure from logical SQLite deletion.
 

@@ -20,6 +20,9 @@ let setupEtag = null;
 let controlsEtag = null;
 let reviewedRevision = null;
 let revisionGeneration = 0;
+let exportGeneration = 0;
+let exportEtag = null;
+let exportTestController = null;
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -381,7 +384,7 @@ async function loadControls() {
   table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
 }
 
-const loaders = {history: loadHistory, storage: loadStorage, audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+const loaders = {export: loadExportSettings, history: loadHistory, storage: loadStorage, audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
   try { await loaders[activeView](); } catch (error) { notice(error.message); }
@@ -397,7 +400,7 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 }));
 
 $("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); sessionGeneration += 1; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
+  event.preventDefault(); sessionGeneration += 1; exportGeneration++; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
   try {
     const setup = await loadSetup(); await loadProjectOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
     if (requestedLog) document.querySelector('[data-view="logs"]').click();
@@ -405,7 +408,7 @@ $("login-form").addEventListener("submit", async (event) => {
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
 });
 
-$("lock").addEventListener("click", () => { sessionGeneration += 1; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); $("revision-preview").textContent = ""; $("revision-error").textContent = ""; $("configuration-revisions").replaceChildren(); $("storage-checks").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
+$("lock").addEventListener("click", () => { exportGeneration++; exportEtag = null; exportTestController?.abort(); $("export-form").reset(); $("export-fields").disabled = true; $("export-config-status").textContent = ""; $("export-test-status").textContent = ""; sessionGeneration += 1; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); appKeysGeneration += 1; activeKeyApp = ""; $("app-keys-panel").hidden = true; $("application-keys").replaceChildren(); $("replacement-key").replaceChildren(); $("replacement-key").hidden = true; $("management-events").replaceChildren(); $("revision-preview").textContent = ""; $("revision-error").textContent = ""; $("configuration-revisions").replaceChildren(); $("storage-checks").replaceChildren(); adminKey = ""; testerController?.abort(); $("console").hidden = true; $("login").hidden = false; $("new-key").replaceChildren(); $("detail-body").replaceChildren(); $("detail").close(); $("tester-result").replaceChildren(); $("tester-form").elements.prompt.value = ""; testerRequestId = ""; $("tester-detail").hidden = true; $("tester-status").textContent = "No request sent."; document.querySelectorAll('input[type="password"]').forEach((node) => { node.value = ""; }); });
 $("refresh").addEventListener("click", refresh);
 $("close-detail").addEventListener("click", () => { detailGeneration++; $("detail").close(); });
 
@@ -577,9 +580,10 @@ async function loadHistory() {
         $("revision-title").textContent = `Restore revision ${item.revision_id}`;
         $("revision-scope").textContent = detail.scope;
         $("revision-preview").textContent = JSON.stringify(detail.settings, null, 2);
-        $("revision-credential-warning").textContent = detail.changed_provider_bindings.length ? `Credentials will be removed for: ${detail.changed_provider_bindings.join(", ")}. Re-enter keys in Setup after restoring.` : "Current credentials will be preserved. Old keys are never restored.";
+        const changed = [...detail.changed_provider_bindings, ...(detail.changed_export_binding ? ["log export (disabled after restore)"] : [])];
+        $("revision-credential-warning").textContent = changed.length ? `Credentials will be removed for: ${changed.join(", ")}. Reconfigure credentials after restoring.` : "Current credentials will be preserved. Old keys are never restored.";
         $("revision-clear-credentials").checked = false;
-        $("revision-clear-credentials").disabled = !detail.changed_provider_bindings.length;
+        $("revision-clear-credentials").disabled = !changed.length;
         $("revision-confirmation").value = ""; $("revision-error").textContent = "";
         $("revision-dialog").showModal();
       } catch (error) { notice(error.message); }
@@ -634,3 +638,66 @@ $("delete-content").addEventListener("click", async () => {
 });
 const requestedLog = new URLSearchParams(window.location.search).get("request_id");
 if (requestedLog && requestedLog.length <= 128) $("log-request-id").value = requestedLog;
+
+
+function exportPayload() {
+  const form = $("export-form"); const fields = form.elements;
+  const config = {enabled: fields.enabled.checked, adapter: fields.adapter.value,
+    endpoint: fields.endpoint.value.trim() || null, use_stored_key: fields.authentication.value === "stored",
+    api_key_env: fields.authentication.value === "environment" ? fields.api_key_env.value.trim() || null : null};
+  for (const name of ["max_pending", "retention_hours", "timeout_seconds", "poll_seconds", "retry_seconds", "max_retry_seconds"]) config[name] = Number(fields[name].value);
+  return {config, clear_key: fields.clear_key.checked, ...(fields.key.value ? {key: fields.key.value} : {})};
+}
+
+function exportAuthentication() {
+  const fields = $("export-form").elements;
+  fields.key.disabled = fields.authentication.value !== "stored";
+  fields.api_key_env.disabled = fields.authentication.value !== "environment";
+  if (fields.key.disabled) fields.key.value = "";
+}
+
+async function loadExportSettings() {
+  const generation = ++exportGeneration; const session = sessionGeneration;
+  $("export-fields").disabled = true;
+  const response = await api("/log-export"); const data = await response.json();
+  if (generation !== exportGeneration || session !== sessionGeneration || !adminKey) return;
+  exportEtag = response.headers.get("ETag");
+  const form = $("export-form"); form.reset();
+  const adapter = form.elements.adapter; adapter.replaceChildren();
+  for (const name of data.adapters) { const option = document.createElement("option"); option.value = name; option.textContent = name; adapter.append(option); }
+  for (const [name, value] of Object.entries(data.config)) {
+    const element = form.elements[name]; if (!element) continue;
+    if (element.type === "checkbox") element.checked = Boolean(value); else element.value = value ?? "";
+  }
+  form.elements.authentication.value = data.config.use_stored_key ? "stored" : data.config.api_key_env ? "environment" : "none";
+  $("export-credential-status").textContent = data.has_stored_key ? "A credential is saved for this destination. Leave the token empty to keep it." : data.has_any_stored_key ? "A credential is saved for another destination. Explicit removal or a new token is required when changing binding." : "No saved credential for this destination.";
+  $("export-config-status").textContent = `${data.health.enabled ? "Enabled" : "Disabled"} · ${data.health.delivery_state} · ${data.health.pending ?? "Unknown"} pending · ${data.health.delivered ?? 0} delivered. ${data.scope}`;
+  $("export-test-status").textContent = "Test sends one synthetic event without saving.";
+  $("export-fields").disabled = false; exportAuthentication();
+}
+
+$("export-form").addEventListener("input", () => { exportGeneration++; exportTestController?.abort(); $("export-test-status").textContent = "Draft changed. Test again before saving."; });
+$("export-form").elements.authentication.addEventListener("change", exportAuthentication);
+$("export-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); exportTestController?.abort(); const payload = exportPayload(); const session = sessionGeneration; const generation = ++exportGeneration;
+  $("export-fields").disabled = true;
+  try {
+    await api("/log-export", {method: "PUT", headers: exportEtag ? {"If-Match": exportEtag} : {}, body: JSON.stringify(payload)});
+    if (session !== sessionGeneration || generation !== exportGeneration || !adminKey) return;
+    $("export-form").elements.key.value = "";
+    notice("Export settings saved and applied. Pending records retain their original destination."); await loadExportSettings();
+  } catch (error) {
+    if (session === sessionGeneration && adminKey) { $("export-form").elements.key.value = ""; $("export-config-status").textContent = error.status === 409 ? `${error.message} Refresh settings before retrying; re-enter a new token if needed.` : error.message; }
+  } finally { if (session === sessionGeneration && adminKey) $("export-fields").disabled = false; }
+});
+$("export-test").addEventListener("click", async () => {
+  const payload = exportPayload(); const session = sessionGeneration; const generation = ++exportGeneration;
+  exportTestController?.abort(); const controller = new AbortController(); exportTestController = controller;
+  $("export-test").disabled = true; $("export-test-status").textContent = "Testing the draft with one synthetic event…";
+  try {
+    const result = await (await api("/log-export/test", {method: "POST", body: JSON.stringify(payload), signal: controller.signal})).json();
+    if (session === sessionGeneration && generation === exportGeneration && adminKey) $("export-test-status").textContent = result.message;
+  } catch (error) {
+    if (session === sessionGeneration && generation === exportGeneration && adminKey) $("export-test-status").textContent = error.name === "AbortError" ? "Test stopped." : error.message;
+  } finally { if (exportTestController === controller) { exportTestController = null; $("export-test").disabled = false; } }
+});

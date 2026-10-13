@@ -8,6 +8,15 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Log export console with destination/authentication/bounds configuration, encrypted
+  receiver credentials, non-saving synthetic connection tests and immediate activation.
+- Schema-9 atomic export settings/key/history/audit, binding-safe restore and encrypted
+  backup validation; existing data and queue remain preserved.
+- Seventeenth sample scenario for app-to-inference metadata delivery and console setup.
+  Operator instructions are in `docs/runbooks/configure-log-export.md`.
+
+### Added
+
 - Schema-8 transactional metadata outbox and optional webhook adapter with stable
   delivery IDs, persisted leases/retries, capacity/expiry and destination binding.
 - Persistent export health in Logs, native/source environment settings, a private

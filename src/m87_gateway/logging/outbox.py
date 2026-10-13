@@ -38,6 +38,12 @@ EXPORT_FIELDS = (
 )
 
 
+def destination_binding(config):
+    return hashlib.sha256(
+        json.dumps([config.adapter, config.endpoint], separators=(",", ":")).encode()
+    ).hexdigest()
+
+
 @runtime_checkable
 class DeliveryOutbox(Protocol):
     """Optional backend contract; enqueue must share the traffic write transaction."""
@@ -74,13 +80,7 @@ class SQLiteDeliveryOutbox(SQLiteRepository):
 
     def configure(self, config, redact):
         self.config_export = config
-        self.binding = (
-            hashlib.sha256(
-                json.dumps([config.adapter, config.endpoint], separators=(",", ":")).encode()
-            ).hexdigest()
-            if config.enabled
-            else None
-        )
+        self.binding = destination_binding(config) if config.enabled else None
         self.redact = redact
 
     @staticmethod

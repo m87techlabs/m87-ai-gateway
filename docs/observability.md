@@ -203,3 +203,9 @@ last success/failure times appear in Logs and `/admin/api/logging-health`, witho
 endpoints or credentials. Input/output remain local. At-least-once delivery within
 capacity/expiry requires receiver deduplication. See [export runbook](runbooks/log-export.md)
 for the example receiver, both launcher configurations and backup/replay boundaries.
+
+## Console export management
+
+**Log export** manages gateway-wide metadata destinations, encrypted receiver credentials
+and worker bounds. Save applies immediately; Test connection sends a synthetic event
+without changing config, queue or counters. See [setup how-to](runbooks/configure-log-export.md).

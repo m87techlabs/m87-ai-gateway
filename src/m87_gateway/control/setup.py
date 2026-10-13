@@ -15,6 +15,8 @@ def apply_overrides(settings: GatewaySettings, saved: dict) -> GatewaySettings:
         data["routing"]["default_model"] = saved["default_model"]
     if "capture_content" in saved:
         data["observability"]["traffic_log"]["capture_content"] = saved["capture_content"]
+    if "log_export" in saved:
+        data["observability"]["log_export"] = saved["log_export"]
     controls = saved.get("controls", {})
     for section in ("cache", "retry", "limits", "guardrails"):
         if section in controls:
@@ -50,6 +52,7 @@ def managed_snapshot(settings: GatewaySettings) -> dict:
         },
         "default_model": settings.routing.default_model,
         "capture_content": settings.observability.traffic_log.capture_content,
+        "log_export": settings.observability.log_export.model_dump(),
         "controls": {
             "cache": settings.cache.model_dump(),
             "retry": settings.retry.model_dump(),

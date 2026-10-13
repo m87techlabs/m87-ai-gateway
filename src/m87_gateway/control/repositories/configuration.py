@@ -81,6 +81,9 @@ class SQLiteConfigurationRepository(SQLiteRepository):
         restored_from=None,
         expected_revision=None,
         clear_providers=(),
+        export_key=None,
+        export_binding=None,
+        clear_export_key=False,
     ):
         """Commit settings, credential changes, revision and audit together."""
         serialized = json.dumps(value)
@@ -95,6 +98,24 @@ class SQLiteConfigurationRepository(SQLiteRepository):
                 connection, snapshot if snapshot is not None else value, action, restored_from
             )
             audit = self.backend.management_audit
+            if clear_export_key:
+                removed = connection.execute("DELETE FROM log_export_credentials WHERE id=1")
+                if removed.rowcount:
+                    audit.record(connection, "log_export_key.deleted", revision_id=revision)
+            if export_key is not None:
+                if not export_binding:
+                    raise ValueError("Export key requires a destination binding")
+                connection.execute(
+                    """INSERT INTO log_export_credentials VALUES (1, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET binding=excluded.binding,
+                    encrypted_value=excluded.encrypted_value, updated_at=excluded.updated_at""",
+                    (
+                        export_binding,
+                        self._fernet.encrypt(export_key.encode()),
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                audit.record(connection, "log_export_key.saved", revision_id=revision)
             for name in clear_providers:
                 aliases = connection.execute(
                     "SELECT alias FROM provider_keys WHERE provider = ?", (name,)

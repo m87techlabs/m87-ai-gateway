@@ -37,6 +37,15 @@ def changed_credentials(current, target, snapshot):
     ]
 
 
+def changed_export_credentials(current, target, snapshot):
+    if "log_export" not in snapshot:
+        return False
+    fields = ("adapter", "endpoint", "api_key_env", "use_stored_key")
+    return tuple(getattr(current.observability.log_export, name) for name in fields) != tuple(
+        getattr(target.observability.log_export, name) for name in fields
+    )
+
+
 def revision_etag(store):
     items = store.list_config_revisions(1)
     return f'"{items[0]["revision_id"]}"' if items else '"0"'

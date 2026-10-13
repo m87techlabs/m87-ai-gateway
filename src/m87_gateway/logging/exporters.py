@@ -8,7 +8,7 @@ from typing import Protocol
 
 import httpx
 
-from .outbox import DeliveryOutbox
+from .outbox import DeliveryOutbox, destination_binding
 
 
 class LogExporter(Protocol):
@@ -43,6 +43,27 @@ class WebhookExporter:
 _EXPORTERS = {"webhook": WebhookExporter}
 
 
+def exporter_adapters():
+    return tuple(sorted(_EXPORTERS))
+
+
+def resolve_export_token(config, store, override=None):
+    if override is not None:
+        token = override
+    elif config.use_stored_key:
+        get_key = getattr(getattr(store, "secrets", None), "get_export_key", None)
+        if not callable(get_key):
+            raise ValueError("Backend does not support stored export credentials")
+        token = get_key(destination_binding(config)) or ""
+    else:
+        token = os.getenv(config.api_key_env, "") if config.api_key_env else ""
+    if (config.use_stored_key or config.api_key_env) and not token:
+        raise ValueError("Log exporter credential is unavailable")
+    if token and (len(token) > 4096 or any(not 33 <= ord(c) <= 126 for c in token)):
+        raise ValueError("Log exporter credential is invalid")
+    return token
+
+
 def register_log_exporter(name, factory):
     """Register trusted source extensions before application startup; no config imports."""
     if (
@@ -55,13 +76,14 @@ def register_log_exporter(name, factory):
 
 
 class ExportService:
-    def __init__(self, config, store, recorder):
+    def __init__(self, config, store, recorder, *, token_override=None, configure_outbox=True):
         self.config = config
         self.outbox = getattr(store, "export_outbox", None)
         self.exporter = None
         self.task = None
         self.storage_ok = True
-        if isinstance(self.outbox, DeliveryOutbox):
+        self.recorder = recorder
+        if configure_outbox and isinstance(self.outbox, DeliveryOutbox):
             self.outbox.configure(config, recorder.redact)
         if not config.enabled:
             return
@@ -70,9 +92,7 @@ class ExportService:
         factory = _EXPORTERS.get(config.adapter)
         if factory is None:
             raise ValueError("Log exporter adapter is not registered")
-        token = os.getenv(config.api_key_env, "") if config.api_key_env else ""
-        if config.api_key_env and (not token or any(not 33 <= ord(c) <= 126 for c in token)):
-            raise ValueError("Log exporter credential is unavailable or invalid")
+        token = resolve_export_token(config, store, token_override)
         if token:
             recorder.add_secret(token)
         self.exporter = factory(config, token)
@@ -89,6 +109,8 @@ class ExportService:
         item = await asyncio.to_thread(self.outbox.claim)
         if item is None:
             return False
+        if item["binding"] != destination_binding(self.config):
+            return False  # A retired worker must never send a claim from a new binding.
         try:
             async with asyncio.timeout(self.config.timeout_seconds):
                 success = await self.exporter.send(item["delivery_id"], json.loads(item["payload"]))
@@ -147,3 +169,22 @@ class ExportService:
                 pass
         if self.exporter:
             await self.exporter.close()
+
+
+async def activate_export(request, settings, service):
+    """Publish validated settings and worker together, then retire the previous worker."""
+    from m87_gateway.control.setup import activate
+
+    state = request.app.state
+    old = state.log_export
+    if old.task:
+        old.task.cancel()
+    service.outbox.configure(service.config, state.recorder.redact)
+    state.log_export = service
+    activate(request, settings)
+    service.start()
+    try:
+        async with asyncio.timeout(5):
+            await old.close()
+    except Exception:
+        state.recorder.logger.error(json.dumps({"event": "log_export_cleanup_failed"}))

@@ -356,7 +356,7 @@ def test_schema_five_migration_preserves_data_and_old_audit(store):
 def test_baseline_snapshot_excludes_keys_apps_and_paths(tmp_path):
     settings = local_settings(tmp_path)
     data = managed_snapshot(settings)
-    assert set(data) == {"providers", "default_model", "capture_content", "controls"}
+    assert set(data) == {"providers", "default_model", "capture_content", "controls", "log_export"}
     assert str(tmp_path) not in json.dumps(data)
 
 

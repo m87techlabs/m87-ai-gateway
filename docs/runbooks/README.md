@@ -33,6 +33,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Streaming and cancellation](streaming-and-cancellation.md) | Test streaming, Stop, partial capture and cancellation |
 | [Configuration recovery and storage health](configuration-recovery.md) | Review/restore settings and investigate private-store failures |
 | [Logging showcase](logging-showcase.md) | Inspect input/output, tokens, capture states, search, exports and deletion |
+| [Configure log export](configure-log-export.md) | Set destinations and encrypted credentials, test drafts and enable delivery |
 | [Metadata webhook export](log-export.md) | Configure the receiver, test outages/restarts and recover pending delivery |
 
 ## Runbook standard

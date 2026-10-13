@@ -14,6 +14,7 @@ from m87_gateway.config import GatewaySettings, get_settings
 from m87_gateway.control.backends import create_backend
 from m87_gateway.control.api import router as control_router
 from m87_gateway.control.recovery import router as recovery_router
+from m87_gateway.control.export_configuration import router as export_router
 from m87_gateway.control.setup import apply_overrides, managed_snapshot
 from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
@@ -89,6 +90,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     application.include_router(router)
     application.include_router(control_router)
     application.include_router(recovery_router)
+    application.include_router(export_router)
 
     @application.exception_handler(GatewayError)
     async def gateway_error(request: Request, exc: GatewayError):

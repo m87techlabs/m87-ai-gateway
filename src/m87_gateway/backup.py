@@ -34,7 +34,8 @@ def validate_database(path: Path, master: bytes):
     with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as connection:
         if connection.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise ValueError("Backup database is invalid")
-        if connection.execute("PRAGMA user_version").fetchone()[0] > SCHEMA_VERSION:
+        schema = connection.execute("PRAGMA user_version").fetchone()[0]
+        if schema > SCHEMA_VERSION:
             raise ValueError("Backup requires a newer gateway version")
         tables = {
             row[0]
@@ -42,14 +43,32 @@ def validate_database(path: Path, master: bytes):
         }
         if not {"events", "projects", "app_keys", "provider_keys", "runtime_config"} <= tables:
             raise ValueError("Backup database is incomplete")
+        if schema >= 9 and "log_export_credentials" not in tables:
+            raise ValueError("Backup export credential storage is incomplete")
         for row in connection.execute("SELECT encrypted_value FROM provider_keys"):
             decoder.decrypt(row[0])
+        if "log_export_credentials" in tables:
+            for row in connection.execute("SELECT encrypted_value FROM log_export_credentials"):
+                decoder.decrypt(row[0])
         # Configuration must be valid before installing the backup.
         from m87_gateway.cli import local_settings
         from m87_gateway.control.setup import apply_overrides
 
         row = connection.execute("SELECT value FROM runtime_config WHERE id = 1").fetchone()
-        apply_overrides(local_settings(path.parent), json.loads(row[0]) if row else {})
+        settings = apply_overrides(local_settings(path.parent), json.loads(row[0]) if row else {})
+        export = settings.observability.log_export
+        if export.enabled and export.use_stored_key:
+            from m87_gateway.logging.outbox import destination_binding
+
+            row = connection.execute(
+                "SELECT encrypted_value FROM log_export_credentials WHERE id=1 AND binding=?",
+                (destination_binding(export),),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Backup export credential does not match its destination")
+            token = decoder.decrypt(row[0]).decode()
+            if not 1 <= len(token) <= 4096 or any(not 33 <= ord(c) <= 126 for c in token):
+                raise ValueError("Backup export credential is invalid")
 
 
 def backup(data_dir: Path, output: Path, password: str):

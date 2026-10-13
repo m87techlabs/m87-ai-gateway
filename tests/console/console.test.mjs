@@ -34,6 +34,8 @@ async function consoleFixture(t) {
   const event = {request_id: "fixture-request", created_at: "2026-10-02T12:00:00Z", project_id: "alpha", app_id: "sample-app", routed_model: "ollama:small", status_code: 200, total_tokens: 13, latency_ms: 12, cache_status: "disabled", provider_attempts: 1};
   let controls = {cache: {enabled: false, ttl_seconds: 300, max_entries: 1000}, retry: {max_attempts: 1, backoff_ms: 100}, limits: {max_concurrent_requests: 64}, max_request_bytes: 262144, max_message_chars: 65536, retention_days: 30, max_content_chars: 16384};
   const applicationKeys = [{key_id: "key-old", app_id: "sample-app", key_prefix: "fixture", created_at: "2026-10-05T12:00:00Z", expires_at: null, revoked_at: null, active: true}];
+  let exportConfig = {enabled: false, adapter: "webhook", endpoint: null, api_key_env: null, use_stored_key: false, max_pending: 5000, retention_hours: 168, timeout_seconds: 5, poll_seconds: 1, retry_seconds: 2, max_retry_seconds: 300};
+  let savedExportKey = false; let exportSaveConflict = false; let deferredExportTest = false; let pendingExportTest = null;
   let paginatedLogs = false; let loggingDegraded = false;
   const revisions = [{revision_id: 2, created_at: "2026-10-06", action: "controls.updated", restored_from: null}, {revision_id: 1, created_at: "2026-10-06", action: "configuration.baseline", restored_from: null}];
   let restoreFailure = false; let deferredRevision = false; let pendingRevision = null;
@@ -58,6 +60,19 @@ async function consoleFixture(t) {
       return response({model: "ollama:small", choices: [{message: {content: "synthetic answer"}}], usage: {prompt_tokens: 8, completion_tokens: 5, total_tokens: 13}}, 200, {"X-Request-ID": "fixture-request"});
     }
     assert.equal(options.headers.Authorization, "Bearer synthetic-admin-key");
+    if (url.pathname.endsWith("/log-export/test")) {
+      const result = {ok: true, message: "Receiver accepted the synthetic test event."};
+      if (deferredExportTest) return new Promise((resolve, reject) => { pendingExportTest = {resolve: () => resolve(response(result)), reject}; options.signal.addEventListener("abort", () => reject(new window.DOMException("Stopped", "AbortError")), {once: true}); });
+      return response(result);
+    }
+    if (url.pathname.endsWith("/log-export")) {
+      if (method === "PUT") {
+        if (exportSaveConflict) return response({error: {message: "Configuration changed; refresh history"}}, 409);
+        exportConfig = body.config; if (body.clear_key) savedExportKey = false; if (body.key) savedExportKey = true;
+        return response(null, 204);
+      }
+      return response({config: exportConfig, adapters: ["webhook"], has_stored_key: savedExportKey, has_any_stored_key: savedExportKey, health: {enabled: exportConfig.enabled, delivery_state: "not_delivered_yet", pending: 0, delivered: 0}, scope: "Test sends one synthetic event without saving."}, 200, {ETag: '"2"'});
+    }
     if (url.pathname.endsWith("/connections/ollama/test")) {
       return body.config.base_url.includes("offline")
         ? response({ok: false, message: "Could not connect to the inference service.", latency_ms: 1})
@@ -128,7 +143,7 @@ async function consoleFixture(t) {
   $("admin-key").value = "synthetic-admin-key";
   submit("login-form");
   await until(() => !$("console").hidden);
-  return {window, $, submit, requests, setEvent: (fields) => Object.assign(event, fields), deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
+  return {window, $, submit, requests, deferExportTest: () => { deferredExportTest = true; }, exportPending: () => pendingExportTest, failExportSave: () => { exportSaveConflict = true; }, setEvent: (fields) => Object.assign(event, fields), deferChat: () => { deferredChat = true; }, pending: () => pendingChat,
     deferDetail: () => { deferredDetail = true; }, detailPending: () => pendingDetail,
     deferKeyIssue: () => { deferredKeyIssue = true; }, keyPending: () => pendingKeyIssue, pageLogs: () => { paginatedLogs = true; }, degradeLogging: () => { loggingDegraded = true; }, failRestore: () => { restoreFailure = true; }, deferRevision: () => { deferredRevision = true; }, revisionPending: () => pendingRevision};
 }
@@ -505,4 +520,58 @@ test("logs show persistent metadata export backlog and recovery guidance", async
   assert.match($("export-status").textContent, /deduplicate/);
   degradeLogging(); $("refresh").click();
   await until(() => $("export-status").textContent.includes("Queue storage needs attention"));
+});
+
+
+test("export console saves bounded config and a one-time token with ETag", async (t) => {
+  const {window, $, submit, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click();
+  await until(() => !$("export-fields").disabled);
+  const fields = $("export-form").elements;
+  assert.equal(fields.key.value, "");
+  fields.authentication.value = "stored"; fields.authentication.dispatchEvent(new window.Event("change"));
+  fields.endpoint.value = "http://receiver/events"; fields.enabled.checked = true; fields.key.value = "synthetic-export-secret";
+  submit("export-form");
+  await until(() => requests.some((r) => r.path.endsWith("/log-export") && r.method === "PUT"));
+  const saved = requests.find((r) => r.path.endsWith("/log-export") && r.method === "PUT");
+  assert.equal(saved.headers["If-Match"], '"2"'); assert.equal(saved.body.config.use_stored_key, true);
+  assert.equal(saved.body.config.api_key_env, null); assert.equal(saved.body.key, "synthetic-export-secret");
+  await until(() => $("export-credential-status").textContent.includes("saved for this destination"));
+  assert.equal(fields.key.value, ""); assert.equal(window.localStorage.length, 0); assert.equal(window.sessionStorage.length, 0);
+});
+
+test("draft export test sends synthetic probe without saving and preserves draft", async (t) => {
+  const {window, $, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click(); await until(() => !$("export-fields").disabled);
+  const fields = $("export-form").elements; fields.endpoint.value = "http://draft-receiver/events";
+  $("export-test").click(); await until(() => $("export-test-status").textContent.includes("accepted"));
+  assert.equal(fields.endpoint.value, "http://draft-receiver/events");
+  assert.equal(requests.filter((r) => r.path.endsWith("/log-export") && r.method === "PUT").length, 0);
+});
+
+test("stale export saves clear tokens and keep actionable feedback", async (t) => {
+  const {window, $, submit, failExportSave} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click(); await until(() => !$("export-fields").disabled);
+  failExportSave(); $("export-form").elements.key.value = "synthetic-secret";
+  submit("export-form"); await until(() => $("export-config-status").textContent.includes("Refresh settings"));
+  assert.equal($("export-form").elements.key.value, ""); assert.equal($("export-fields").disabled, false);
+});
+
+test("lock aborts export probe and clears draft secrets", async (t) => {
+  const {window, $, deferExportTest, exportPending} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click(); await until(() => !$("export-fields").disabled);
+  deferExportTest(); $("export-form").elements.key.value = "synthetic-secret"; $("export-test").click(); await until(exportPending);
+  $("lock").click(); exportPending().resolve(); await delay(20);
+  assert.equal($("export-form").elements.key.value, ""); assert.equal($("export-fields").disabled, true);
+  assert.equal($("export-test-status").textContent, "");
+});
+
+test("editing an export draft aborts its outdated probe", async (t) => {
+  const {window, $, deferExportTest, exportPending} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click(); await until(() => !$("export-fields").disabled);
+  deferExportTest(); $("export-test").click(); await until(exportPending);
+  $("export-form").elements.endpoint.value = "http://changed/events";
+  $("export-form").elements.endpoint.dispatchEvent(new window.Event("input", {bubbles: true}));
+  exportPending().resolve(); await delay(20);
+  assert.match($("export-test-status").textContent, /Draft changed/);
 });

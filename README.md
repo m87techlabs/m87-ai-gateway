@@ -212,6 +212,7 @@ and [remaining logging plan](docs/logging-plan.md).
 The gateway includes a bounded SQLite metadata queue and optional webhook exporter.
 Retries and pending deliveries survive restart; receivers deduplicate delivery IDs.
 Input/output stay local. Try the [receiver example and outage showcase](docs/runbooks/log-export.md).
-Loki/OTLP and export configuration in the console remain planned.
+Configure destinations, encrypted credentials and draft connection tests in **Log export**.
+See [console export setup](docs/runbooks/configure-log-export.md). Loki/OTLP remain planned.
 
 For routine startup, sample testing and log inspection, use the [everyday operations how-to](docs/runbooks/daily-operations.md). All operational procedures are indexed in [runbooks](docs/runbooks/README.md).

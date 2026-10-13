@@ -51,6 +51,7 @@ observability:
   json_logs: true
   prometheus_metrics: true
   log_export:
+    use_stored_key: false # Configure encrypted receiver tokens through Log export.
     # Optional sanitized metadata delivery; requires control_plane.enabled.
     enabled: false
     adapter: webhook

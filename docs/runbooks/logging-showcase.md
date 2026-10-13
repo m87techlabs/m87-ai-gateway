@@ -8,7 +8,7 @@ access, an application key and a reachable supported inference backend. Docker i
 unnecessary for the local showcase. Keep provider secrets in the gateway.
 
 Before upgrading an existing instance, create an encrypted offline backup using the
-[workstation runbook](workstation-distribution.md). Current schema 8 includes the schema-7 migration of retained
+[workstation runbook](workstation-distribution.md). Current schema 9 includes the schema-7 migration of retained
 content into `exchange_content`, preserves metadata/usage/keys/configuration/audit,
 and leaves legacy content columns empty. Older binaries reject the new schema;
 rollback uses a compatible backup restored into a fresh destination. Tests do not
@@ -133,7 +133,7 @@ Record live Ollama/browser/tunnel/Docker results separately in [validation](../v
 
 ## Optional remote metadata showcase
 
-Current startup uses schema 8, which also adds the bounded metadata delivery queue.
+Current startup uses schema 9, which also adds the bounded metadata delivery queue.
 Back up before upgrading; older binaries require their matching backup for rollback.
 Follow [metadata webhook export](log-export.md) to demonstrate outage/restart recovery
 with a local receiver. Input/output stay in the local viewer; remote content export

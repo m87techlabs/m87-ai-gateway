@@ -145,6 +145,14 @@ rollback and final Docker packaging remain separate manual/release checks. Recor
 results in [validation](../validation.md); automated synthetic checks do not establish
 those environments.
 
-Current startup uses schema 8, preserving the schema-6 configuration foundations.
+Current startup uses schema 9, preserving the schema-6 configuration foundations.
 Backups also contain pending metadata deliveries, which may replay after restore.
 Review [export recovery](log-export.md#delivery-and-storage-boundaries) when export is enabled.
+
+## Export settings in history
+
+Export settings appear in new revisions; token values do not. An unchanged binding
+retains the current token. Restoring a changed adapter/endpoint/credential source
+requires removal confirmation, clears its credential binding and disables export.
+Configure and test it again in **Log export**. Older revisions without export fields
+preserve current export settings. See [export recovery](configure-log-export.md).

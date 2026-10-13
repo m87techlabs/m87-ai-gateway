@@ -68,9 +68,11 @@ does not securely erase WAL/free pages/backups/downloaded files. See [logging sh
 
 Optional webhook delivery exports only allowlisted redacted metadata. Captured
 input/output and hashed user attribution stay local. Endpoint selection is trusted
-operator bootstrap configuration; redirects and proxy environment variables are
+operator configuration; redirects and proxy environment variables are
 ignored, TLS verification remains enabled, and bearer tokens are resolved from the
-configured environment variable without persistence. Use HTTPS for remote collectors.
+configured environment variable or encrypted destination-bound gateway storage.
+Changed destinations require a fresh token or explicit removal; draft tests use the
+same protection. Config/history/audit never contain token values. Use HTTPS for remote collectors.
 Health output excludes endpoints/tokens and raw remote errors. Pending deliveries
 survive backup/restore and may replay; receiver deduplication is mandatory. Local
 log deletion does not erase pending metadata or recall receiver records. See

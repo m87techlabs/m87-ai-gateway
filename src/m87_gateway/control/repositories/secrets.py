@@ -11,6 +11,28 @@ from .base import SQLiteRepository
 
 
 class SQLiteSecretStore(SQLiteRepository):
+    @staticmethod
+    def migrate(connection):
+        connection.execute("""CREATE TABLE IF NOT EXISTS log_export_credentials (
+            id INTEGER PRIMARY KEY CHECK(id=1), binding TEXT NOT NULL,
+            encrypted_value BLOB NOT NULL, updated_at TEXT NOT NULL
+        )""")
+
+    def export_key_binding(self):
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT binding FROM log_export_credentials WHERE id=1"
+            ).fetchone()
+        return row[0] if row else None
+
+    def get_export_key(self, binding):
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT encrypted_value FROM log_export_credentials WHERE id=1 AND binding=?",
+                (binding,),
+            ).fetchone()
+        return self._fernet.decrypt(row[0]).decode() if row else None
+
     def put_provider_key(self, provider: str, value: str, alias: str = "default") -> None:
         now = datetime.now(timezone.utc).isoformat()
         encrypted = self._fernet.encrypt(value.encode())
@@ -49,7 +71,9 @@ class SQLiteSecretStore(SQLiteRepository):
 
     def provider_secret_values(self) -> list[str]:
         with self._connect() as connection:
-            rows = connection.execute("SELECT encrypted_value FROM provider_keys").fetchall()
+            rows = connection.execute(
+                "SELECT encrypted_value FROM provider_keys UNION ALL SELECT encrypted_value FROM log_export_credentials"
+            ).fetchall()
         values = []
         for row in rows:
             try:

@@ -221,3 +221,12 @@ the local exchange. Metadata is allowlisted, redacted and limited to 16 KiB per 
 Retries retain a delivery ID; receiver deduplication is required. Destination changes
 hold existing records rather than rerouting them. Backups include pending deliveries.
 See [metadata export](runbooks/log-export.md) for expiry, replay and deletion boundaries.
+
+## Schema 9: managed export credentials
+
+`log_export_credentials` stores one encrypted receiver token bound to adapter/endpoint.
+SQLite saves settings, token changes, encrypted history and management audit in one
+transaction. Settings exclude token values; worker activation follows commit. Storage
+health checks decryption, and backups validate enabled stored-token bindings. History
+restore clears changed bindings and disables export, while older snapshots preserve
+current export settings. See [console setup](runbooks/configure-log-export.md).

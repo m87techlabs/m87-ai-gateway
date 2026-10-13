@@ -12,7 +12,7 @@ root. For Windows or an unpacked native bundle, follow
 - Install the source package once using [local development](local-development.md).
 - Have an existing supported inference service and a model available there.
 - Back up existing data before upgrading, using [backup and restore](workstation-distribution.md#backup-and-restore).
-  Current startup upgrades to schema 8; older binaries require their compatible backup.
+  Current startup upgrades to schema 9; older binaries require their compatible backup.
 - Keep the operator key and application key private. They serve different roles.
 
 The scripts use the checkout's `.venv` automatically; manual activation is unnecessary.
@@ -126,3 +126,10 @@ inspect Storage health and use [configuration/storage recovery](configuration-re
 Preserve the existing database/key pair and restore into a fresh directory when
 needed. Backups containing queued deliveries can replay after restore; review the
 [export lifecycle](log-export.md#delivery-and-storage-boundaries).
+
+## Configure remote metadata delivery
+
+Use **Log export** to set a receiver endpoint, save its encrypted bearer token, test
+the draft and enable delivery. See [console setup](configure-log-export.md). Local
+input/output remains in Logs. Startup environment changes require restart; console
+saves apply immediately and persist across restart.

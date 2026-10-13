@@ -3,6 +3,7 @@
 import json
 import os
 import secrets
+import sqlite3
 import tempfile
 import threading
 import time
@@ -15,6 +16,8 @@ import httpx
 import uvicorn
 
 from examples.chat_app.app import Settings, create_app as sample_app
+from examples.log_receiver.start import make_server
+from m87_gateway.config.settings import LogExportConfig
 from m87_gateway.cli import local_settings
 from m87_gateway.local_server import bind_listener
 from m87_gateway.main import create_app
@@ -155,6 +158,7 @@ def exercise():
     try:
         with tempfile.TemporaryDirectory(prefix="m87-controls-") as temporary:
             settings = local_settings(Path(temporary))
+            settings.observability.log_export = LogExportConfig()  # Never inherit a real collector.
             settings.control_plane.admin_api_key_env = variable
             settings.observability.json_logs = False
             gateway = create_app(settings)
@@ -649,6 +653,74 @@ def exercise():
                 results.append(
                     {"scenario": "Sample replacement key, overlap and revocation", "passed": True}
                 )
+                token = secrets.token_urlsafe(32)
+                receiver = make_server(Path(temporary) / "receiver/deliveries.db", token)
+                receiver_worker = threading.Thread(target=receiver.serve_forever, daemon=True)
+                receiver_worker.start()
+                try:
+                    export = operator.get("/admin/api/log-export").json()["config"]
+                    export.update(
+                        enabled=True,
+                        endpoint=f"http://127.0.0.1:{receiver.server_port}/events",
+                        use_stored_key=True,
+                        api_key_env=None,
+                        poll_seconds=0.1,
+                    )
+                    draft = {"config": export, "key": token}
+                    assert operator.post("/admin/api/log-export/test", json=draft).json()["ok"]
+                    assert not operator.get("/admin/api/log-export").json()["config"]["enabled"]
+                    operator.put("/admin/api/log-export", json=draft).raise_for_status()
+                    with serving(
+                        sample_app(Settings(gateway_url=url, app_key=replacement["api_key"]))
+                    ) as sample_url:
+                        with httpx.Client(
+                            base_url=sample_url, timeout=10, trust_env=False
+                        ) as browser:
+                            response = browser.post(
+                                "/api/chat",
+                                json={
+                                    "messages": [
+                                        {"role": "user", "content": "Synthetic export showcase"}
+                                    ]
+                                },
+                            )
+                            response.raise_for_status()
+                            request_id = response.json()["request_id"]
+                    delivered = None
+                    for _ in range(100):
+                        with sqlite3.connect(receiver.database) as db:
+                            records = [
+                                json.loads(row[0])
+                                for row in db.execute("SELECT payload FROM deliveries")
+                            ]
+                        delivered = next(
+                            (
+                                record
+                                for record in records
+                                if record["event"]["request_id"] == request_id
+                            ),
+                            None,
+                        )
+                        if delivered:
+                            break
+                        time.sleep(0.02)
+                    assert delivered and delivered["event"]["total_tokens"] == 6
+                    assert "Synthetic export showcase" not in json.dumps(delivered)
+                    assert token not in operator.get("/admin/api/log-export").text
+                    export["enabled"] = False
+                    operator.put(
+                        "/admin/api/log-export", json={"config": export}
+                    ).raise_for_status()
+                    results.append(
+                        {
+                            "scenario": "Console export probe, encrypted credential and sample metadata delivery",
+                            "passed": True,
+                        }
+                    )
+                finally:
+                    receiver.shutdown()
+                    receiver.server_close()
+                    receiver_worker.join(timeout=2)
         return results
     finally:
         state.release.set()

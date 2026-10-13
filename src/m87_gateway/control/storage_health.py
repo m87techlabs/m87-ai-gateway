@@ -48,6 +48,8 @@ def sqlite_storage_health(backend, *, verify=False):
         with backend._connect() as connection:
             for row in connection.execute("SELECT encrypted_value FROM provider_keys"):
                 backend._fernet.decrypt(row[0])
+            for row in connection.execute("SELECT encrypted_value FROM log_export_credentials"):
+                backend._fernet.decrypt(row[0])
 
     def metadata():
         backend.check_storage()

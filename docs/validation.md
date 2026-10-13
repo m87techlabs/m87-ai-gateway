@@ -11,6 +11,28 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Console export configuration — 2026-10-12
+
+Verified with temporary stores and synthetic endpoints: **347 Python tests**, **40
+console/sample interaction tests**, lint/format (**107 Python files**), a wheel build
+and links/fences in **60 Markdown files**. The rebuilt Linux standalone preview passed
+saved receiver credentials, non-saving connection tests, metadata delivery, encrypted
+backup/restore, inference, logging, configuration recovery and lifecycle checks.
+
+The sample suite now contains **17 HTTP scenarios**, including console export setup
+and sample → gateway → synthetic inference → metadata receiver. Tests cover schema-8
+preservation including pending delivery, encrypted tokens, destination/source binding
+confirmation, hot enable/disable, stale writes and audit rollback, history credential
+removal, old revisions, backup tampering, operator-only APIs and safe probe failures.
+Browser tests cover password clearing, ETags, unsaved probes and stale/locked drafts.
+
+No existing gateway store, inference service or Docker instance was changed. Manual
+visual review, Windows workstation/Ollama, live receivers, clean-host installation,
+real power loss/disk exhaustion and final Docker packaging remain deferred. Loki/OTLP,
+remote content export and managed observability containers remain planned. Back up
+before schema 9; restored queues may replay to matching destinations. See
+[console export how-to](runbooks/configure-log-export.md).
+
 ## Operational documentation review
 
 On 2026-10-12, added the everyday operations how-to, consolidated runbook navigation,
@@ -40,7 +62,8 @@ Delivery is at least once after local commit within capacity/expiry policy; rece
 deduplication is required. Local logging before commit remains best effort. Real
 power loss, disk exhaustion/corruption, live collectors, Windows workstation/Ollama
 interaction, visual browser review, clean hosts and final Docker packaging are deferred.
-Loki/OTLP, remote content and UI export configuration remain planned. Native CI builder
+At that checkpoint UI export configuration was planned; it is implemented below.
+Loki/OTLP and remote content remain planned. Native CI builder
 checks do not establish clean-workstation support. No live database or existing
 service/container was changed. Back up before schema 8; restored pending metadata
 may replay to its matching configured destination. See [export runbook](runbooks/log-export.md).

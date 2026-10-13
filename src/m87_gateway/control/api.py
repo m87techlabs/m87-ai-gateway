@@ -735,7 +735,7 @@ async def destinations(request: Request, store: AdminStore):
                 "name": "Remote log export",
                 "type": "sanitized metadata webhook",
                 "enabled": settings.observability.log_export.enabled,
-                "target": "Startup configuration; delivery status in Logs",
+                "target": "Configure in Log export; delivery status in Logs",
             },
         ]
     }

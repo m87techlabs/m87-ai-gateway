@@ -206,7 +206,7 @@ admission until completion or disconnect. See [stream lifecycle and errors](runb
 
 ## Managed configuration revisions
 
-Console-managed provider/default/capture/controls changes create encrypted revisions
+Console-managed provider/default/capture/controls/export changes create encrypted revisions
 and management audit. The console sends ETag preconditions to reject stale saves;
 API clients can pass `If-Match` from Setup/Controls GET responses. Restores require
 `expected_revision` and `RESTORE`, preserve current credentials for unchanged bindings,
@@ -231,6 +231,11 @@ timeout_seconds 5, poll_seconds 1, retry_seconds 2, max_retry_seconds 300. Enabl
 export requires a persistent control plane and endpoint. `api_key_env` names an
 optional privately supplied bearer token; credentials are not stored in config.
 Each field accepts `GATEWAY_LOG_EXPORT_<UPPERCASE_FIELD>` in source and native/local
-launchers. The local launcher does not load YAML. Changes require restart, and
-console configuration is planned. Captured content cannot be enabled for this exporter.
+launchers. The local launcher does not load YAML. Bootstrap changes require restart.
+The **Log export** screen persists overrides and applies them without restart. It can
+store an encrypted destination-bound token (`use_stored_key`, default false), or select
+a process environment variable; the two sources are mutually exclusive. Saved settings
+take precedence over bootstrap settings. Token values are excluded from config/history.
+Draft tests send one synthetic event without saving. Captured content cannot be enabled
+for this exporter. See [console setup](runbooks/configure-log-export.md).
 See [metadata export](runbooks/log-export.md) for examples and policy boundaries.

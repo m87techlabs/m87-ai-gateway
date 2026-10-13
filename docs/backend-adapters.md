@@ -165,3 +165,13 @@ retry/expiry/capacity counters and destination binding must survive restart. Exi
 backends work with export disabled. Reuse the failure/restart cases in
 `tests/test_log_export.py` and follow [export operations](runbooks/log-export.md).
 Exporter extensions use a separate trusted registry; configuration never imports code.
+
+## Optional console export credentials
+
+Console management additionally requires `secrets.get_export_key(binding)` and
+`secrets.export_key_binding()`. The configuration repository must support
+`export_key`, `export_binding` and `clear_export_key` in its atomic save transaction,
+including encrypted storage and key-change audit. Include export secrets in redaction
+inputs, health and backup checks. These extend the optional preview contract; run
+`tests/test_export_configuration.py` before claiming compatibility. Startup environment
+export remains available with the outbox contract alone.

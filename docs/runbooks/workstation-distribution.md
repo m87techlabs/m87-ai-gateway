@@ -101,7 +101,9 @@ environment. Never put the password in command arguments, Git or shared logs.
 The versioned archive encrypts a consistent SQLite snapshot, master key and saved
 admin key with a password-derived Fernet key (PBKDF2-HMAC-SHA256, 600,000 iterations,
 random salt). It includes projects, keys, connections, controls and retained event
-content. It excludes environment variables, upstream services, external JSONL
+content, pending export metadata and encrypted saved receiver credentials. Export
+backups validate stored-token bindings when enabled; restores may replay pending
+deliveries, so retain receiver deduplication. It excludes environment variables, upstream services, external JSONL
 files, exports, inference models and arbitrary YAML files. Environment-provided
 operator/provider credentials must be supplied separately after restore.
 

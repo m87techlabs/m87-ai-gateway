@@ -210,6 +210,7 @@ class LogExportConfig(ConfigModel):
     adapter: str = Field(default="webhook", pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     endpoint: str | None = Field(default=None, repr=False, max_length=2048)
     api_key_env: str | None = None
+    use_stored_key: bool = False
     max_pending: int = Field(default=5000, ge=1, le=100000)
     retention_hours: int = Field(default=168, ge=1, le=2160)
     timeout_seconds: float = Field(default=5, gt=0, le=30)
@@ -229,6 +230,8 @@ class LogExportConfig(ConfigModel):
 
     @model_validator(mode="after")
     def valid_export(self):
+        if self.use_stored_key and self.api_key_env:
+            raise ValueError("Choose either a stored export key or an environment binding")
         if self.enabled and not self.endpoint:
             raise ValueError("Enabled log export requires an endpoint")
         if self.max_retry_seconds < self.retry_seconds:
@@ -480,6 +483,7 @@ def log_export_environment(environ) -> dict:
         "adapter",
         "endpoint",
         "api_key_env",
+        "use_stored_key",
         "max_pending",
         "retention_hours",
         "timeout_seconds",
@@ -491,7 +495,7 @@ def log_export_environment(environ) -> dict:
         if variable in environ:
             values[field] = (
                 _parse_bool(variable, environ[variable])
-                if field == "enabled"
+                if field in {"enabled", "use_stored_key"}
                 else environ[variable]
             )
     return values

@@ -24,7 +24,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 class LocalControlStore(BackendFacade):
@@ -127,6 +127,7 @@ class LocalControlStore(BackendFacade):
             self.identities.migrate(connection, previous_version)
             self.management_audit.migrate(connection)
             self.configuration.migrate(connection)
+            self.secrets.migrate(connection)
             self.traffic.migrate(connection)
             self.usage_repository.migrate(connection, previous_version)
             self.export_outbox.migrate(connection)

@@ -5,8 +5,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from m87_gateway.api.errors import GatewayError
 from .api import AdminStore
-from .configuration_service import changed_credentials, persist_configuration
+from .configuration_service import (
+    changed_credentials,
+    changed_export_credentials,
+    persist_configuration,
+)
 from .setup import activate, apply_overrides
+from m87_gateway.logging.exporters import ExportService, activate_export
 
 router = APIRouter()
 
@@ -50,32 +55,62 @@ async def restore_revision(
         ) from exc
     current = request.app.state.settings
     changed = changed_credentials(current, settings, saved)
+    export_changed = changed_export_credentials(current, settings, saved)
     # Do not revive a historical environment binding or reuse a stored credential
     # across endpoints. Explicit confirmation removes every alias for affected providers.
-    if changed and not payload.clear_changed_credentials:
+    if (changed or export_changed) and not payload.clear_changed_credentials:
         raise GatewayError(
             409,
             "credential_confirmation_required",
-            "Provider endpoint or credential binding changes. Confirm removal of credentials for affected providers.",
+            "Endpoint or credential binding changes. Confirm removal of credentials for affected providers or log export.",
         )
     for name in changed:
         saved["providers"][name]["api_key_env"] = None
         saved["providers"][name]["base_url_env"] = None
+    # Older revisions do not manage export: preserve the current console override.
+    saved.setdefault("log_export", current.observability.log_export.model_dump())
+    if export_changed:
+        saved["log_export"].update(enabled=False, api_key_env=None, use_stored_key=False)
     settings = apply_overrides(current, saved)
-    revision = persist_configuration(
-        store,
-        saved,
-        settings,
-        action="configuration.restored",
-        restored_from=revision_id,
-        expected_revision=payload.expected_revision,
-        clear_providers=changed,
-    )
-    activate(request, settings)
+    service = None
+    if current.observability.log_export != settings.observability.log_export:
+        try:
+            service = ExportService(
+                settings.observability.log_export,
+                store,
+                request.app.state.recorder,
+                configure_outbox=False,
+            )
+        except Exception as exc:
+            raise GatewayError(
+                409,
+                "export_restore_unavailable",
+                "Cannot prepare restored export settings; check credentials and Storage health",
+            ) from exc
+    try:
+        revision = persist_configuration(
+            store,
+            saved,
+            settings,
+            action="configuration.restored",
+            restored_from=revision_id,
+            expected_revision=payload.expected_revision,
+            clear_providers=changed,
+            clear_export_key=export_changed,
+        )
+    except Exception:
+        if service:
+            await service.close()
+        raise
+    if service:
+        await activate_export(request, settings, service)
+    else:
+        activate(request, settings)
     return {
         "revision_id": revision,
         "restored_from": revision_id,
         "cleared_provider_credentials": changed,
+        "cleared_export_credential": export_changed,
     }
 
 
@@ -116,5 +151,8 @@ async def revision_detail(revision_id: int, request: Request, store: AdminStore)
         "revision_id": revision_id,
         "settings": snapshot,
         "changed_provider_bindings": changed,
+        "changed_export_binding": changed_export_credentials(
+            request.app.state.settings, settings, snapshot
+        ),
         "scope": "Console-managed settings only. Current credentials are preserved for unchanged bindings. Changed bindings require credential removal.",
     }

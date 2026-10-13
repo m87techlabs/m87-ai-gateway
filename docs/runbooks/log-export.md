@@ -10,7 +10,8 @@ the [logging showcase](logging-showcase.md).
 
 This optional feature uses the gateway's private SQLite store and one background
 worker. It requires no Docker or additional database. Webhook delivery is implemented;
-Loki, OTLP, UI configuration and remote content export remain planned.
+Console configuration and encrypted receiver tokens are implemented; see
+[setup how-to](configure-log-export.md). Loki, OTLP and remote content export remain planned.
 
 ```mermaid
 flowchart LR
@@ -28,7 +29,7 @@ flowchart LR
 
 ## Local demonstration
 
-Back up first: startup upgrades the private database to **schema 8**. Existing keys,
+Back up first: startup upgrades the private database to **schema 9**. Existing keys,
 logs, captured content, configuration history, usage and audit are preserved. An
 older binary rejects the newer store; restore its matching backup into a fresh
 directory for rollback. Do not copy individual SQLite files while the gateway runs.
@@ -98,6 +99,10 @@ corruption and disk exhaustion still require separate operational evidence.
 
 ## Configuration
 
+Prefer [Log export in the console](configure-log-export.md): configure, store an encrypted
+token, test a draft and enable delivery without restart. The environment/YAML method
+below remains available for bootstrap; saved UI settings override it.
+
 For the YAML-configured server entry point:
 
 ```yaml
@@ -118,7 +123,7 @@ observability:
 ```
 
 Every field accepts `GATEWAY_LOG_EXPORT_<FIELD_IN_UPPERCASE>` in either launcher.
-Changes take effect on restart. Export is disabled by default. A configured token
+Bootstrap changes take effect on restart; console saves apply immediately. Export is disabled by default. A configured token
 variable must contain a non-empty ASCII token without whitespace. Use HTTPS for
 remote authenticated collectors; local HTTP is useful for this loopback example.
 Endpoints cannot contain embedded credentials, query strings or fragments.
@@ -159,7 +164,7 @@ Endpoint/credentials and raw remote errors are excluded from operator health out
 ## Framework extensions and verification
 
 Trusted source integrations register `register_log_exporter(name, factory)` from
-`m87_gateway.logging.exporters` before startup. Factories receive validated startup
+`m87_gateway.logging.exporters` before startup. Factories receive validated effective
 configuration and the resolved token; exporters implement async `send(delivery_id,
 event) -> bool` and `close()`. The worker supplies a total deadline. Source adapters
 must cooperate with async cancellation, preserve delivery IDs and avoid logging
