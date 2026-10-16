@@ -68,7 +68,9 @@ Overview/Loki dashboards, provisioning templates and nine Prometheus alerts with
 query/transition checks are implemented in deploy/observability. New scrape-time
 logging metrics expose local failures and export queue/counters without secret labels.
 Native ZIPs include the templates and docs. See [monitoring setup](runbooks/grafana-monitoring.md).
-Actual Grafana rendering, live Loki and notification routing need separate verification.
+Native Linux/WSL Grafana/Prometheus setup now has live provisioning, datasource,
+24-query and nine-rule health evidence; use [local setup](runbooks/local-monitoring.md).
+Visual Grafana rendering, live Loki and notification routing need separate verification.
 Next add optional
 managed profiles with provision/start/stop/readiness/backup/rollback. Docker remains
 on demand until these service-specific checks are needed. Metrics contain aggregates;

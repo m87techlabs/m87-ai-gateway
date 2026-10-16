@@ -15,3 +15,5 @@ Start with the [monitoring runbook](../../docs/runbooks/grafana-monitoring.md). 
 standalone ZIP, these files are under `observability/` with `MONITORING.md` beside it.
 Only structural/metric/query/rule and native packaging checks are automated here;
 actual Grafana rendering and live Loki ingestion/querying remain separate checks.
+
+Use the source checkout’s [native local monitoring helper](../../docs/runbooks/local-monitoring.md) for a private Linux/WSL installation. It provisions metrics and alerts; Loki and notification routing remain separate.

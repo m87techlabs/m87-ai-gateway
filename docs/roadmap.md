@@ -120,7 +120,9 @@ sequence and remaining development scope.
   and synthetic sample/native coverage. Live Loki/Grafana verification remains deferred.
 - [x] Add optional Grafana overview/Loki dashboards, provisioning templates, Prometheus
   alerts and query/transition tests; include assets/docs in native downloads.
-- Verify live Grafana/Loki/notifications, then add managed service profiles and OTLP;
+- [x] Add optional native Linux/WSL Grafana/Prometheus lifecycle with pinned downloads,
+  private login, fallback-port detection and live datasource/query/rule verification.
+- Verify visual Grafana, live Loki/notifications, then add managed service profiles and OTLP;
   direct Basic/tenant headers remain follow-up scope.
   and managed observability profiles. Live/manual release evidence remains separate.
 

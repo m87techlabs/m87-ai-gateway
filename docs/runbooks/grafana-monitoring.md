@@ -29,6 +29,10 @@ flowchart LR
     Loki --> Logs[Grafana metadata dashboard]
 ```
 
+For the optional native Linux/WSL helper, use [local monitoring setup](local-monitoring.md)
+to install and run Grafana/Prometheus without Docker. The steps below cover services
+you manage yourself.
+
 ## 1. Point Prometheus at the gateway
 
 Run `./status.sh` to find the actual gateway URL. Default workstation port is 8087;

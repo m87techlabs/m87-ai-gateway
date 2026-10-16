@@ -11,6 +11,33 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Native local Grafana/Prometheus setup — 2026-10-16
+
+Verified **374 Python tests**, lint/format (**113 Python files**), shell syntax for
+three monitoring wrappers, links/fences in **64 Markdown files**, and the existing
+nine-rule/24-query checks with Prometheus **3.13.4 promtool**. Helper tests cover
+process identity, unrelated-process preservation, private state/symlinks, rejected
+checksums, missing tools without network permission, loopback configuration,
+preserved initial password, status and gateway fallback-port detection.
+
+Live native Linux/WSL setup used official checksum-verified **Grafana OSS 13.2.4**
+and **Prometheus LTS 3.13.4**. Verified Grafana database health, overview provisioning,
+datasource health and all **24 queries through Grafana's actual datasource API**.
+Prometheus reported the gateway scrape UP, all **nine rules healthy**, and no active
+alerts. Repeated helper start preserved PIDs, ports and data. The helper provisions
+metrics only; no Loki instance or external notification receiver was started.
+
+The existing stopped gateway had schema-5 data. An encrypted recovery backup and
+separate private password were saved before starting it with the current schema-9
+migration. Monitoring config/data/tools remain in ignored private storage; secrets
+and local absolute paths are excluded from repository content. Docker integration
+was unavailable and was left disabled. The requested native services remain running.
+
+Native Windows/ARM helper support, visual browser review, actual notification delivery,
+live Loki ingestion/query/retention and managed container lifecycle remain deferred.
+Native ZIPs still ship the monitoring assets/docs; the new Python lifecycle helper
+is a source-checkout option. See [local monitoring](runbooks/local-monitoring.md).
+
 ## Optional monitoring dashboards and alerts — 2026-10-16
 
 Verified with temporary stores: **366 Python tests**, lint/format (**111 Python files**),

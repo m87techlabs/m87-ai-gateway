@@ -224,3 +224,5 @@ The [monitoring bundle](deploy/observability/README.md) includes an overview das
 Loki request-metadata browsing, Prometheus scrape configuration and nine tested alert
 rules. Native ZIPs include these assets and docs. Supply your own monitoring services;
 none start automatically. Follow [setup and verification](docs/runbooks/grafana-monitoring.md).
+
+For a Linux/WSL workstation, run `./monitoring-start.sh --install` after starting the gateway. Use `./monitoring-status.sh` and `./monitoring-stop.sh` to manage only those services. See [local monitoring setup](docs/runbooks/local-monitoring.md) for login and alert details.

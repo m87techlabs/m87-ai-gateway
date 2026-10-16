@@ -45,6 +45,7 @@ jobs:
           ruff format --check src tests scripts examples
           bash -n start.sh stop.sh status.sh scripts/gateway-lifecycle.sh
           bash -n docker-start.sh docker-stop.sh docker-status.sh scripts/docker-lifecycle.sh
+          bash -n monitoring-start.sh monitoring-stop.sh monitoring-status.sh
           bash -n examples/chat_app/start.sh examples/chat_app/stop.sh examples/chat_app/status.sh
 
       - name: Test

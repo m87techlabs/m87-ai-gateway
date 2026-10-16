@@ -77,3 +77,5 @@ flowchart LR
 - [Loki metadata export](runbooks/loki-export.md): existing receiver setup, LogQL, retry and authentication limits.
 
 - [Grafana dashboards and Prometheus alerts](runbooks/grafana-monitoring.md): optional provisioning, scrape setup, rule tests and notification boundaries.
+
+- [Native local monitoring](runbooks/local-monitoring.md): repeatable Grafana/Prometheus setup, private login, status and stop without Docker.

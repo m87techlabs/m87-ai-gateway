@@ -762,3 +762,5 @@ include monitoring assets and docs; no extra service starts automatically.
 Run scripts/check_observability.py with promtool for rule and query validation. Hosted
 CI uses a checksum-pinned verification binary. Actual Grafana rendering, live Loki and
 notification routing remain deferred. See docs/runbooks/grafana-monitoring.md.
+
+Native Linux/WSL x86-64 monitoring is available through monitoring-start.sh/stop/status. The source-only helper downloads checksum-pinned Grafana OSS and Prometheus, uses private ignored state, loopback listeners, preserved passwords, process identity checks and no automatic notifications. It does not start Docker, Loki or the gateway. Explicit user requests may start it; routine development must leave live services alone. Source tests use temporary stores/processes. See docs/runbooks/local-monitoring.md.

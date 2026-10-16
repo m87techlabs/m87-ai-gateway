@@ -144,3 +144,5 @@ Use the included [monitoring setup](grafana-monitoring.md) with existing Prometh
 Grafana and optionally Loki. The overview reports traffic/tokens and logging delivery;
 the Loki dashboard searches project/app/request metadata. Alerts evaluate in Prometheus;
 notifications require separate routing. No optional service starts with the gateway.
+
+For a native Linux/WSL setup, use `./monitoring-start.sh --install`, then `./monitoring-status.sh` or `./monitoring-stop.sh`. Follow [local monitoring](local-monitoring.md) for requirements and the private password file.

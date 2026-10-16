@@ -8,6 +8,14 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Optional Linux/WSL x86-64 Grafana/Prometheus setup with root start/stop/status helpers,
+  checksum-pinned downloads, private initial credentials, loopback listeners and
+  identity-checked lifecycle. Existing services, passwords and data are preserved.
+- Native local monitoring runbook and live provisioning/query/alert-health verification.
+  Loki and external notification routing remain separate opt-in setup.
+
+### Added
+
 - Optional Grafana overview and Loki metadata dashboards, datasource/provider templates,
   private Prometheus scraping and nine alert rules with transition/query verification.
 - Read-only logging health metrics with fixed labels and unknown counts omitted during

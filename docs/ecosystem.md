@@ -137,3 +137,7 @@ state; IDs/content/credentials never become new health labels. Query/rule tests 
 automated; live Grafana/Loki and notification checks remain deferred. See
 [monitoring runbook](runbooks/grafana-monitoring.md). This is the configuration foundation
 for later managed profiles; it does not start Docker or install services.
+
+## Native workstation monitoring helper
+
+An optional source-only Linux/WSL x86-64 helper installs pinned Grafana/Prometheus into project-private storage, provisions metrics/alerts and provides start/stop/status. It has live local API/query evidence. This is a bounded workstation integration; managed Docker/Loki/Vault profiles and notification routing remain planned. See [local setup](runbooks/local-monitoring.md).
