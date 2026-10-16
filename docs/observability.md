@@ -123,9 +123,10 @@ flowchart LR
     Gateway --> Private[Optional private rotating traffic file]
     Gateway --> Metrics[Metrics endpoint]
     Metrics -. Planned collector .-> Prometheus[Prometheus]
-    Metadata -. Planned collector .-> Loki[Loki]
-    Private -. Explicit export policy .-> Loki
-    Prometheus --> Grafana[Grafana views]
+    Gateway --> Outbox[Bounded metadata outbox]
+    Outbox --> Loki[Loki]
+    Private -. Planned content export policy .-> Loki
+    Prometheus -. Planned dashboards .-> Grafana[Grafana views]
     Loki --> Grafana
 ```
 
@@ -152,8 +153,8 @@ event detail, bounded JSON export, key operations, and a destination inventory.
 The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and
 must be recorded at that layer. Streaming, embeddings, traces,
-cost estimation, Loki/OTLP and remote content export remain planned. Optional sanitized
-metadata webhook delivery is implemented.
+cost estimation, OTLP and remote content export remain planned. Optional sanitized
+metadata webhook and Loki delivery are implemented.
 
 
 ## Stream and cancellation outcomes
@@ -209,3 +210,12 @@ for the example receiver, both launcher configurations and backup/replay boundar
 **Log export** manages gateway-wide metadata destinations, encrypted receiver credentials
 and worker bounds. Save applies immediately; Test connection sends a synthetic event
 without changing config, queue or counters. See [setup how-to](runbooks/configure-log-export.md).
+
+## Loki metadata delivery
+
+The `loki` adapter pushes bounded sanitized JSON with original timestamps, delivery IDs
+and fixed `service_name`/`log_kind` labels. Request/project/model/token fields remain
+in the log body. It shares queue, credentials, console tests and recovery with webhook.
+Only 204 acknowledges ingestion; blocked/old/out-of-order records retry within expiry.
+See [Loki runbook](runbooks/loki-export.md) for LogQL, supported authentication, live
+verification limits and duplicate handling. Grafana provisioning remains planned.

@@ -135,7 +135,11 @@ best effort. Schema 9 adds console-managed export settings and destination-bound
 encrypted receiver credentials. Saves hot-activate workers after atomic config/key/history/audit
 commit. Draft probes send synthetic metadata without saving or queueing. Changed history
 bindings clear credentials and disable export; older snapshots preserve current settings.
-Loki/OTLP, remote content and Grafana remain planned. See docs/runbooks/configure-log-export.md.
+The Loki adapter is implemented for single-tenant or bearer-proxy endpoints; it uses
+fixed labels, original event timestamps and stable JSON/IDs across retries, and
+acknowledges only HTTP 204. Direct Basic/tenant headers, OTLP, remote content and
+Grafana provisioning remain planned. Live Loki/Grafana evidence is deferred; source
+sample and native smoke use synthetic receivers. See docs/runbooks/loki-export.md. See docs/runbooks/configure-log-export.md.
 See docs/runbooks/log-export.md; preserve queue state and document backup replay.
 Never claim crash durability or secure erasure from logical SQLite deletion.
 

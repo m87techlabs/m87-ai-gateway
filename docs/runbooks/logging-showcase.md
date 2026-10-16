@@ -116,7 +116,7 @@ cd tests/console
 npm test
 ```
 
-The 16-scenario sample suite includes exact request lookup, captured input/output,
+The 18-scenario sample suite includes exact request lookup, captured input/output,
 provider-reported tokens, metadata/content export separation, content deletion and
 recording health. Tests additionally cover schema-6 preservation, atomic writes,
 independent retention on reads, pagination ties, malformed cursors, project filters,
@@ -127,14 +127,14 @@ and encrypted backup/recovery.
 On a write failure, inspect **Storage health**, available disk, owner-only permissions
 and competing writers. Preserve failed-store evidence and use encrypted recovery
 when required; do not regenerate keys or grant broad permissions. Local recording
-remains best effort before commit. Metadata outbox/webhook delivery is implemented;
-Loki/OTLP, remote content, traces and managed Grafana services remain planned in [logging plan](../logging-plan.md).
+remains best effort before commit. Metadata outbox/webhook and [Loki delivery](loki-export.md) are implemented;
+OTLP, remote content, traces and managed Grafana services remain planned in [logging plan](../logging-plan.md).
 Record live Ollama/browser/tunnel/Docker results separately in [validation](../validation.md).
 
 ## Optional remote metadata showcase
 
-Current startup uses schema 9, which also adds the bounded metadata delivery queue.
+Current startup uses schema 9, including the bounded queue introduced in schema 8.
 Back up before upgrading; older binaries require their matching backup for rollback.
 Follow [metadata webhook export](log-export.md) to demonstrate outage/restart recovery
 with a local receiver. Input/output stay in the local viewer; remote content export
-and Loki/OTLP integrations remain planned.
+and OTLP remain planned. See [Loki setup](loki-export.md) for the implemented adapter.

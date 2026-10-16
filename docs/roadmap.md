@@ -112,11 +112,13 @@ sequence and remaining development scope.
 - [x] Exact request/application/outcome search, deterministic paging and clear capture states.
 - [x] Readable input/output, raw JSON, separate tokens and sample-to-console request links.
 - [x] Metadata-only default export and explicit content inclusion, with recording health.
-- [x] Extend sample acceptance to 17 scenarios and native logging/recovery smoke.
+- [x] Extend sample acceptance to 18 scenarios and native logging/recovery smoke.
 - [x] Add bounded schema-8 metadata outbox and optional webhook delivery, with stable
   IDs, persisted leases/retries, capacity/expiry, destination binding and receiver tests.
 - [x] Add console export configuration, encrypted credentials, draft tests and schema-9 backup/recovery.
-- Add Loki/OTLP, then dashboards/alerts
+- [x] Add Loki JSON push with fixed labels, stable retry payloads, strict acknowledgement
+  and synthetic sample/native coverage. Live Loki/Grafana verification remains deferred.
+- Add Grafana dashboards/alerts and OTLP; direct Basic/tenant headers remain follow-up scope.
   and managed observability profiles. Live/manual release evidence remains separate.
 
 ## Backend foundations — in progress

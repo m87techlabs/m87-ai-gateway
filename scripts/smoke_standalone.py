@@ -31,6 +31,22 @@ class Inference(BaseHTTPRequestHandler):
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if self.path == "/loki/api/v1/push":
+            assert self.headers["Authorization"] == "Bearer synthetic-export-token"
+            stream = body["streams"][0]
+            assert stream["stream"] == {
+                "service_name": "m87-ai-gateway",
+                "log_kind": "llm_exchange",
+            }
+            timestamp, line = stream["values"][0]
+            assert isinstance(timestamp, str) and timestamp.isdigit()
+            event = json.loads(line)
+            with self.server.delivery_lock:
+                self.server.deliveries.setdefault(event["delivery_id"], event)
+            self.send_response(204)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if self.path == "/events":
             assert self.headers["Authorization"] == "Bearer synthetic-export-token"
             assert self.headers["Idempotency-Key"] == body["delivery_id"]
@@ -382,6 +398,22 @@ def exercise(executable):
                     admin,
                 )
                 assert call("/admin/api/log-export", key=admin)["has_stored_key"]
+                export.update(
+                    adapter="loki",
+                    endpoint=f"http://127.0.0.1:{inference.server_port}/loki/api/v1/push",
+                )
+                assert call(
+                    "/admin/api/log-export/test",
+                    "POST",
+                    {"config": export, "key": "synthetic-export-token"},
+                    admin,
+                )["ok"]
+                call(
+                    "/admin/api/log-export",
+                    "PUT",
+                    {"config": export, "key": "synthetic-export-token"},
+                    admin,
+                )
                 expected_revision = call("/admin/api/configuration/revisions", key=admin)[
                     "current_revision"
                 ]
@@ -428,6 +460,17 @@ def exercise(executable):
                     app["api_key"],
                 )
                 assert response["usage"]["total_tokens"] == 6
+                assert call("/admin/api/log-export", key=admin)["config"]["adapter"] == "loki"
+                for _ in range(100):
+                    with inference.delivery_lock:
+                        found = any(
+                            value.get("total_tokens") == 6
+                            for value in inference.deliveries.values()
+                        )
+                    if found:
+                        break
+                    time.sleep(0.05)
+                assert found, "Restored native gateway did not deliver Loki metadata"
                 native("--stop")
                 process.wait(timeout=10)
                 print(

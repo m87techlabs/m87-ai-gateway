@@ -2,10 +2,10 @@
 
 ## Use this when
 
-Use **Log export** to configure an existing webhook receiver, store its bearer token
+Use **Log export** to configure an existing webhook or Loki receiver, store its bearer token
 in the gateway, test a draft, and enable/disable delivery without restarting. This
-is gateway-wide metadata export. Input/output remains in local **Logs**; Loki/OTLP
-and remote content export are planned.
+is gateway-wide metadata export. Input/output remains in local **Logs**. The [Loki adapter](loki-export.md)
+supports single-tenant and bearer-proxy receivers; OTLP and remote content remain planned.
 
 Prerequisites: the gateway is running, you have its operator key, and a webhook
 receiver is reachable. The bundled SQLite backend supports this workflow. External
@@ -35,7 +35,7 @@ inspection commands, outage exercises and optional startup environment settings.
 ## Configure, test and save
 
 1. Open the gateway console, authenticate as operator, and select **Log export**.
-2. Choose **webhook** and enter the exact receiver endpoint. For the local example,
+2. Choose **webhook** (or follow [Loki setup](loki-export.md)) and enter the exact receiver endpoint. For the local example,
    use `http://127.0.0.1:9087/events`. Use HTTPS for remote authenticated receivers.
 3. Choose authentication:
 
@@ -136,7 +136,7 @@ npm test --prefix tests/console
 ```
 
 These checks use temporary stores and synthetic endpoints. The sample suite has
-17 scenarios, including console export testing and metadata delivery. Native smoke
+18 scenarios, including console export testing and metadata delivery. Native smoke
 also tests saved tokens and encrypted recovery without relying on startup token
 variables. See [validation](../validation.md) for live/manual and packaging limits.
 

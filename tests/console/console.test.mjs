@@ -71,7 +71,7 @@ async function consoleFixture(t) {
         exportConfig = body.config; if (body.clear_key) savedExportKey = false; if (body.key) savedExportKey = true;
         return response(null, 204);
       }
-      return response({config: exportConfig, adapters: ["webhook"], has_stored_key: savedExportKey, has_any_stored_key: savedExportKey, health: {enabled: exportConfig.enabled, delivery_state: "not_delivered_yet", pending: 0, delivered: 0}, scope: "Test sends one synthetic event without saving."}, 200, {ETag: '"2"'});
+      return response({config: exportConfig, adapters: ["loki", "webhook"], has_stored_key: savedExportKey, has_any_stored_key: savedExportKey, health: {enabled: exportConfig.enabled, delivery_state: "not_delivered_yet", pending: 0, delivered: 0}, scope: "Test sends one synthetic event without saving."}, 200, {ETag: '"2"'});
     }
     if (url.pathname.endsWith("/connections/ollama/test")) {
       return body.config.base_url.includes("offline")
@@ -574,4 +574,18 @@ test("editing an export draft aborts its outdated probe", async (t) => {
   $("export-form").elements.endpoint.dispatchEvent(new window.Event("input", {bubbles: true}));
   exportPending().resolve(); await delay(20);
   assert.match($("export-test-status").textContent, /Draft changed/);
+});
+
+
+test("Loki is selectable and uses the shared credential and probe controls", async (t) => {
+  const {window, $, requests} = await consoleFixture(t);
+  window.document.querySelector('[data-view="export"]').click();
+  await until(() => !$("export-fields").disabled);
+  const fields = $("export-form").elements;
+  fields.adapter.value = "loki"; fields.endpoint.value = "http://127.0.0.1:3100/loki/api/v1/push";
+  $("export-test").click();
+  await until(() => $("export-test-status").textContent.includes("accepted"));
+  const probe = requests.find((r) => r.path === "/admin/api/log-export/test");
+  assert.equal(probe.body.config.adapter, "loki");
+  assert.equal(probe.body.config.endpoint, fields.endpoint.value);
 });

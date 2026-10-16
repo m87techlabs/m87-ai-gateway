@@ -53,8 +53,8 @@ additional storage package is required.
 Unknown adapter identifiers fail before creating a SQLite database or master key. The local launcher may already
 have prepared its operator key and lifecycle files.
 Configuration accepts identifiers, never Python module paths or executable code.
-Only SQLite is bundled; its optional metadata outbox/webhook exporter is implemented.
-PostgreSQL, Vault, Loki and OTLP implementations remain planned.
+Only SQLite is bundled; its optional metadata outbox and webhook/Loki exporters are implemented.
+PostgreSQL, Vault and OTLP implementations remain planned.
 
 ## Trusted source extensions
 
@@ -175,3 +175,9 @@ including encrypted storage and key-change audit. Include export secrets in reda
 inputs, health and backup checks. These extend the optional preview contract; run
 `tests/test_export_configuration.py` before claiming compatibility. Startup environment
 export remains available with the outbox contract alone.
+
+The built-in `loki` factory uses the same outbox and encrypted credential contracts
+as `webhook`; no schema change is needed. Preserve original timestamps and JSON lines
+on retry and acknowledge only 204. Run `tests/test_loki_export.py` alongside the shared
+exporter suite. Direct Basic/tenant headers and live collector evidence remain deferred.
+See [Loki operations](runbooks/loki-export.md).

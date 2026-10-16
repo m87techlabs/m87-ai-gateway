@@ -28,7 +28,7 @@ guide prerequisites and provide approved startup on supported platforms.
 | --- | --- | --- |
 | Included gateway | API, project dashboard, keys, test console, local logs/usage | Implemented local developer preview |
 | Grafana + Prometheus | Metrics history, dashboards and alerts | Managed setup and dashboards planned |
-| Loki + collector/exporter | Sanitized correlated log browsing and retention | Remote delivery and provisioning planned |
+| Loki + collector/exporter | Sanitized correlated log browsing and retention | Loki adapter implemented; live verification and provisioning planned |
 | Vault or external secret store | Scoped provider-credential retrieval and rotation | Adapter and managed lifecycle planned |
 | Shared persistence | Coordinated usage/configuration for replicas | Planned; SQLite currently targets one process |
 

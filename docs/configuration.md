@@ -225,7 +225,7 @@ and opaque cursors. Operator exports now default to metadata; request content wi
 
 ## Metadata export bootstrap
 
-`observability.log_export` configures optional sanitized metadata webhook delivery.
+`observability.log_export` configures optional sanitized metadata webhook or Loki delivery.
 Defaults: disabled, adapter `webhook`, max_pending 5000, retention_hours 168,
 timeout_seconds 5, poll_seconds 1, retry_seconds 2, max_retry_seconds 300. Enabled
 export requires a persistent control plane and endpoint. `api_key_env` names an
@@ -239,3 +239,12 @@ take precedence over bootstrap settings. Token values are excluded from config/h
 Draft tests send one synthetic event without saving. Captured content cannot be enabled
 for this exporter. See [console setup](runbooks/configure-log-export.md).
 See [metadata export](runbooks/log-export.md) for examples and policy boundaries.
+
+## Loki export adapter
+
+Select `adapter: loki` with a complete `/loki/api/v1/push` endpoint. It uses existing
+export limits, queue and stored/environment bearer-token settings. No schema or
+container dependency is added. Labels are fixed; metadata is JSON and original event
+time is preserved. Only 204 acknowledges delivery. Single-tenant or bearer-proxy
+endpoints are supported; direct Basic/tenant headers remain planned. See
+[Loki setup and recovery](runbooks/loki-export.md).

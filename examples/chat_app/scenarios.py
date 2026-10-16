@@ -658,65 +658,70 @@ def exercise():
                 receiver_worker = threading.Thread(target=receiver.serve_forever, daemon=True)
                 receiver_worker.start()
                 try:
-                    export = operator.get("/admin/api/log-export").json()["config"]
-                    export.update(
-                        enabled=True,
-                        endpoint=f"http://127.0.0.1:{receiver.server_port}/events",
-                        use_stored_key=True,
-                        api_key_env=None,
-                        poll_seconds=0.1,
-                    )
-                    draft = {"config": export, "key": token}
-                    assert operator.post("/admin/api/log-export/test", json=draft).json()["ok"]
-                    assert not operator.get("/admin/api/log-export").json()["config"]["enabled"]
-                    operator.put("/admin/api/log-export", json=draft).raise_for_status()
-                    with serving(
-                        sample_app(Settings(gateway_url=url, app_key=replacement["api_key"]))
-                    ) as sample_url:
-                        with httpx.Client(
-                            base_url=sample_url, timeout=10, trust_env=False
-                        ) as browser:
-                            response = browser.post(
-                                "/api/chat",
-                                json={
-                                    "messages": [
-                                        {"role": "user", "content": "Synthetic export showcase"}
-                                    ]
-                                },
-                            )
-                            response.raise_for_status()
-                            request_id = response.json()["request_id"]
-                    delivered = None
-                    for _ in range(100):
-                        with sqlite3.connect(receiver.database) as db:
-                            records = [
-                                json.loads(row[0])
-                                for row in db.execute("SELECT payload FROM deliveries")
-                            ]
-                        delivered = next(
-                            (
-                                record
-                                for record in records
-                                if record["event"]["request_id"] == request_id
-                            ),
-                            None,
+                    for adapter, receiver_path in (
+                        ("webhook", "/events"),
+                        ("loki", "/loki/api/v1/push"),
+                    ):
+                        export = operator.get("/admin/api/log-export").json()["config"]
+                        export.update(
+                            enabled=True,
+                            adapter=adapter,
+                            endpoint=f"http://127.0.0.1:{receiver.server_port}{receiver_path}",
+                            use_stored_key=True,
+                            api_key_env=None,
+                            poll_seconds=0.1,
                         )
-                        if delivered:
-                            break
-                        time.sleep(0.02)
-                    assert delivered and delivered["event"]["total_tokens"] == 6
-                    assert "Synthetic export showcase" not in json.dumps(delivered)
-                    assert token not in operator.get("/admin/api/log-export").text
-                    export["enabled"] = False
-                    operator.put(
-                        "/admin/api/log-export", json={"config": export}
-                    ).raise_for_status()
-                    results.append(
-                        {
-                            "scenario": "Console export probe, encrypted credential and sample metadata delivery",
-                            "passed": True,
-                        }
-                    )
+                        draft = {"config": export, "key": token}
+                        assert operator.post("/admin/api/log-export/test", json=draft).json()["ok"]
+                        assert not operator.get("/admin/api/log-export").json()["config"]["enabled"]
+                        operator.put("/admin/api/log-export", json=draft).raise_for_status()
+                        with serving(
+                            sample_app(Settings(gateway_url=url, app_key=replacement["api_key"]))
+                        ) as sample_url:
+                            with httpx.Client(
+                                base_url=sample_url, timeout=10, trust_env=False
+                            ) as browser:
+                                response = browser.post(
+                                    "/api/chat",
+                                    json={
+                                        "messages": [
+                                            {"role": "user", "content": "Synthetic export showcase"}
+                                        ]
+                                    },
+                                )
+                                response.raise_for_status()
+                                request_id = response.json()["request_id"]
+                        delivered = None
+                        for _ in range(100):
+                            with sqlite3.connect(receiver.database) as db:
+                                records = [
+                                    json.loads(row[0])
+                                    for row in db.execute("SELECT payload FROM deliveries")
+                                ]
+                            delivered = next(
+                                (
+                                    record
+                                    for record in records
+                                    if record["event"]["request_id"] == request_id
+                                ),
+                                None,
+                            )
+                            if delivered:
+                                break
+                            time.sleep(0.02)
+                        assert delivered and delivered["event"]["total_tokens"] == 6
+                        assert "Synthetic export showcase" not in json.dumps(delivered)
+                        assert token not in operator.get("/admin/api/log-export").text
+                        export["enabled"] = False
+                        operator.put(
+                            "/admin/api/log-export", json={"config": export}
+                        ).raise_for_status()
+                        results.append(
+                            {
+                                "scenario": f"{adapter}: console probe, encrypted credential and sample metadata delivery",
+                                "passed": True,
+                            }
+                        )
                 finally:
                     receiver.shutdown()
                     receiver.server_close()

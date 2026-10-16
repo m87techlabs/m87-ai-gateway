@@ -11,6 +11,31 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Loki metadata adapter — 2026-10-16
+
+Verified using temporary stores and synthetic endpoints: **361 Python tests**, **41
+console/sample interaction tests**, lint/format (**108 Python files**), a wheel build,
+and links/fences across **61 Markdown files**. The sample suite now has **18 HTTP
+scenarios**. A rebuilt Linux standalone passed setup/inference, both export protocols,
+Loki draft testing and stored-key recovery, post-restore metadata delivery, logging,
+configuration history, storage checks and lifecycle operations.
+
+Coverage includes exact timezone-aware timestamp conversion without float rounding,
+fixed labels, JSON fields/null usage, stable retry payloads, persisted queue retry after
+reopen, credential destination boundaries, unsaved probes, safe redacted metadata,
+invalid/naive timestamps and strict 204 acceptance. Statuses 200/202/260, redirects,
+400/401/429/500 are rejected for retry rather than acknowledged. Existing shared
+transport tests cover timeout, shutdown, TLS/redirect/proxy policy and bounded queues.
+The demonstration receiver normalizes Loki push bodies; it does not implement Loki
+storage, querying, retention or Grafana, and its deduplication is not evidence of Loki
+behavior. Contract reference: [Loki HTTP API](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs).
+
+No existing gateway, inference service, data store or Docker instance was changed.
+Actual Loki/Grafana ingestion/query/retention/replay, proxy deployment, Windows
+workstation/Ollama, visual review, clean hosts and final Docker packaging remain
+separate checks. Direct Basic/tenant headers, OTLP, remote input/output export and
+managed service profiles remain planned. See [Loki runbook](runbooks/loki-export.md).
+
 ## Console export configuration — 2026-10-12
 
 Verified with temporary stores and synthetic endpoints: **348 Python tests**, **40

@@ -149,7 +149,7 @@ python -m examples.chat_app.scenarios
 ```
 
 This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
-inference service on reserved, temporary loopback ports. It exercises 17 scenarios
+inference service on reserved, temporary loopback ports. It exercises 18 scenarios
 and reports PASS for each. It uses a private temporary database and generated keys;
 all test services/data are cleaned up afterward. Your running gateway, existing
 keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
@@ -188,3 +188,7 @@ and recording health. See [logging showcase](../../docs/runbooks/logging-showcas
 The export scenario tests a draft receiver, saves its encrypted token, and verifies
 request ID and usage through sample → gateway → synthetic inference → receiver.
 See [console export setup](../../docs/runbooks/configure-log-export.md).
+
+The same synthetic metadata scenario runs with the Loki adapter. It verifies the
+HTTP push path through a protocol test double, not a real Loki/Grafana deployment.
+See [Loki operations](../../docs/runbooks/loki-export.md).

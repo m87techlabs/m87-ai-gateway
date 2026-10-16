@@ -21,7 +21,7 @@ class Receiver(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path != "/events":
+        if self.path not in {"/events", "/loki/api/v1/push"}:
             return self.reply(404)
         expected = f"Bearer {self.server.token}"
         if not secrets.compare_digest(
@@ -33,12 +33,37 @@ class Receiver(BaseHTTPRequestHandler):
             if not 0 < length <= 32768:
                 return self.reply(413)
             value = json.loads(self.rfile.read(length))
+            if self.path == "/loki/api/v1/push":
+                streams = value["streams"]
+                if len(streams) != 1 or streams[0]["stream"] != {
+                    "service_name": "m87-ai-gateway",
+                    "log_kind": "llm_exchange",
+                }:
+                    return self.reply(400)
+                values = streams[0]["values"]
+                if len(values) != 1 or len(values[0]) != 2:
+                    return self.reply(400)
+                timestamp, line = values[0]
+                if (
+                    not isinstance(timestamp, str)
+                    or not timestamp.isascii()
+                    or not timestamp.isdigit()
+                ):
+                    return self.reply(400)
+                metadata = json.loads(line)
+                if not isinstance(metadata, dict):
+                    return self.reply(400)
+                value = {
+                    "schema_version": metadata.pop("schema_version"),
+                    "delivery_id": metadata.pop("delivery_id"),
+                    "event": metadata,
+                }
             delivery_id = value["delivery_id"]
             if (
                 value.get("schema_version") != 1
                 or not isinstance(delivery_id, str)
                 or len(delivery_id) != 32
-                or self.headers.get("Idempotency-Key") != delivery_id
+                or (self.path == "/events" and self.headers.get("Idempotency-Key") != delivery_id)
                 or not isinstance(value.get("event"), dict)
             ):
                 return self.reply(400)
@@ -47,7 +72,7 @@ class Receiver(BaseHTTPRequestHandler):
                     "INSERT OR IGNORE INTO deliveries VALUES (?, ?)",
                     (delivery_id, json.dumps(value)),
                 )
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, IndexError, TypeError, ValueError):
             return self.reply(400)
         except sqlite3.Error:
             return self.reply(503)

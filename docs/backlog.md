@@ -22,7 +22,7 @@ documented in [configuration](configuration.md#chat-generation-parameters).
 
 Logging is the current development focus. Local showcase/content separation/search/
 recording-health work is implemented. **O2** now has a bounded metadata outbox and
-webhook delivery; remaining logging work is Loki/OTLP,
+webhook delivery; remaining logging work is OTLP and dashboards,
 then **O1 dashboards/alerts** and **O3/O4 tracing/performance**. Other priorities remain
 recorded below. See [logging plan](logging-plan.md).
 
@@ -269,7 +269,10 @@ documented failure exercise.
 **Status: partial.** Schema-8 transactional metadata outbox, webhook adapter, stable IDs,
 persisted lease/retry/capacity/expiry counters, restart recovery and a deduplicating
 receiver example are implemented. Schema 9 adds UI settings, encrypted receiver credentials
-and non-saving draft probes. Loki/OTLP and remote content policy remain planned.
+and non-saving draft probes. Loki JSON push is implemented with fixed labels and
+strict 204 acknowledgement; synthetic sample/native tests cover delivery/recovery.
+OTLP, direct Loki Basic/tenant headers and remote content policy remain planned.
+See [Loki setup](runbooks/loki-export.md); live Loki/Grafana remains deferred.
 See [console configuration](runbooks/configure-log-export.md). See [metadata export](runbooks/log-export.md).
 
 **Scope:** an exporter interface with OTLP logs, Loki and webhook implementations,

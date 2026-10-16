@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import re
+from datetime import datetime, timezone
 from typing import Protocol
 
 import httpx
@@ -40,7 +41,38 @@ class WebhookExporter:
         await self.client.aclose()
 
 
-_EXPORTERS = {"webhook": WebhookExporter}
+class LokiExporter(WebhookExporter):
+    """Loki JSON push with fixed labels and stable event timestamps across retries."""
+
+    async def send(self, delivery_id, event):
+        created = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            raise ValueError("Loki event requires a timezone-aware timestamp")
+        delta = created - datetime(1970, 1, 1, tzinfo=timezone.utc)
+        nanoseconds = ((delta.days * 86400 + delta.seconds) * 1000000 + delta.microseconds) * 1000
+        line = json.dumps(
+            {**event, "schema_version": 1, "delivery_id": delivery_id},
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        async with self.client.stream(
+            "POST",
+            self.config.endpoint,
+            json={
+                "streams": [
+                    {
+                        "stream": {"service_name": "m87-ai-gateway", "log_kind": "llm_exchange"},
+                        "values": [[str(nanoseconds), line]],
+                    }
+                ]
+            },
+        ) as response:
+            # Loki can return 260 (or configured 200) when ingestion is blocked.
+            return response.status_code == 204
+
+
+_EXPORTERS = {"webhook": WebhookExporter, "loki": LokiExporter}
 
 
 def exporter_adapters():

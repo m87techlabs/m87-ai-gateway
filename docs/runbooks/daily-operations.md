@@ -133,3 +133,7 @@ Use **Log export** to set a receiver endpoint, save its encrypted bearer token, 
 the draft and enable delivery. See [console setup](configure-log-export.md). Local
 input/output remains in Logs. Startup environment changes require restart; console
 saves apply immediately and persist across restart.
+
+For an existing Loki endpoint, select the **loki** adapter and follow
+[Loki setup](loki-export.md). The test double also supports a local demonstration
+without Docker; live indexing and Grafana browsing require your actual Loki service.

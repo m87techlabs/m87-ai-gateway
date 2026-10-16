@@ -238,6 +238,7 @@
         <div class="panel form-panel">
           <h3>Configure log export</h3>
           <p>Send sanitized request metadata to a receiver. LLM input/output stays in local Logs. Settings apply across all projects.</p>
+          <p class="muted">For Loki, enter the full /loki/api/v1/push URL. Supports single-tenant Loki or a bearer-authenticated proxy. Request IDs and usage remain searchable JSON fields.</p>
           <form id="export-form">
             <fieldset id="export-fields" disabled>
               <label class="check"><input name="enabled" type="checkbox">Enable metadata export</label>

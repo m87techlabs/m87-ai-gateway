@@ -77,3 +77,11 @@ Health output excludes endpoints/tokens and raw remote errors. Pending deliverie
 survive backup/restore and may replay; receiver deduplication is mandatory. Local
 log deletion does not erase pending metadata or recall receiver records. See
 [export operations](runbooks/log-export.md).
+
+## Loki delivery
+
+Loki uses existing encrypted/environment bearer credentials and destination-binding
+confirmation, with fixed labels and metadata-only payloads. URL credentials, redirects
+and proxy environment routing remain disallowed. Direct Basic/tenant headers are not
+implemented. Receiver authentication/retention and ingestion policy are operator
+responsibilities; queue expiry/backup replay apply. See [Loki operations](runbooks/loki-export.md).

@@ -73,3 +73,5 @@ flowchart LR
 - [Metadata webhook export](runbooks/log-export.md): bounded queue, retries, receiver example and delivery recovery.
 
 - [Configure log export](runbooks/configure-log-export.md): console destinations, encrypted credentials, draft tests and recovery.
+
+- [Loki metadata export](runbooks/loki-export.md): existing receiver setup, LogQL, retry and authentication limits.

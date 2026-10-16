@@ -6,6 +6,15 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Loki JSON push adapter with fixed stream labels, original event timestamps, stable
+  delivery JSON across retries, strict 204 acknowledgement and existing encrypted
+  credentials/console controls. Supports single-tenant Loki and bearer-authenticated proxies.
+- Eighteenth sample flow and native backup/recovery smoke for Loki protocol delivery,
+  plus operator setup, LogQL, limits and recovery in `docs/runbooks/loki-export.md`.
+  Live Loki/Grafana, direct Basic/tenant headers and managed containers remain deferred.
+
 ### Fixed
 
 - Pin SQLite sidecars during storage-health permission/size checks so background

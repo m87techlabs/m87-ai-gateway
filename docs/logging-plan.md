@@ -17,7 +17,7 @@ SQLite application must deliver this without installing external services.
 - Metadata-only exports by default; explicit captured-content inclusion.
 - Project-scoped content deletion preserving metadata/usage, and audited content/log deletion.
 - Recording health showing failed/successful destination writes and recovery.
-- Sample request link, 17 isolated HTTP scenarios and extended native package smoke.
+- Sample request link, 18 isolated HTTP scenarios and extended native package smoke.
 
 Follow [logging showcase](runbooks/logging-showcase.md). Automated synthetic evidence
 and remaining live/manual checks are recorded in [validation](validation.md).
@@ -37,7 +37,7 @@ flowchart LR
     Console --> Usage
 ```
 
-## Stage 2: durable optional export — webhook implemented, integrations partial
+## Stage 2: durable optional export — webhook/Loki implemented, integrations partial
 
 Schema 8 adds a bounded metadata outbox in the traffic/usage transaction. An optional
 webhook worker implements stable delivery IDs, leasing, persisted capped backoff,
@@ -50,7 +50,13 @@ Schema 9 adds UI configuration, encrypted destination-bound tokens, atomic saves
 non-saving connection tests and hot worker changes. The sample suite demonstrates
 the complete export path. See [console setup](runbooks/configure-log-export.md).
 
-Loki/OTLP adapters, explicit remote content policy and correlated
+The Loki JSON push adapter is implemented for single-tenant and bearer-proxy
+endpoints. Fixed stream labels keep request/project/model fields in JSON. Original
+timestamps and delivery IDs survive retry; only 204 acknowledges ingestion. Source
+and native tests use synthetic receivers; live Loki/Grafana remains deferred. See
+[Loki operations](runbooks/loki-export.md).
+
+OTLP, direct Loki Basic/tenant headers, explicit remote content policy and correlated
 tracing remain planned. Tests cover process exit after commit, leases/retries, storage
 unavailability and outages; real power loss, disk exhaustion/corruption and live
 collector behavior require separate evidence. Local recording before commit remains

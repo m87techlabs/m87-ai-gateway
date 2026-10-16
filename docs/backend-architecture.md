@@ -32,7 +32,7 @@ current local access boundary.
 The recorder already has an `EventSink` interface. Writes run through a thread pool
 and are best effort: a failed sink increments an error metric and emits a safe
 failure notice. Schema 8 adds a bounded transactional metadata outbox and optional
-webhook delivery with restart recovery; remote content, Loki/OTLP and strict accounting
+webhook/Loki delivery with restart recovery; remote content, OTLP and strict accounting
 remain planned. Usage is stored independently in schema-2 `usage_records`,
 without captured content; deleting traffic does not change those aggregates.
 Traffic/usage writes share a transaction, and repeated request IDs do not add usage.
@@ -175,8 +175,9 @@ with Grafana as an optional visualization surface. See
 3. Application/key separation, rotation/revocation and identity audit are implemented.
    Configuration/provider-key audit is implemented; continue encryption/digest key-version migration.
 4. Validated configuration revisions and atomic activation are implemented. Add stable connection IDs and remaining audit actions.
-5. Schema-8 metadata outbox/webhook delivery is implemented. Add Loki/OTLP and UI
-   configuration after exercising the contracts and documented delivery semantics.
+5. Schema-8 metadata outbox and schema-9 UI credentials are implemented. Webhook and
+   Loki adapters share the delivery contract. Add OTLP and verify live collectors
+   before claiming production integration support.
 6. Add PostgreSQL or external secret-store adapters only with a demonstrated use case
    and a shared contract suite. Validate container/native packaging for the final
    functional scope before publishing a release.

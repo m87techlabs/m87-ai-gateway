@@ -11,7 +11,7 @@ the [logging showcase](logging-showcase.md).
 This optional feature uses the gateway's private SQLite store and one background
 worker. It requires no Docker or additional database. Webhook delivery is implemented;
 Console configuration and encrypted receiver tokens are implemented; see
-[setup how-to](configure-log-export.md). Loki, OTLP and remote content export remain planned.
+[setup how-to](configure-log-export.md). [Loki JSON push](loki-export.md) is also implemented; OTLP and remote content export remain planned.
 
 ```mermaid
 flowchart LR
@@ -181,6 +181,6 @@ adapters remain usable with export disabled. Adapt the tests before claiming sup
 npm test --prefix tests/console
 ```
 
-Native package smoke also exercises metadata delivery. Live collectors, Loki/OTLP,
+Native package smoke also exercises metadata delivery. Live collectors, OTLP,
 Windows workstation interaction and Docker profiles remain deferred; see
 [validation](../validation.md) and [logging plan](../logging-plan.md).
