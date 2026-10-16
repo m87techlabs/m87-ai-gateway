@@ -248,3 +248,10 @@ container dependency is added. Labels are fixed; metadata is JSON and original e
 time is preserved. Only 204 acknowledges delivery. Single-tenant or bearer-proxy
 endpoints are supported; direct Basic/tenant headers remain planned. See
 [Loki setup and recovery](runbooks/loki-export.md).
+
+## Monitoring templates
+
+No gateway setting is required beyond `observability.prometheus_metrics: true` to
+expose traffic and read-only logging health. Configure external scrape targets and
+Grafana datasources separately using deploy/observability. Do not store service
+credentials in repo templates. See [monitoring runbook](runbooks/grafana-monitoring.md).

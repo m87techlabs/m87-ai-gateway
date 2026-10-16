@@ -21,6 +21,7 @@ from m87_gateway.logging.audit import AuditRecorder
 from m87_gateway.logging.middleware import TrafficMiddleware
 from m87_gateway.logging.exporters import ExportService
 from m87_gateway.metrics import GatewayMetrics
+from m87_gateway.metrics.logging import LoggingCollector
 from m87_gateway.model_catalog import ModelCatalog
 
 
@@ -71,6 +72,9 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             return application.state.settings
 
         application.dependency_overrides[get_settings] = active_settings
+        application.state.metrics.registry.register(
+            LoggingCollector(application.state.recorder, lambda: application.state.log_export)
+        )
         application.state.log_export.start()
         try:
             yield

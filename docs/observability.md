@@ -126,7 +126,7 @@ flowchart LR
     Gateway --> Outbox[Bounded metadata outbox]
     Outbox --> Loki[Loki]
     Private -. Planned content export policy .-> Loki
-    Prometheus -. Planned dashboards .-> Grafana[Grafana views]
+    Prometheus --> Grafana[Included dashboard assets]
     Loki --> Grafana
 ```
 
@@ -218,4 +218,15 @@ and fixed `service_name`/`log_kind` labels. Request/project/model/token fields r
 in the log body. It shares queue, credentials, console tests and recovery with webhook.
 Only 204 acknowledges ingestion; blocked/old/out-of-order records retry within expiry.
 See [Loki runbook](runbooks/loki-export.md) for LogQL, supported authentication, live
-verification limits and duplicate handling. Grafana provisioning remains planned.
+verification limits and duplicate handling. Grafana provisioning templates are included; managed service lifecycle remains planned.
+
+## Included monitoring assets
+
+[Grafana/Prometheus setup](runbooks/grafana-monitoring.md) covers the two dashboards,
+nine alert rules and optional provisioning. Scrape-time logging health adds fixed-label
+local write counters/last-result gauges, export enabled/storage gauges, pending/held/
+expiry/capacity snapshots and persisted delivered/failure/drop/expiry counters.
+Unknown counts are omitted during storage failure; the empty queue has no oldest time.
+Prometheus history is separate from durable project usage and gateway backups.
+Queries and alert transitions are tested without services; rendering/live collectors
+and notification delivery require separate evidence.

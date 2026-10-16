@@ -11,7 +11,7 @@ container engine is also a planned platform integration when authorized.
 
 The current core provides the console, project grouping, API tester, usage/logs,
 encrypted local keys, and an experimental Linux bundle. Managed companion services,
-engine startup, Vault integration, remote exporters, and Grafana provisioning are
+engine startup, Vault integration and managed service provisioning are
 **planned**. This page defines their design and acceptance criteria; it does not
 claim those services are running or supported today.
 
@@ -27,7 +27,7 @@ guide prerequisites and provide approved startup on supported platforms.
 | Profile / component | Intended purpose | Current status |
 | --- | --- | --- |
 | Included gateway | API, project dashboard, keys, test console, local logs/usage | Implemented local developer preview |
-| Grafana + Prometheus | Metrics history, dashboards and alerts | Managed setup and dashboards planned |
+| Grafana + Prometheus | Metrics history, dashboards and alerts | Dashboard/provisioning assets and alerts implemented; managed setup planned |
 | Loki + collector/exporter | Sanitized correlated log browsing and retention | Loki adapter implemented; live verification and provisioning planned |
 | Vault or external secret store | Scoped provider-credential retrieval and rotation | Adapter and managed lifecycle planned |
 | Shared persistence | Coordinated usage/configuration for replicas | Planned; SQLite currently targets one process |
@@ -127,3 +127,13 @@ stateDiagram-v2
 Service-specific runbooks will accompany runnable implementations. Container
 image/Compose/readiness/networking/data/cleanup checks must be recorded in
 [validation](validation.md). The [roadmap](roadmap.md) tracks release gates.
+
+## Optional monitoring bundle
+
+Overview and Loki metadata dashboards, datasource/provider templates, private Prometheus
+scraping and nine alert rules are included in the repo and native ZIPs. Users supply
+services and notification routing. Read-only logging metrics preserve unknown storage
+state; IDs/content/credentials never become new health labels. Query/rule tests are
+automated; live Grafana/Loki and notification checks remain deferred. See
+[monitoring runbook](runbooks/grafana-monitoring.md). This is the configuration foundation
+for later managed profiles; it does not start Docker or install services.

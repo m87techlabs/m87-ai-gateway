@@ -118,7 +118,10 @@ sequence and remaining development scope.
 - [x] Add console export configuration, encrypted credentials, draft tests and schema-9 backup/recovery.
 - [x] Add Loki JSON push with fixed labels, stable retry payloads, strict acknowledgement
   and synthetic sample/native coverage. Live Loki/Grafana verification remains deferred.
-- Add Grafana dashboards/alerts and OTLP; direct Basic/tenant headers remain follow-up scope.
+- [x] Add optional Grafana overview/Loki dashboards, provisioning templates, Prometheus
+  alerts and query/transition tests; include assets/docs in native downloads.
+- Verify live Grafana/Loki/notifications, then add managed service profiles and OTLP;
+  direct Basic/tenant headers remain follow-up scope.
   and managed observability profiles. Live/manual release evidence remains separate.
 
 ## Backend foundations — in progress

@@ -22,7 +22,7 @@ documented in [configuration](configuration.md#chat-generation-parameters).
 
 Logging is the current development focus. Local showcase/content separation/search/
 recording-health work is implemented. **O2** now has a bounded metadata outbox and
-webhook delivery; remaining logging work is OTLP and dashboards,
+webhook delivery; remaining logging work is OTLP and live monitoring verification,
 then **O1 dashboards/alerts** and **O3/O4 tracing/performance**. Other priorities remain
 recorded below. See [logging plan](logging-plan.md).
 
@@ -330,3 +330,9 @@ Worker/tunnel path still need recorded live evidence in [validation](validation.
 
 Each item keeps the acceptance criteria already defined in the [roadmap](roadmap.md)
 and [lifecycle](lifecycle.md) release gates.
+
+
+The optional monitoring assets now include overview/Loki dashboards, provisioning
+and nine Prometheus rules with query/transition tests. Managed service lifecycle,
+actual Grafana rendering, live Loki and notifications remain separate gates. See
+[monitoring setup](runbooks/grafana-monitoring.md).

@@ -8,6 +8,15 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Optional Grafana overview and Loki metadata dashboards, datasource/provider templates,
+  private Prometheus scraping and nine alert rules with transition/query verification.
+- Read-only logging health metrics with fixed labels and unknown counts omitted during
+  export storage failure; native ZIPs include monitoring assets and documentation.
+- Monitoring runbook covering setup, scopes, thresholds, validation, notifications and
+  shutdown. Automatic service lifecycle and live rendering/notification checks remain deferred.
+
+### Added
+
 - Loki JSON push adapter with fixed stream labels, original event timestamps, stable
   delivery JSON across retries, strict 204 acknowledgement and existing encrypted
   credentials/console controls. Supports single-tenant Loki and bearer-authenticated proxies.

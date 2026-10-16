@@ -133,3 +133,10 @@ and Grafana end-to-end check remains deferred. See [validation](../validation.md
 To finish, disable export and save, stop the sample with `./examples/chat_app/stop.sh`
 and the gateway with `./stop.sh`, and stop the demonstration receiver with Ctrl+C.
 Your private queue and local logs remain. Operate an existing Loki separately.
+
+## Included Grafana dashboard
+
+The optional [monitoring bundle](grafana-monitoring.md) includes a Loki metadata
+dashboard with project/application/request filters. Use a real Loki datasource and
+the original event time range. Gateway input/output remains local. Live rendering
+and notifications remain separate checks.

@@ -1,0 +1,87 @@
+groups:
+- name: m87-gateway
+  rules:
+  - alert: M87GatewayDown
+    expr: up{job="m87-gateway"} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: Gateway metrics scrape is failing
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayNoTargets
+    expr: absent(up{job="m87-gateway"})
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: No gateway scrape targets are present
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayHighErrorRate
+    expr: (sum by (job,instance) (increase(m87_gateway_requests_total{job="m87-gateway",status_code=~"5.."}[5m]))
+      / sum by (job,instance) (increase(m87_gateway_requests_total{job="m87-gateway"}[5m]))
+      > 0.05) and on (job,instance) (sum by (job,instance) (increase(m87_gateway_requests_total{job="m87-gateway"}[5m]))
+      >= 10)
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Gateway HTTP 5xx fraction exceeds 5 percent
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayHighLatency
+    expr: (histogram_quantile(0.95, sum by (job,instance,le) (rate(m87_gateway_request_latency_seconds_bucket{job="m87-gateway"}[5m])))
+      > 5) and on (job,instance) (sum by (job,instance) (increase(m87_gateway_requests_total{job="m87-gateway"}[5m]))
+      >= 10)
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Gateway p95 request duration exceeds 5 seconds
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayLogWriteFailure
+    expr: m87_gateway_log_last_write_ok{job="m87-gateway"} == 0
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: Last local log write failed
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayExportStorageFailure
+    expr: (m87_gateway_log_export_storage_ok{job="m87-gateway"} == 0) and on (job,instance)
+      (m87_gateway_log_export_enabled{job="m87-gateway"} == 1)
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: Enabled log export cannot read or write storage
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayExportBacklog
+    expr: (time() - m87_gateway_log_export_oldest_pending_at{job="m87-gateway"} >
+      120) and on (job,instance) (m87_gateway_log_export_pending{job="m87-gateway"}
+      > 0) and on (job,instance) (m87_gateway_log_export_enabled{job="m87-gateway"}
+      == 1)
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Enabled log export has records older than 2 minutes
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayExportDrops
+    expr: increase(m87_gateway_log_export_dropped_total{job="m87-gateway"}[5m]) >
+      0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: Log export dropped metadata within the last 5 minutes
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting
+  - alert: M87GatewayExportHeld
+    expr: (m87_gateway_log_export_held_for_other_destination{job="m87-gateway"} >
+      0) and on (job,instance) (m87_gateway_log_export_enabled{job="m87-gateway"}
+      == 1)
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Enabled log export holds records for another destination
+      runbook_url: https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/runbooks/grafana-monitoring.md#troubleshooting

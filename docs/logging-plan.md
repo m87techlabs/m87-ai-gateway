@@ -60,11 +60,16 @@ OTLP, direct Loki Basic/tenant headers, explicit remote content policy and corre
 tracing remain planned. Tests cover process exit after commit, leases/retries, storage
 unavailability and outages; real power loss, disk exhaustion/corruption and live
 collector behavior require separate evidence. Local recording before commit remains
-best effort. Docker/Grafana services remain deferred.
+best effort. Managed Docker/Grafana services remain deferred.
 
-## Stage 3: observability ecosystem — planned
+## Stage 3: observability ecosystem — assets implemented, services planned
 
-Supply Grafana views, Prometheus alerts and correlated Loki browsing, then optional
+Overview/Loki dashboards, provisioning templates and nine Prometheus alerts with
+query/transition checks are implemented in deploy/observability. New scrape-time
+logging metrics expose local failures and export queue/counters without secret labels.
+Native ZIPs include the templates and docs. See [monitoring setup](runbooks/grafana-monitoring.md).
+Actual Grafana rendering, live Loki and notification routing need separate verification.
+Next add optional
 managed profiles with provision/start/stop/readiness/backup/rollback. Docker remains
 on demand until these service-specific checks are needed. Metrics contain aggregates;
 request IDs and prompt text are not metric labels. See [ecosystem](ecosystem.md).

@@ -113,7 +113,8 @@ def exercise(executable):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
-        inference = ThreadingHTTPServer(("127.0.0.1", 0), Inference)
+            # Keep the gateway port reserved while allocating the fake provider's port.
+            inference = ThreadingHTTPServer(("127.0.0.1", 0), Inference)
         inference.deliveries = {}
         inference.delivery_lock = threading.Lock()
         worker = threading.Thread(target=inference.serve_forever, daemon=True)
@@ -172,7 +173,8 @@ def exercise(executable):
                 if running.poll() is not None:
                     raise RuntimeError("Standalone gateway exited during startup")
                 try:
-                    if call("/health")["status"] == "ok":
+                    report = call("/health")
+                    if report.get("status") == "ok" and report.get("service") == "m87-ai-gateway":
                         return running
                 except (URLError, TimeoutError):
                     time.sleep(0.1)
@@ -471,6 +473,10 @@ def exercise(executable):
                         break
                     time.sleep(0.05)
                 assert found, "Restored native gateway did not deliver Loki metadata"
+                monitoring = call("/metrics").decode()
+                assert "m87_gateway_log_export_enabled 1.0" in monitoring
+                assert "m87_gateway_log_export_delivered_total" in monitoring
+                assert "synthetic-export-token" not in monitoring
                 native("--stop")
                 process.wait(timeout=10)
                 print(

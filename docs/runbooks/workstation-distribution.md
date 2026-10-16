@@ -164,3 +164,9 @@ now requires an explicit CI packaging dispatch on main. Existing preview release
 downloads remain available until deleted. A CI runner
 has development tools installed, so it is not clean-workstation evidence. Record
 manual Windows Ollama and clean-host checks in validation before expanding claims.
+
+## Optional monitoring files
+
+Native ZIPs include `observability/`, `MONITORING.md` and the documentation tree.
+These are configuration assets; extracting or starting the gateway does not install
+or launch monitoring services. See [Grafana setup](grafana-monitoring.md).

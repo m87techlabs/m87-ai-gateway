@@ -85,3 +85,12 @@ confirmation, with fixed labels and metadata-only payloads. URL credentials, red
 and proxy environment routing remain disallowed. Direct Basic/tenant headers are not
 implemented. Receiver authentication/retention and ingestion policy are operator
 responsibilities; queue expiry/backup replay apply. See [Loki operations](runbooks/loki-export.md).
+
+## Monitoring service boundaries
+
+Metrics remain private-network, unauthenticated operational data. New logging health
+labels are fixed destination/outcome names; queue secrets/content/IDs are excluded.
+Grafana/Prometheus/Loki have separate access, retention and backup responsibilities.
+Bundled templates contain no service credentials or notification destinations.
+Configure private secrets and notification routing outside Git. See
+[monitoring operations](runbooks/grafana-monitoring.md).

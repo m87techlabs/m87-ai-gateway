@@ -217,3 +217,10 @@ See [console export setup](docs/runbooks/configure-log-export.md). Use [Loki set
 bearer-authenticated proxy. OTLP and managed Grafana services remain planned.
 
 For routine startup, sample testing and log inspection, use the [everyday operations how-to](docs/runbooks/daily-operations.md). All operational procedures are indexed in [runbooks](docs/runbooks/README.md).
+
+### Optional Grafana dashboards and alerts
+
+The [monitoring bundle](deploy/observability/README.md) includes an overview dashboard,
+Loki request-metadata browsing, Prometheus scrape configuration and nine tested alert
+rules. Native ZIPs include these assets and docs. Supply your own monitoring services;
+none start automatically. Follow [setup and verification](docs/runbooks/grafana-monitoring.md).

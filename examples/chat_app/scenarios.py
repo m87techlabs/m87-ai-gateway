@@ -710,6 +710,13 @@ def exercise():
                                 break
                             time.sleep(0.02)
                         assert delivered and delivered["event"]["total_tokens"] == 6
+                        monitoring = operator.get("/metrics").text
+                        assert "m87_gateway_log_export_enabled 1.0" in monitoring
+                        assert (
+                            'm87_gateway_log_last_write_ok{destination="control_store"} 1.0'
+                            in monitoring
+                        )
+                        assert request_id not in monitoring and token not in monitoring
                         assert "Synthetic export showcase" not in json.dumps(delivered)
                         assert token not in operator.get("/admin/api/log-export").text
                         export["enabled"] = False

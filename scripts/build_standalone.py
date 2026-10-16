@@ -70,6 +70,23 @@ def main():
         archive.write(ROOT / "docs/runbooks/workstation-distribution.md", "WORKSTATION.md")
         archive.write(ROOT / "LICENSE", "LICENSE")
         archive.write(ROOT / "NOTICE", "NOTICE")
+        for asset in sorted((ROOT / "deploy/observability").rglob("*")):
+            if asset.is_file():
+                name = (
+                    "observability/" + asset.relative_to(ROOT / "deploy/observability").as_posix()
+                )
+                if asset.name == "README.md":
+                    archive.writestr(name, asset.read_text().replace("../../docs/", "../docs/"))
+                else:
+                    archive.write(asset, name)
+        archive.writestr(
+            "MONITORING.md",
+            "# Optional monitoring\n\n"
+            "See [setup and verification](docs/runbooks/grafana-monitoring.md). "
+            "Templates are in observability/. Services are optional and are not started.\n",
+        )
+        for document in sorted((ROOT / "docs").rglob("*.md")):
+            archive.write(document, document.relative_to(ROOT).as_posix())
         extension = "cmd" if target == "windows" else "sh"
         for action in ("start", "stop", "status"):
             script = ROOT / "deploy/workstation" / f"{action}.{extension}"

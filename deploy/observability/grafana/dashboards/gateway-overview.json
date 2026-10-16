@@ -1,0 +1,920 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [
+    "m87",
+    "gateway"
+  ],
+  "links": [],
+  "uid": "m87-gateway-overview",
+  "title": "M87 Gateway Overview",
+  "description": "Process metrics and current logging health. Missing data stays unknown. Token counters exclude cache hits and unknown usage; use the gateway console for durable project accounting.",
+  "templating": {
+    "list": [
+      {
+        "name": "prometheus",
+        "label": "Prometheus",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "m87-prometheus",
+          "value": "m87-prometheus"
+        },
+        "refresh": 1
+      },
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "$prometheus"
+        },
+        "query": "label_values(up{job=\"m87-gateway\"}, instance)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Scrape availability",
+      "description": "1 = reachable; 0 = scrape failure. Missing targets are not zero traffic.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Requests per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (instance) (rate(m87_gateway_requests_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Requests by application",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (app_id) (rate(m87_gateway_requests_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{app_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Requests by status",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status_code) (rate(m87_gateway_requests_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{status_code}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "HTTP 5xx fraction",
+      "description": "No value when no 5xx series or no traffic. Streaming failures also appear in stream outcomes.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (instance) (rate(m87_gateway_requests_total{job=\"m87-gateway\",instance=~\"$instance\",status_code=~\"5..\"}[$__rate_interval])) / sum by (instance) (rate(m87_gateway_requests_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Request p95 duration",
+      "description": "Classic histogram estimates saturate at bucket coverage; no traffic yields no estimate.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, instance) (rate(m87_gateway_request_latency_seconds_bucket{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval])))",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Provider tokens per second",
+      "description": "Provider-reported prompt/completion tokens; excludes cache hits. Missing usage is not counted. Not billing totals or project accounting.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider,kind) (rate(m87_gateway_tokens_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{provider}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Provider failures per second",
+      "description": "Adapter attempts; includes failed retry attempts.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider) (rate(m87_gateway_provider_errors_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Cache lookups per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (rate(m87_gateway_cache_requests_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Concurrency queue depth",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_queue_depth{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Streaming outcomes per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(m87_gateway_streams_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Rate-limit rejections per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (app_id) (rate(m87_gateway_rate_limit_rejections_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{app_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Local log last-write health",
+      "description": "1 = last completed write succeeded; 0 = failed; absent until first write.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_last_write_ok{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} {{destination}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Local failed writes per second",
+      "description": "Process counters reset at restart.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(m87_gateway_log_writes_total{job=\"m87-gateway\",instance=~\"$instance\",outcome=\"failure\"}[$__rate_interval])",
+          "legendFormat": "{{instance}} {{destination}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Export enabled",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_export_enabled{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Export storage health",
+      "description": "Check enabled separately; storage failure suppresses queue/counter samples.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_export_storage_ok{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "title": "Export pending records",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_export_pending{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "Held for another destination",
+      "description": "Includes held rows while disabled. Restore original binding before expiry to resume.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_export_held_for_other_destination{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Export oldest pending age",
+      "description": "Original queue time; includes held/expired rows until pruning; absent when empty.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 72
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_min(time() - m87_gateway_log_export_oldest_pending_at{job=\"m87-gateway\",instance=~\"$instance\"}, 0)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Delivered metadata per second",
+      "description": "Persisted counters are gateway-wide and survive destination changes. Restored backups can reset values.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 72
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(m87_gateway_log_export_delivered_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "Export retry failures per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 80
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(m87_gateway_log_export_failed_attempts_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Export drops per second",
+      "description": "Newest records dropped at capacity/size limits. Local logs/usage can still exist.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 80
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(m87_gateway_log_export_dropped_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "Export expiry per second",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 88
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(m87_gateway_log_export_expired_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "title": "Export queue capacity",
+      "description": "",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 88
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "m87_gateway_log_export_max_pending{job=\"m87-gateway\",instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

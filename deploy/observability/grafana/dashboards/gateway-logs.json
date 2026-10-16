@@ -1,0 +1,99 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [
+    "m87",
+    "gateway"
+  ],
+  "links": [],
+  "uid": "m87-gateway-logs",
+  "title": "M87 Gateway LLM Metadata",
+  "description": "Metadata only; input/output stays in gateway Logs. Multiple gateways sharing these labels are combined. Select source and original event time range.",
+  "templating": {
+    "list": [
+      {
+        "name": "loki",
+        "label": "Loki",
+        "type": "datasource",
+        "query": "loki",
+        "current": {
+          "text": "m87-loki",
+          "value": "m87-loki"
+        },
+        "refresh": 1
+      },
+      {
+        "name": "project",
+        "label": "Project (regular expression)",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "application",
+        "label": "Application (regular expression)",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      },
+      {
+        "name": "request",
+        "label": "Request (regular expression)",
+        "type": "textbox",
+        "query": ".*",
+        "current": {
+          "text": ".*",
+          "value": ".*"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "LLM request metadata",
+      "type": "logs",
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "$loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=\"m87-ai-gateway\",log_kind=\"llm_exchange\"} | json | __error__=\"\" | project_id=~${project:doublequote} | app_id=~${application:doublequote} | request_id=~${request:doublequote}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    }
+  ]
+}

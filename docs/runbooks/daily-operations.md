@@ -137,3 +137,10 @@ saves apply immediately and persist across restart.
 For an existing Loki endpoint, select the **loki** adapter and follow
 [Loki setup](loki-export.md). The test double also supports a local demonstration
 without Docker; live indexing and Grafana browsing require your actual Loki service.
+
+## Optional monitoring
+
+Use the included [monitoring setup](grafana-monitoring.md) with existing Prometheus,
+Grafana and optionally Loki. The overview reports traffic/tokens and logging delivery;
+the Loki dashboard searches project/app/request metadata. Alerts evaluate in Prometheus;
+notifications require separate routing. No optional service starts with the gateway.

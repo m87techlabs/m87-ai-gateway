@@ -138,7 +138,7 @@ bindings clear credentials and disable export; older snapshots preserve current 
 The Loki adapter is implemented for single-tenant or bearer-proxy endpoints; it uses
 fixed labels, original event timestamps and stable JSON/IDs across retries, and
 acknowledges only HTTP 204. Direct Basic/tenant headers, OTLP, remote content and
-Grafana provisioning remain planned. Live Loki/Grafana evidence is deferred; source
+managed Grafana service lifecycle remain planned. Live Loki/Grafana evidence is deferred; source
 sample and native smoke use synthetic receivers. See docs/runbooks/loki-export.md. See docs/runbooks/configure-log-export.md.
 See docs/runbooks/log-export.md; preserve queue state and document backup replay.
 Never claim crash durability or secure erasure from logical SQLite deletion.
@@ -752,3 +752,13 @@ Use honest maturity language:
 - “Developer preview”
 - “Local MVP”
 - “Built in public”
+
+Optional monitoring assets live in deploy/observability: overview and Loki metadata
+dashboards, datasource/provider templates, a private scrape example and nine Prometheus
+alert rules with synthetic transition tests. Logging health is collected read-only at
+scrape time, using fixed destination labels and current-worker lookup; storage failure
+omits unknown counts. Existing counters retain their accounting semantics. Native ZIPs
+include monitoring assets and docs; no extra service starts automatically.
+Run scripts/check_observability.py with promtool for rule and query validation. Hosted
+CI uses a checksum-pinned verification binary. Actual Grafana rendering, live Loki and
+notification routing remain deferred. See docs/runbooks/grafana-monitoring.md.

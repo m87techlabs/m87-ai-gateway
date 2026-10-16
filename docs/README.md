@@ -75,3 +75,5 @@ flowchart LR
 - [Configure log export](runbooks/configure-log-export.md): console destinations, encrypted credentials, draft tests and recovery.
 
 - [Loki metadata export](runbooks/loki-export.md): existing receiver setup, LogQL, retry and authentication limits.
+
+- [Grafana dashboards and Prometheus alerts](runbooks/grafana-monitoring.md): optional provisioning, scrape setup, rule tests and notification boundaries.

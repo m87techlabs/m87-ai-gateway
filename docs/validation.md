@@ -11,6 +11,37 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Optional monitoring dashboards and alerts — 2026-10-16
+
+Verified with temporary stores: **366 Python tests**, lint/format (**111 Python files**),
+links/fences across **63 Markdown files**, and Prometheus **3.5.0 promtool** validation
+of the scrape config, nine rules, synthetic hold/firing/recovery/disabled/low-traffic
+cases and all **24 overview PromQL queries**. The verification binary came from the
+official release and its SHA-256 matched the pinned archive checksum. CI runs the
+same verification without Docker. Existing **41 browser tests** run in hosted CI;
+this batch does not change console/browser behavior.
+
+Tests check emitted metric names against dashboard queries, fixed-label privacy,
+current-worker lookup, last-write failure/recovery, persisted counters after reopen,
+storage failure without fabricated zero counts and disabled metrics. The existing
+**18 sample scenarios** now check logging metrics at the real HTTP boundary. A rebuilt
+Linux standalone passed setup, inference, logging metrics, Loki delivery, storage,
+configuration history and encrypted backup/recovery. Native ZIPs include optional
+monitoring templates, dashboards, rules and documentation. Wheel build and archive
+content verification are part of packaging checks.
+
+The first standalone attempt exposed an existing test-port race: the fake provider
+could reuse the just-released gateway port. The test now holds that port until the
+provider is allocated and checks gateway identity in the health response. The rerun
+passed. No running gateway, user data, inference service or Docker instance changed.
+
+Grafana import/rendering, datasource/provisioning behavior in a real installation,
+live Loki ingestion/query/retention, external Prometheus scraping/notification routing,
+Windows workstation/Ollama, clean hosts and final Docker packaging remain deferred.
+Rules evaluate locally but do not configure Alertmanager receivers or send messages.
+Managed container lifecycle remains planned. See
+[monitoring runbook](runbooks/grafana-monitoring.md).
+
 ## Loki metadata adapter — 2026-10-16
 
 Verified using temporary stores and synthetic endpoints: **361 Python tests**, **41
