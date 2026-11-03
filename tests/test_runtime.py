@@ -114,7 +114,10 @@ def test_ollama_preserves_messages_options_and_real_usage(runtime):
         assert response.headers["x-request-id"]
         metrics = client.get("/metrics")
         assert metrics.status_code == 200
-        assert 'm87_gateway_tokens_total{kind="prompt",provider="ollama"} 7.0' in metrics.text
+        assert (
+            'm87_gateway_tokens_total{app_id="test-app",kind="prompt",provider="ollama"} 7.0'
+            in metrics.text
+        )
         assert response.headers["x-request-id"] not in metrics.text
         assert "question" not in metrics.text
 
@@ -303,7 +306,7 @@ def test_provider_failures_are_safe_and_observable(runtime, failure, status, cod
         assert response.json()["error"]["code"] == code
         assert sensitive not in response.text
         assert (
-            'm87_gateway_provider_errors_total{provider="ollama"} 1.0'
+            'm87_gateway_provider_errors_total{app_id="test-app",provider="ollama"} 1.0'
             in client.get("/metrics").text
         )
     assert sensitive not in capsys.readouterr().out

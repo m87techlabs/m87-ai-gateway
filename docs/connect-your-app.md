@@ -25,6 +25,12 @@ networks:
     external: true
 ```
 
+## One application, one key
+
+Create one application per calling app. The gateway works out the application from the key on
+every request, and everything it reports hangs off that: allowed models, limits, logs, usage and
+metrics. See [one application's activity](runbooks/projects-and-usage.md#see-one-application).
+
 ## Model names
 
 | You send | Routes to | Reported back as |

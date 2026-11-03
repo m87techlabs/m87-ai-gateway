@@ -9,15 +9,25 @@ import sqlite3
 from .base import SQLiteRepository
 
 
+def _window(hours: int, project_id: str | None, app_id: str | None) -> tuple[str, list, datetime]:
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=hours)
+    where = "created_at >= ? AND created_at <= ?"
+    values = [cutoff.isoformat(), now.isoformat()]
+    if project_id is not None:
+        where += " AND project_id = ?"
+        values.append(project_id)
+    if app_id is not None:
+        where += " AND app_id = ?"
+        values.append(app_id)
+    return where, values, cutoff
+
+
 class SQLiteUsageRepository(SQLiteRepository):
-    def overview(self, hours: int = 24, project_id: str | None = None) -> dict[str, Any]:
-        now = datetime.now(timezone.utc)
-        cutoff = now - timedelta(hours=hours)
-        where = "created_at >= ? AND created_at <= ?"
-        values = [cutoff.isoformat(), now.isoformat()]
-        if project_id is not None:
-            where += " AND project_id = ?"
-            values.append(project_id)
+    def overview(
+        self, hours: int = 24, project_id: str | None = None, app_id: str | None = None
+    ) -> dict[str, Any]:
+        where, values, _ = _window(hours, project_id, app_id)
         with self._connect() as connection:
             row = connection.execute(
                 f"""SELECT COUNT(*) AS requests,
@@ -37,15 +47,21 @@ class SQLiteUsageRepository(SQLiteRepository):
         result["average_latency_ms"] = round(result["average_latency_ms"], 2)
         return result
 
-    def usage(self, hours: int = 24, project_id: str | None = None) -> dict:
+    def known_app_ids(self) -> list[str]:
+        """Managed applications plus any that still have usage, such as deleted or YAML apps."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """SELECT app_id FROM applications UNION
+                   SELECT app_id FROM usage_records WHERE app_id IS NOT NULL ORDER BY app_id"""
+            ).fetchall()
+        return [row["app_id"] for row in rows]
+
+    def usage(
+        self, hours: int = 24, project_id: str | None = None, app_id: str | None = None
+    ) -> dict:
         """Independent usage aggregates; cached responses do not add provider token usage."""
-        now = datetime.now(timezone.utc)
-        cutoff = now - timedelta(hours=hours)
-        where = "created_at >= ? AND created_at <= ?"
-        values = [cutoff.isoformat(), now.isoformat()]
-        if project_id is not None:
-            where += " AND project_id = ?"
-            values.append(project_id)
+        where, values, cutoff = _window(hours, project_id, app_id)
+        now = datetime.fromisoformat(values[1])
         aggregate = """COUNT(*) AS requests,
             COALESCE(SUM(CASE WHEN cache_status != 'hit' THEN prompt_tokens END), 0) AS prompt_tokens,
             COALESCE(SUM(CASE WHEN cache_status != 'hit' THEN completion_tokens END), 0) AS completion_tokens,
@@ -98,6 +114,7 @@ class SQLiteUsageRepository(SQLiteRepository):
         return {
             "hours": hours,
             "project_id": project_id,
+            "app_id": app_id,
             "series": timeline,
             "by_app": [dict(row) for row in by_app],
             "by_endpoint": [dict(row) for row in by_endpoint],

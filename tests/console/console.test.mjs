@@ -123,6 +123,7 @@ async function consoleFixture(t) {
     }
     if (url.pathname.endsWith("/project")) { apps[0].project_id = body.project_id; return response(null, 204); }
     if (url.pathname.includes("/apps/") && url.pathname.endsWith("/models")) { apps[0].allowed_models = body.allowed_models; return response(null, 204); }
+    if (url.pathname.endsWith("/app-names")) return response({items: ["retired-app", "sample-app"]});
     if (url.pathname.endsWith("/overview")) return response({requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12});
     if (url.pathname.endsWith("/usage")) return response({series: [{bucket: "2026-10-02T12:00:00Z", requests: 1, total_tokens: 13}], by_app: [{app_id: "sample-app", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}], by_model: [{model: "ollama:small", requests: 1, prompt_tokens: 8, completion_tokens: 5, errors: 0}]});
     if (url.pathname.endsWith("/logs")) {
@@ -478,7 +479,8 @@ test("logs search, paging and exports keep project filters and explicit content 
   assert.match($("logs").textContent, /older-reques/);
   assert.equal(requests.find((item) => item.query.get("cursor") === "fixture-next").query.get("project_id"), "alpha");
   $("log-newer").click(); await until(() => $("log-page-status").textContent.includes("Page 1"));
-  $("log-request-id").value = "fixture-request"; $("log-app-id").value = "sample-app"; $("log-status").value = "success"; submit("log-filter-form");
+  $("app-filter").value = "sample-app"; $("app-filter").dispatchEvent(new window.Event("change")); await until(() => requests.some((item) => item.query.get("limit") === "250" && item.query.get("app_id") === "sample-app"));
+  $("log-request-id").value = "fixture-request"; $("log-status").value = "success"; submit("log-filter-form");
   await until(() => requests.some((item) => item.query.get("request_id") === "fixture-request"));
   assert.equal($("log-newer").disabled, true);
   $("export").dispatchEvent(new window.MouseEvent("click", {bubbles: true, cancelable: true})); await until(() => requests.some((item) => item.path.endsWith("/export")));
@@ -487,6 +489,44 @@ test("logs search, paging and exports keep project filters and explicit content 
   $("export-content").checked = true; $("export").dispatchEvent(new window.MouseEvent("click", {bubbles: true, cancelable: true})); await until(() => requests.filter((item) => item.path.endsWith("/export")).length === 2);
   sent = requests.filter((item) => item.path.endsWith("/export")).at(-1);
   assert.equal(sent.query.get("include_content"), "true"); assert.equal(sent.query.get("project_id"), "alpha"); assert.equal(sent.query.get("app_id"), "sample-app");
+});
+
+test("application filter scopes the dashboard, and failed logins are labelled", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  assert.deepEqual([...$("app-filter").options].map((option) => option.value), ["", "retired-app", "sample-app"]);
+  $("app-filter").value = "sample-app"; $("app-filter").dispatchEvent(new window.Event("change"));
+  await until(() => ["/overview", "/usage"].every((path) => requests.some((item) => item.path.endsWith(path) && item.query.get("app_id") === "sample-app")));
+  window.document.querySelector('[data-view="audit"]').click();
+  await until(() => requests.some((item) => item.path.endsWith("/management-events")));
+  assert.equal(requests.filter((item) => item.path.endsWith("/management-events")).at(-1).query.get("app_id"), null);
+  window.document.querySelector('[data-view="logs"]').click();
+  await until(() => requests.some((item) => item.query.get("limit") === "250" && item.query.get("app_id") === "sample-app"));
+  // The delete action ignores the application filter, so its label must not imply otherwise.
+  assert.equal($("delete-logs").textContent, "Delete all logs");
+  $("project-filter").value = "alpha"; $("project-filter").dispatchEvent(new window.Event("change"));
+  await until(() => $("delete-logs").textContent === "Delete selected project logs");
+  window.document.querySelector('[data-view="apps"]').click();
+  await until(() => $("apps").querySelector("button.link-button")?.textContent === "sample-app");
+  $("apps").querySelector("button.link-button").click();
+  await until(() => $("app-detail-title").textContent === "sample-app" && !$("view-app-detail").hidden);
+});
+
+test("an application's page shows its own activity, keys and settings", async (t) => {
+  const {$, window, requests} = await consoleFixture(t);
+  const link = $("usage-apps").querySelector("button.link-button");
+  assert.equal(link.textContent, "sample-app");
+  link.click();
+  await until(() => $("app-detail-title").textContent === "sample-app" && $("app-detail-requests").textContent === "1");
+  assert.equal($("view-app-detail").hidden, false); assert.equal($("view-overview").hidden, true);
+  assert.equal($("view-title").textContent, "sample-app");
+  assert.match($("app-detail-settings").textContent, /Project alpha/);
+  assert.equal($("app-detail-token-chart").querySelectorAll("svg rect").length, 1);
+  assert.ok(requests.some((item) => item.path.endsWith("/usage") && item.query.get("app_id") === "sample-app" && item.query.get("hours") === "24"));
+  $("app-detail-hours").value = "168"; $("app-detail-hours").dispatchEvent(new window.Event("change"));
+  await until(() => requests.some((item) => item.path.endsWith("/overview") && item.query.get("hours") === "168"));
+  $("app-detail-logs").click();
+  await until(() => !$("view-logs").hidden && requests.some((item) => item.query.get("limit") === "250" && item.query.get("app_id") === "sample-app"));
+  assert.equal($("app-filter").value, "sample-app");
 });
 
 for (const [status, expected] of [["disabled", "disabled for this request"], ["expired", "expired under its retention"], ["deleted", "deleted by an operator"], ["unknown", "older record"]]) {

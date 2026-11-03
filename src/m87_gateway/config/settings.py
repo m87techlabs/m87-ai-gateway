@@ -63,6 +63,8 @@ class AppConfig(ConfigModel):
     rate_limit_per_minute: int | None = Field(default=None, ge=1)
     max_concurrent_requests: int | None = Field(default=None, ge=1, le=10000)
     monthly_budget_usd: float | None = Field(default=None, ge=0)
+    # Which stored key authenticated this request; YAML and environment keys have none.
+    key_id: str | None = Field(default=None, exclude=True)
 
     @field_validator("allowed_models")
     @classmethod

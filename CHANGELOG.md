@@ -8,6 +8,11 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- Per-application views: an application filter across the dashboard, charts, logs and exports,
+  and an application page with activity, models, endpoints, keys and recent requests.
+- `key_id` on log events and exports, and **Last used** on each application key (schema 11),
+  so an old key can be confirmed idle before it is revoked.
+- `app_id` on the token, latency and provider failure metrics, with three new Grafana panels.
 - `POST /v1/embeddings` with allowlists, limits, guardrails and separate usage reporting.
 - Upstream model names such as `qwen3:14b`, resolved through the default provider and
   reported back as requested. `GET /v1/models` lists them alongside `provider:model`.
@@ -20,6 +25,9 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Changed
 
+- The `overview` and `usage` backend methods take an optional `app_id`, and backends must provide
+  `known_app_ids`. Trusted third-party backends need the same additions.
+- Failed logins appear as **Unauthenticated** in the console rather than as a blank application.
 - The Ollama adapter now uses Ollama's OpenAI-compatible `/v1` API, so tools and reasoning
   controls work. It needs an Ollama version that provides `/v1`.
 - Stream validation accepts extra delta fields, several choices and per-chunk timestamps.

@@ -68,6 +68,7 @@ ProjectIdentifier = Annotated[
 ProjectFilter = Annotated[
     str | None, Query(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
 ]
+AppFilter = Annotated[str | None, Query(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")]
 
 
 class ProjectCreate(BaseModel):
@@ -253,8 +254,9 @@ def overview(
     store: AdminStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
+    app_id: AppFilter = None,
 ):
-    return store.overview(hours, project_id)
+    return store.overview(hours, project_id, app_id)
 
 
 @router.get("/admin/api/usage")
@@ -262,8 +264,14 @@ def usage(
     store: AdminStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
+    app_id: AppFilter = None,
 ):
-    return store.usage(hours, project_id)
+    return store.usage(hours, project_id, app_id)
+
+
+@router.get("/admin/api/app-names")
+def app_names(store: AdminStore):
+    return {"items": store.known_app_ids()}
 
 
 @router.get("/admin/api/projects")

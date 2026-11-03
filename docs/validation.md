@@ -11,6 +11,21 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Per-application reporting — 2026-11-03
+
+Verified **407 Python tests**, **43 console tests**, lint, links, and promtool with **9 alerts and
+27 dashboard queries**. A backup of a live schema-10 store was upgraded to schema 11 in an isolated
+container: existing usage and application keys, including a revoked one, were preserved.
+
+With Ollama 0.40.13 on an RTX 5080, two new applications sent chat, streaming and embedding
+requests. Overview, usage, logs and metrics separated them correctly, and each key's last use was
+recorded. A model outside an application's allowlist returned 403 and a missing key returned 401.
+
+The console was rendered in headless Chrome at 1440 pixels and reviewed for the application filter,
+application page, logs and keys, with no script errors. That review found a delete button mislabelled
+by the new filter, which is fixed and covered by a test. Grafana panels were validated with promtool,
+not rendered in Grafana. Rotation on the running deployment and narrow screens were not reviewed.
+
 ## Drop-in API on a real GPU — 2026-11-03
 
 Verified **396 Python tests**, **41 console tests**, lint and links. The container was built

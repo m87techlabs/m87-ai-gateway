@@ -132,7 +132,7 @@ def test_dashboard_queries_reference_real_metric_samples():
     metrics.registry.register(LoggingCollector(Recorder(), Worker))
     # Instantiate bounded-label metrics that have not yet had a synthetic event.
     metrics.streams.labels("ollama", "failed").inc()
-    metrics.provider_errors.labels("ollama").inc()
+    metrics.provider_errors.labels("sample", "ollama").inc()
     metrics.cache_requests.labels("miss").inc()
     metrics.rate_limits.labels("sample").inc()
     names = samples(metrics.render().decode())

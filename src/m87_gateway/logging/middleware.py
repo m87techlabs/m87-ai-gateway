@@ -29,6 +29,7 @@ class TrafficMiddleware:
             "created_at": datetime.now(timezone.utc).isoformat(),
             "app_id": None,
             "project_id": None,
+            "key_id": None,
             "provider": None,
             "model": None,
             "routed_model": None,

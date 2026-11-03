@@ -24,5 +24,6 @@ async def authenticate_app(
         )
     request.state.audit["app_id"] = app_context.app_id
     request.state.audit["project_id"] = app_context.project_id
+    request.state.audit["key_id"] = app_context.key_id
     request.app.state.recorder.add_secret(app_context.api_key)
     return app_context

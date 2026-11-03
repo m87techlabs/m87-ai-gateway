@@ -14,6 +14,7 @@ EXPORT_FIELDS = (
     "created_at",
     "project_id",
     "app_id",
+    "key_id",
     "provider",
     "model",
     "routed_model",

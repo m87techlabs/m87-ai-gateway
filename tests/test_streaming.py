@@ -117,7 +117,9 @@ def test_stream_contract_usage_and_cache_bypass(runtime, monkeypatch, name, incl
         assert all(stream.closed for stream in streams)
         assert all(e["request_outcome"] == "completed" and e["total_tokens"] == 5 for e in events)
         assert (
-            'm87_gateway_tokens_total{kind="prompt",provider="' + name + '"} 6.0'
+            'm87_gateway_tokens_total{app_id="stream-test",kind="prompt",provider="'
+            + name
+            + '"} 6.0'
             in app.state.metrics.render().decode()
         )
 

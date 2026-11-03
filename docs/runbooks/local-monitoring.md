@@ -155,6 +155,6 @@ Automated verification:
 The helper tests cover ownership, unrelated-process preservation, private files,
 checksum/missing-download behavior, stable passwords, loopback configuration and
 managed gateway fallback ports. Live setup verified Grafana health, provisioning,
-24 queries through its datasource, gateway scrape and nine healthy rules. Visual
+24 queries (now 27) through its datasource, gateway scrape and nine healthy rules. Visual
 browser review, a real notification destination and live Loki are separate checks.
 See [validation](../validation.md).

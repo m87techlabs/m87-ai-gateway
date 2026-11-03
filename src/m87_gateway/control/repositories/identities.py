@@ -21,8 +21,14 @@ class KeyLimitError(ValueError):
 class SQLiteIdentityRepository(SQLiteRepository):
     @staticmethod
     def migrate(connection: sqlite3.Connection, previous_version: int) -> None:
-        if previous_version >= 3:
-            return
+        if previous_version < 3:
+            SQLiteIdentityRepository._separate_keys(connection)
+        existing = {row[1] for row in connection.execute("PRAGMA table_info(app_keys)")}
+        if "last_used_at" not in existing:
+            connection.execute("ALTER TABLE app_keys ADD COLUMN last_used_at TEXT")
+
+    @staticmethod
+    def _separate_keys(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE app_keys RENAME TO legacy_app_keys")
         connection.execute("""CREATE TABLE applications (
             app_id TEXT PRIMARY KEY, project_id TEXT NOT NULL DEFAULT 'default',
@@ -69,7 +75,8 @@ class SQLiteIdentityRepository(SQLiteRepository):
             "revoked_at": None,
         }
         connection.execute(
-            "INSERT INTO app_keys VALUES (?, ?, ?, ?, ?, ?, NULL)",
+            "INSERT INTO app_keys (key_id, app_id, key_digest, key_prefix, created_at, "
+            "expires_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, NULL)",
             (
                 metadata["key_id"],
                 app_id,
@@ -162,7 +169,8 @@ class SQLiteIdentityRepository(SQLiteRepository):
             ).fetchone():
                 return None
             rows = connection.execute(
-                "SELECT key_id, app_id, key_prefix, created_at, expires_at, revoked_at "
+                "SELECT key_id, app_id, key_prefix, created_at, expires_at, revoked_at, "
+                "last_used_at "
                 "FROM app_keys WHERE app_id = ? ORDER BY created_at DESC, key_id DESC",
                 (app_id,),
             ).fetchall()
@@ -196,10 +204,17 @@ class SQLiteIdentityRepository(SQLiteRepository):
                 )
         return True
 
+    @staticmethod
+    def record_key_use(connection: sqlite3.Connection, key_id: str, used_at: str) -> None:
+        """Written with the request's event, off the request path, so rotation can check use."""
+        connection.execute(
+            "UPDATE app_keys SET last_used_at = ? WHERE key_id = ?", (used_at, key_id)
+        )
+
     def authenticate_app_key(self, raw_key: str) -> AppConfig | None:
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT a.* FROM app_keys k JOIN applications a USING(app_id) "
+                "SELECT a.*, k.key_id AS authenticated_key_id FROM app_keys k JOIN applications a USING(app_id) "
                 "WHERE k.key_digest = ? AND a.enabled = 1 AND k.revoked_at IS NULL "
                 "AND (k.expires_at IS NULL OR k.expires_at > ?)",
                 (self._digest(raw_key), datetime.now(timezone.utc).isoformat()),
@@ -210,6 +225,7 @@ class SQLiteIdentityRepository(SQLiteRepository):
             app_id=row["app_id"],
             project_id=row["project_id"],
             api_key=raw_key,
+            key_id=row["authenticated_key_id"],
             allowed_models=json.loads(row["allowed_models"]),
             capture_content=bool(row["capture_content"]),
             rate_limit_per_minute=row["rate_limit_per_minute"],

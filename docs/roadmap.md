@@ -60,9 +60,11 @@ is the primary package, so the same setup runs on a laptop or a cloud host.
 2. **Drop-in** — [x] upstream model names; [x] forwarding of unmodelled fields with an optional
    strict mode; [x] embeddings; [x] upstream status in logs; [x] live Ollama verification with a
    real RAG client; named connections for several providers of one type; live OpenAI check.
-3. **Console** — one Features page driven by a single backend list, and a rebuilt modern UI.
+3. **Per-application reporting** — [x] application filter and page; [x] key use and last-used;
+   [x] token, latency and failure metrics by application.
+4. **Console** — one Features page driven by a single backend list, and a rebuilt modern UI.
    Blocklists, routing rules, metrics and JSON logs become editable there.
-4. **Cloud** — TLS Compose profile, authenticated `/metrics`, admin key throttling, and a
+5. **Cloud** — TLS Compose profile, authenticated `/metrics`, admin key throttling, and a
    verified deployment on a real cloud host.
 
 Optional services are Compose profiles rather than containers started from the UI: controlling

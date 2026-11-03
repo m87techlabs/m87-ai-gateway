@@ -148,7 +148,10 @@ def test_real_disconnect_cancels_backend_and_records_one_outcome(
             assert event["total_tokens"] is None
             metrics = gateway.state.metrics.render().decode()
             assert 'm87_gateway_cancellations_total{provider="ollama"} 1.0' in metrics
-            assert 'm87_gateway_provider_errors_total{provider="ollama"}' not in metrics
+            assert (
+                'm87_gateway_provider_errors_total{app_id="disconnect-test",provider="ollama"}'
+                not in metrics
+            )
             assert bool(event["streaming"]) is streaming
             assert event["http_status_code"] == (200 if streaming else None)
             if streaming:

@@ -108,6 +108,9 @@ def test_chat_controls_enforce_limits_cache_and_retry(monkeypatch, failure):
                 assert events[1]["provider_attempts"] == 0
                 assert events[0]["provider_retries"] == (1 if failure else 0)
                 metrics = app.state.metrics.render().decode()
-                assert 'm87_gateway_tokens_total{kind="prompt",provider="ollama"} 3.0' in metrics
+                assert (
+                    'm87_gateway_tokens_total{app_id="test",kind="prompt",provider="ollama"} 3.0'
+                    in metrics
+                )
 
     asyncio.run(scenario())

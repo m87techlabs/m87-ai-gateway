@@ -3,6 +3,9 @@ let activeView = "overview";
 let connections = [];
 let projects = [];
 let activeProject = "";
+let activeApp = "";
+let detailApp = "";
+let appDetailGeneration = 0;
 let activeKeyApp = "";
 let appKeysGeneration = 0;
 let sessionGeneration = 0;
@@ -73,12 +76,13 @@ function notice(message) {
 }
 
 function renderLogs(target, rows, limit) {
-  table(target, ["Request ID", "Time", "Project", "App", "Model", "Status", "Input tokens", "Output tokens", "Total tokens", "Outcome", "Capture", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
+  table(target, ["Request ID", "Time", "Project", "App", "Key", "Model", "Status", "Input tokens", "Output tokens", "Total tokens", "Outcome", "Capture", "Latency", "Cache", "Attempts"], rows.slice(0, limit), (row, item) => {
     row.dataset.id = item.request_id;
     const requestCell = cell(row, `${item.request_id.slice(0, 12)}…`); requestCell.title = item.request_id;
     cell(row, new Date(item.created_at).toLocaleString());
     cell(row, item.project_id);
-    cell(row, item.app_id);
+    cell(row, item.app_id ?? "Unauthenticated");
+    const keyCell = cell(row, item.key_id ? item.key_id.slice(0, 8) : null); if (item.key_id) keyCell.title = item.key_id;
     cell(row, item.routed_model || item.model);
     const status = cell(row, item.status_code);
     status.className = `status ${item.status_code >= 400 ? "error" : ""}`;
@@ -91,13 +95,15 @@ function renderLogs(target, rows, limit) {
   });
 }
 
+const filterScope = () => JSON.stringify([activeProject, activeApp]);
+
 async function loadOverview() {
-  const scope = activeProject;
+  const scope = filterScope();
   const [summaryResponse, logsResponse, usageResponse] = await Promise.all([api(scoped("/overview")), api(scoped("/logs", {limit: 8})), api(scoped("/usage"))]);
   const summary = await summaryResponse.json();
   const logs = await logsResponse.json();
   const usage = await usageResponse.json();
-  if (scope !== activeProject || !adminKey) return;
+  if (scope !== filterScope() || !adminKey) return;
   $("requests").textContent = summary.requests.toLocaleString();
   $("tokens").textContent = summary.total_tokens.toLocaleString();
   $("errors").textContent = summary.errors.toLocaleString();
@@ -108,23 +114,23 @@ async function loadOverview() {
   $("usage-unknown").textContent = summary.usage_unknown.toLocaleString();
   renderChart($("request-chart"), usage.series, "requests", "Hourly requests");
   renderChart($("token-chart"), usage.series, "total_tokens", "Hourly provider tokens");
-  renderUsage($("usage-apps"), usage.by_app, "app_id", "Application");
+  renderUsage($("usage-apps"), usage.by_app, "app_id", "Application", openAppDetail);
   renderUsage($("usage-models"), usage.by_model, "model", "Model");
   renderLogs($("recent"), logs.items, 8);
 }
 
 function logFilters() {
-  return Object.fromEntries(["request_id", "app_id", "status"].map((name) => [name, $("log-filter-form").elements[name].value.trim()]).filter(([,value]) => value));
+  return Object.fromEntries(["request_id", "status"].map((name) => [name, $("log-filter-form").elements[name].value.trim()]).filter(([,value]) => value));
 }
 
 async function loadLogs(cursor = null, page = 0) {
-  const scope = activeProject; const session = sessionGeneration; const generation = ++logGeneration;
+  const scope = filterScope(); const session = sessionGeneration; const generation = ++logGeneration;
   const filters = logFilters(); const key = JSON.stringify([scope, filters]);
   if (key !== logFilterKey) { cursor = null; page = 0; }
-  $("delete-logs").textContent = scope ? "Delete selected project logs" : "Delete all logs";
+  $("delete-logs").textContent = activeProject ? "Delete selected project logs" : "Delete all logs";
   const [response, healthResponse] = await Promise.all([api(scoped("/logs", {limit: 250, ...filters, ...(cursor ? {cursor} : {})})), api("/logging-health")]);
   const data = await response.json(); const health = await healthResponse.json();
-  if (session !== sessionGeneration || generation !== logGeneration || scope !== activeProject || !adminKey) return;
+  if (session !== sessionGeneration || generation !== logGeneration || scope !== filterScope() || !adminKey) return;
   logFilterKey = key; logPage = page; if (page === 0) logCursors = [null]; logCursors[page] = cursor; logNextCursor = data.next_cursor || null;
   renderLogs($("logs"), data.items, 250);
   $("log-page-status").textContent = `Page ${page + 1} · ${data.items.length} records. Refresh to see newly completed requests.`;
@@ -135,15 +141,23 @@ async function loadLogs(cursor = null, page = 0) {
   $("export-status").textContent = delivery ? `${delivery.enabled ? `Remote ${delivery.adapter} export enabled` : "Remote export disabled"} · ${delivery.delivery_state || "Status unknown"} · Metadata only · ${delivery.pending ?? "Unknown"} pending · ${delivery.delivered ?? 0} delivered · ${delivery.failed_attempts ?? 0} failed attempts · ${delivery.dropped ?? 0} dropped · ${delivery.expired ?? 0} expired · ${delivery.held_for_other_destination ?? 0} held for another destination. ${delivery.storage_ok ? "Queue storage accessible." : "Queue storage needs attention."} ${delivery.scope}` : "Remote export status unavailable.";
 }
 
-function scoped(path, values = {}) {
+function scoped(path, values = {}, {byApp = true} = {}) {
   const query = new URLSearchParams(values);
   if (activeProject) query.set("project_id", activeProject);
+  if (byApp && activeApp) query.set("app_id", activeApp);
   return query.size ? `${path}?${query}` : path;
 }
 
-function renderUsage(target, rows, field, label) {
+function renderUsage(target, rows, field, label, open = null) {
   table(target, [label, "Requests", "Input tokens", "Output tokens", "Errors"], rows, (row, item) => {
-    cell(row, item[field] || "Unattributed"); cell(row, item.requests); cell(row, item.prompt_tokens); cell(row, item.completion_tokens); cell(row, item.errors);
+    const name = item[field];
+    const nameCell = cell(row, name || (field === "app_id" ? "Unauthenticated" : "Unattributed"));
+    if (name && open) {
+      const link = document.createElement("button"); link.type = "button"; link.className = "link-button"; link.textContent = name;
+      link.addEventListener("click", () => open(name));
+      nameCell.replaceChildren(link);
+    }
+    cell(row, item.requests); cell(row, item.prompt_tokens); cell(row, item.completion_tokens); cell(row, item.errors);
   });
 }
 
@@ -200,7 +214,7 @@ async function showDetail(requestId) {
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "detail-grid";
-  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id], ["Model", item.routed_model], ["Status", item.status_code], ["HTTP status", item.http_status_code], ["Response mode", item.streaming ? "Streaming" : "Complete response"], ["Outcome", item.request_outcome], ["Partial output", item.response_content_partial ? "Yes" : "No"], ["Input tokens", item.prompt_tokens], ["Output tokens", item.completion_tokens], ["Total tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
+  [["Request", item.request_id], ["Project", item.project_id], ["Application", item.app_id ?? "Unauthenticated"], ["Key", item.key_id], ["Endpoint", item.endpoint], ["Model", item.routed_model], ["Provider status", item.upstream_status], ["Status", item.status_code], ["HTTP status", item.http_status_code], ["Response mode", item.streaming ? "Streaming" : "Complete response"], ["Outcome", item.request_outcome], ["Partial output", item.response_content_partial ? "Yes" : "No"], ["Input tokens", item.prompt_tokens], ["Output tokens", item.completion_tokens], ["Total tokens", item.total_tokens], ["Cache", item.cache_status], ["Attempts", item.provider_attempts], ["Error", item.error_type], ["Latency", `${item.latency_ms} ms`], ["Queue outcome", item.queue_outcome], ["Queue wait", item.queue_wait_ms == null ? null : `${item.queue_wait_ms} ms`], ["Client user hash", item.client_user_hash]].forEach(([label, value]) => {
     const box = document.createElement("div");
     const caption = document.createElement("span"); caption.textContent = label;
     const strong = document.createElement("strong"); strong.textContent = value ?? "—";
@@ -231,7 +245,8 @@ function readableContent(value) {
 async function loadApps() {
   const [response] = await Promise.all([api("/apps"), loadProjectOptions()]);
   table($("apps"), ["Application", "Project", "Key prefix", "Models", "Limits", ""], (await response.json()).items, (row, item) => {
-    cell(row, item.app_id);
+    const nameCell = cell(row, ""); const nameLink = document.createElement("button"); nameLink.type = "button"; nameLink.className = "link-button"; nameLink.textContent = item.app_id;
+    nameLink.addEventListener("click", () => openAppDetail(item.app_id)); nameCell.append(nameLink);
     const projectCell = cell(row, ""); const selection = document.createElement("select"); selection.setAttribute("aria-label", `Project for ${item.app_id}`);
     projects.forEach((project) => { const option = document.createElement("option"); option.value = project.project_id; option.textContent = project.name; selection.append(option); });
     selection.value = item.project_id; projectCell.append(selection);
@@ -284,14 +299,61 @@ async function loadApps() {
   });
 }
 
+const lastUsed = (key) => key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "No use recorded";
+
+async function openAppDetail(appId) {
+  detailApp = appId;
+  document.querySelectorAll(".nav").forEach((node) => node.classList.toggle("active", node.dataset.view === "apps"));
+  document.querySelectorAll(".view").forEach((node) => { node.hidden = true; });
+  activeView = "app-detail"; $("view-app-detail").hidden = false;
+  $("view-title").textContent = appId;
+  await refresh();
+}
+
+async function loadAppDetail() {
+  const appId = detailApp; const session = sessionGeneration; const generation = ++appDetailGeneration;
+  const encoded = encodeURIComponent(appId); const window = `app_id=${encoded}&hours=${$("app-detail-hours").value}`;
+  const [summaryResponse, usageResponse, logsResponse, appsResponse, keysResponse] = await Promise.all([
+    api(`/overview?${window}`), api(`/usage?${window}`), api(`/logs?app_id=${encoded}&limit=10`), api("/apps"),
+    // Deleted applications and YAML keys still have history, but no stored keys to list.
+    api(`/apps/${encoded}/keys`).catch((error) => { if (error.status === 404) return null; throw error; }),
+  ]);
+  const [summary, usage, logs, apps, keys] = await Promise.all([summaryResponse, usageResponse, logsResponse, appsResponse].map((item) => item.json()).concat(keysResponse ? keysResponse.json() : null));
+  if (session !== sessionGeneration || generation !== appDetailGeneration || appId !== detailApp || !adminKey) return;
+  const app = apps.items.find((item) => item.app_id === appId);
+  $("app-detail-title").textContent = appId;
+  $("app-detail-settings").textContent = app ? `Project ${app.project_id} · Models: ${app.allowed_models.join(", ")} · ${app.rate_limit_per_minute ? `${app.rate_limit_per_minute} requests per minute` : "No rate limit"} · ${app.max_concurrent_requests ? `${app.max_concurrent_requests} concurrent requests` : "Gateway concurrency limit"}` : "Not managed in this console: the application was deleted or comes from YAML. Its history remains.";
+  $("app-detail-manage").hidden = !app;
+  $("app-detail-requests").textContent = summary.requests.toLocaleString();
+  $("app-detail-tokens").textContent = summary.total_tokens.toLocaleString();
+  $("app-detail-errors").textContent = summary.errors.toLocaleString();
+  $("app-detail-latency").textContent = `${summary.average_latency_ms} ms`;
+  renderChart($("app-detail-request-chart"), usage.series, "requests", `Hourly requests for ${appId}`);
+  renderChart($("app-detail-token-chart"), usage.series, "total_tokens", `Hourly provider tokens for ${appId}`);
+  renderUsage($("app-detail-models"), usage.by_model, "model", "Model");
+  renderUsage($("app-detail-endpoints"), usage.by_endpoint || [], "endpoint", "Endpoint");
+  table($("app-detail-keys"), ["Key", "Prefix", "Created", "Last used", "Status"], keys ? keys.items : [], (row, item) => {
+    cell(row, item.key_id.slice(0, 8)); cell(row, `${item.key_prefix}…`); cell(row, new Date(item.created_at).toLocaleString()); cell(row, lastUsed(item)); cell(row, item.revoked_at ? "Revoked" : item.active ? "Active" : "Expired");
+  });
+  renderLogs($("app-detail-recent"), logs.items, 10);
+}
+
+async function loadAppOptions() {
+  const names = (await (await api("/app-names")).json()).items;
+  const select = $("app-filter");
+  const all = document.createElement("option"); all.value = ""; all.textContent = "All applications";
+  const options = [...new Set([...names, ...(activeApp ? [activeApp] : [])])].sort().map((name) => { const option = document.createElement("option"); option.value = name; option.textContent = name; return option; });
+  select.replaceChildren(all, ...options); select.value = activeApp;
+}
+
 async function loadAppKeys(appId) {
   const session = sessionGeneration; const generation = ++appKeysGeneration; activeKeyApp = appId;
   $("app-keys-panel").hidden = true;
   const response = await api(`/apps/${encodeURIComponent(appId)}/keys`); const data = await response.json();
   if (session !== sessionGeneration || generation !== appKeysGeneration || !adminKey) return;
   $("app-keys-title").textContent = `Keys for ${appId}`; $("app-keys-panel").hidden = false;
-  table($("application-keys"), ["Prefix", "Created", "Expires", "Status", ""], data.items, (row, item) => {
-    cell(row, `${item.key_prefix}…`); cell(row, item.created_at); cell(row, item.expires_at || "No expiry");
+  table($("application-keys"), ["Key", "Prefix", "Created", "Last used", "Expires", "Status", ""], data.items, (row, item) => {
+    cell(row, item.key_id.slice(0, 8)); cell(row, `${item.key_prefix}…`); cell(row, new Date(item.created_at).toLocaleString()); cell(row, lastUsed(item)); cell(row, item.expires_at ? new Date(item.expires_at).toLocaleString() : "No expiry");
     cell(row, item.revoked_at ? "Revoked" : item.active ? "Active" : "Expired");
     const action = cell(row, ""); const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "danger"; revoke.textContent = "Revoke key"; revoke.disabled = !item.active;
     revoke.addEventListener("click", async () => {
@@ -306,7 +368,7 @@ async function loadAppKeys(appId) {
 
 async function loadManagementAudit() {
   const session = sessionGeneration; const scope = activeProject;
-  const response = await api(scoped("/management-events", {limit: 250})); const data = await response.json();
+  const response = await api(scoped("/management-events", {limit: 250}, {byApp: false})); const data = await response.json();
   if (session !== sessionGeneration || scope !== activeProject || !adminKey) return;
   table($("management-events"), ["Time", "Actor", "Action", "Project", "Application", "Key ID", "Provider", "Alias", "Revision", "Restored from"], data.items, (row, item) => {
     for (const field of ["created_at", "actor", "action", "project_id", "app_id", "key_id", "provider", "alias", "revision_id", "restored_from"]) cell(row, item[field]);
@@ -385,10 +447,10 @@ async function loadControls() {
   table($("readiness-checks"), ["Check", "Status", "Action"], report.checks, (row, item) => { cell(row, item.name); cell(row, item.ok ? "OK" : "Needs attention"); cell(row, item.ok ? "—" : item.message); });
 }
 
-const loaders = {export: loadExportSettings, history: loadHistory, storage: loadStorage, audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, keys: loadProviderKeys, destinations: loadDestinations};
+const loaders = {export: loadExportSettings, history: loadHistory, storage: loadStorage, audit: loadManagementAudit, setup: loadSetup, controls: loadControls, projects: loadProjects, tester: async () => {}, overview: loadOverview, logs: loadLogs, apps: loadApps, "app-detail": loadAppDetail, keys: loadProviderKeys, destinations: loadDestinations};
 
 async function refresh() {
-  try { await loaders[activeView](); } catch (error) { notice(error.message); }
+  try { await Promise.all([loaders[activeView](), loadAppOptions()]); } catch (error) { notice(error.message); }
 }
 
 document.querySelectorAll(".nav").forEach((button) => button.addEventListener("click", async () => {
@@ -403,7 +465,7 @@ document.querySelectorAll(".nav").forEach((button) => button.addEventListener("c
 $("login-form").addEventListener("submit", async (event) => {
   event.preventDefault(); sessionGeneration += 1; exportGeneration++; logGeneration++; revisionGeneration++; reviewedRevision = null; currentRevision = null; $("revision-dialog").close(); adminKey = $("admin-key").value;
   try {
-    const setup = await loadSetup(); await loadProjectOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
+    const setup = await loadSetup(); await loadProjectOptions(); await loadAppOptions(); await loadOverview(); $("admin-key").value = ""; $("login").hidden = true; $("console").hidden = false; $("login-error").textContent = "";
     if (requestedLog) document.querySelector('[data-view="logs"]').click();
     else if (!setup.connections.some((item) => item.configured)) document.querySelector('[data-view="setup"]').click();
   } catch (error) { adminKey = ""; $("login-error").textContent = error.message; }
@@ -512,6 +574,10 @@ $("export").addEventListener("click", async (event) => {
 });
 
 $("project-filter").addEventListener("change", () => { activeProject = $("project-filter").value; refresh(); });
+$("app-filter").addEventListener("change", () => { activeApp = $("app-filter").value; refresh(); });
+$("app-detail-hours").addEventListener("change", refresh);
+$("app-detail-logs").addEventListener("click", () => { activeApp = detailApp; $("app-filter").value = activeApp; document.querySelector('[data-view="logs"]').click(); });
+$("app-detail-manage").addEventListener("click", async () => { const appId = detailApp; document.querySelector('[data-view="apps"]').click(); try { await loadAppKeys(appId); } catch (error) { notice(error.message); } });
 $("project-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const element = event.currentTarget; const form = new FormData(element);
   try {

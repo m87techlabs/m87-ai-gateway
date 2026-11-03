@@ -41,7 +41,7 @@
       <button id="lock" class="secondary">Lock console</button>
     </aside>
     <main>
-      <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><div class="header-actions"><label>Dashboard and logs<select id="project-filter"><option value="">All projects</option></select></label><button id="refresh" class="secondary">Refresh</button></div></header>
+      <header><div><p class="eyebrow">Local operations</p><h2 id="view-title">Overview</h2></div><div class="header-actions"><label>Dashboard and logs<select id="project-filter"><option value="">All projects</option></select></label><label>Application<select id="app-filter"><option value="">All applications</option></select></label><button id="refresh" class="secondary">Refresh</button></div></header>
 
       <section id="view-projects" class="view" hidden>
         <div class="split">
@@ -152,6 +152,22 @@
         <div class="panel"><h3>Recent LLM exchanges</h3><div id="recent"></div></div>
       </section>
 
+      <section id="view-app-detail" class="view" hidden>
+        <div class="panel dashboard-panel">
+          <div class="panel-head"><div><h3 id="app-detail-title">Application</h3><p id="app-detail-settings"></p></div><div class="header-actions"><label>Window<select id="app-detail-hours"><option value="24">Last 24 hours</option><option value="168">Last 7 days</option><option value="720">Last 30 days</option></select></label><button id="app-detail-logs" type="button" class="secondary">Open in Logs</button><button id="app-detail-manage" type="button" class="secondary">Manage keys and limits</button></div></div>
+        </div>
+        <div class="cards">
+          <article><span>Requests</span><strong id="app-detail-requests">—</strong></article>
+          <article><span>Reported provider tokens</span><strong id="app-detail-tokens">—</strong></article>
+          <article><span>Errors</span><strong id="app-detail-errors">—</strong></article>
+          <article><span>Average latency</span><strong id="app-detail-latency">—</strong></article>
+        </div>
+        <div class="panel dashboard-panel"><h3>Activity · hourly UTC buckets</h3><div class="charts"><div><h4>Requests</h4><div id="app-detail-request-chart"></div></div><div><h4>Provider tokens</h4><div id="app-detail-token-chart"></div></div></div></div>
+        <div class="charts dashboard-panel"><div class="panel"><h3>Usage by model</h3><div id="app-detail-models"></div></div><div class="panel"><h3>Usage by endpoint</h3><div id="app-detail-endpoints"></div></div></div>
+        <div class="panel dashboard-panel"><h3>Keys</h3><div id="app-detail-keys"></div></div>
+        <div class="panel"><h3>Recent requests</h3><div id="app-detail-recent"></div></div>
+      </section>
+
       <section id="view-logs" class="view" hidden>
         <div class="panel">
           <div class="panel-head"><div><h3>Request logs</h3><p>Token usage, status, latency, and opted-in payloads.</p></div><div><a class="button" id="export" href="#">Export JSON</a><button id="delete-logs" type="button" class="danger">Delete selected project logs</button></div></div>
@@ -159,7 +175,6 @@
           <p id="export-status" role="status"></p>
           <form id="log-filter-form" class="form-panel">
             <label>Request ID<input id="log-request-id" name="request_id" maxlength="128" placeholder="Paste the sample request ID"></label>
-            <label>Application<input id="log-app-id" name="app_id" maxlength="100" placeholder="All applications"></label>
             <label>Outcome<select id="log-status" name="status"><option value="">All outcomes</option><option value="success">Successful</option><option value="error">Failed or cancelled</option></select></label>
             <button type="submit">Search logs</button><button id="log-reset" type="button" class="secondary">Clear filters</button>
           </form>
@@ -187,7 +202,7 @@
         </div>
         <div id="app-keys-panel" class="panel" hidden>
           <h3 id="app-keys-title">Application keys</h3>
-          <p>Issue a replacement, update your calling app, then revoke the old key. Both keys remain valid during the overlap. All keys share application permissions and limits.</p>
+          <p>Issue a replacement, update your calling app, check that the old key's <strong>Last used</strong> has stopped changing, then revoke it. Both keys remain valid during the overlap. All keys share application permissions and limits.</p>
           <form id="app-key-form" class="form-panel">
             <label>Replacement key expiry in days<input name="expires_in_days" type="number" min="1" max="3650" placeholder="No expiry"></label>
             <label class="check"><input name="revoke_existing" type="checkbox">Revoke existing keys immediately</label>

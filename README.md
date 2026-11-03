@@ -77,6 +77,7 @@ Most OpenAI SDKs also read `OPENAI_BASE_URL` and `OPENAI_API_KEY`. See
 | Separate application keys, rotation and per-model allowlists | Implemented |
 | Rate limits, concurrency limits, queueing, retries and response cache | Implemented, per process |
 | Request logs, token usage, optional input/output capture | Implemented |
+| Per-application dashboards, log filters, key use and metrics | Implemented |
 | Web console, encrypted provider keys, configuration history and rollback | Implemented |
 | Prometheus metrics, Grafana dashboards, webhook and Loki export | Implemented; supply your own monitoring services |
 | Fallback routes, budgets, response policies | [Planned](docs/backlog.md) |

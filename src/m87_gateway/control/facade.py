@@ -44,8 +44,10 @@ class BackendFacade:
     def prune_events(self) -> int:
         return self.traffic.prune_events()
 
-    def overview(self, hours: int = 24, project_id: str | None = None) -> dict[str, Any]:
-        return self.usage_repository.overview(hours, project_id)
+    def overview(
+        self, hours: int = 24, project_id: str | None = None, app_id: str | None = None
+    ) -> dict[str, Any]:
+        return self.usage_repository.overview(hours, project_id, app_id)
 
     def list_events(
         self,
@@ -110,8 +112,13 @@ class BackendFacade:
     def assign_app_project(self, app_id: str, project_id: str) -> bool:
         return self.identities.assign_app_project(app_id, project_id)
 
-    def usage(self, hours: int = 24, project_id: str | None = None) -> dict:
-        return self.usage_repository.usage(hours, project_id)
+    def usage(
+        self, hours: int = 24, project_id: str | None = None, app_id: str | None = None
+    ) -> dict:
+        return self.usage_repository.usage(hours, project_id, app_id)
+
+    def known_app_ids(self) -> list[str]:
+        return self.usage_repository.known_app_ids()
 
     def delete_app(self, app_id: str) -> bool:
         return self.identities.delete_app(app_id)

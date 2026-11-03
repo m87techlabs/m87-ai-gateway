@@ -81,6 +81,7 @@ class SQLiteTrafficRepository(SQLiteRepository):
             "queue_outcome",
             "endpoint",
             "upstream_status",
+            "key_id",
             "project_id",
             "created_at",
             "app_id",
@@ -134,6 +135,10 @@ class SQLiteTrafficRepository(SQLiteRepository):
                     ),
                 )
             self.backend.usage_repository.record(connection, event)
+            if event.get("key_id"):
+                self.backend.identities.record_key_use(
+                    connection, event["key_id"], event["created_at"]
+                )
             self.backend.export_outbox.enqueue(connection, event)
         tighten_sqlite_files(self.database_path)
         self.prune_events()
@@ -215,7 +220,7 @@ class SQLiteTrafficRepository(SQLiteRepository):
                            total_tokens, error_type, cache_status, provider_attempts,
                            provider_retries, streaming, request_outcome, http_status_code,
                            response_content_partial, queue_wait_ms, queue_outcome, client_user_hash,
-                           endpoint, upstream_status,
+                           endpoint, upstream_status, key_id,
                            capture_enabled, request_content_recorded, response_content_recorded,
                            request_content_truncated, response_content_truncated, content_deleted
                     FROM events {where} ORDER BY created_at DESC, request_id DESC LIMIT ?""",

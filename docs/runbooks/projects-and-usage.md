@@ -21,6 +21,21 @@ at startup. Without a project ID, apps use `default`. Existing stored keys and
 authenticated legacy events migrate to that project; anonymous events remain
 unattributed. The managed-app count lists runtime stored keys, excluding YAML keys.
 
+## See one application
+
+Every request is attributed from its key, so a caller cannot report as a different application.
+
+- **Application filter:** the dropdown in the header narrows Overview, charts, Logs and exports.
+  It combines with the project filter and also lists deleted applications that still have usage.
+- **Application page:** select an application's name under **Usage by application** or in
+  **Applications**. It shows requests, tokens, errors, latency, hourly charts, usage by model and
+  endpoint, keys with **Last used**, and recent requests, over 24 hours, 7 days or 30 days.
+- **Failed logins:** requests with a missing or unknown key appear as **Unauthenticated**.
+  They belong to no application, so the application filter excludes them.
+
+The API equivalents are `app_id` on `/admin/api/overview`, `/usage`, `/logs` and `/logs/export`,
+and `/admin/api/app-names` for the list of names.
+
 ## Test an application API
 
 1. Open **API tester** and enter the application key, a model, synthetic prompt,

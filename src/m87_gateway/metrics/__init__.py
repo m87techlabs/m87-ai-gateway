@@ -39,7 +39,7 @@ class GatewayMetrics:
         self.latency = Histogram(
             "m87_gateway_request_latency_seconds",
             "Total chat request duration",
-            ("provider",),
+            ("app_id", "provider"),
             registry=self.registry,
         )
         self.provider_requests = Counter(
@@ -51,7 +51,7 @@ class GatewayMetrics:
         self.provider_errors = Counter(
             "m87_gateway_provider_errors_total",
             "Failed provider adapter attempts",
-            ("provider",),
+            ("app_id", "provider"),
             registry=self.registry,
         )
         self.blocks = Counter(
@@ -63,7 +63,7 @@ class GatewayMetrics:
         self.tokens = Counter(
             "m87_gateway_tokens_total",
             "Provider-reported token usage",
-            ("provider", "kind"),
+            ("app_id", "provider", "kind"),
             registry=self.registry,
         )
         self.log_errors = Counter(
@@ -99,12 +99,10 @@ class GatewayMetrics:
 
     def observe(self, event: dict) -> None:
         provider = event.get("provider") or "none"
-        self.requests.labels(
-            event.get("app_id") or "anonymous",
-            provider,
-            str(event["status_code"]),
-        ).inc()
-        self.latency.labels(provider).observe(event["latency_ms"] / 1000)
+        # Applications are created by the operator, so this label stays bounded.
+        app = event.get("app_id") or "anonymous"
+        self.requests.labels(app, provider, str(event["status_code"])).inc()
+        self.latency.labels(app, provider).observe(event["latency_ms"] / 1000)
         outcome = event.get("request_outcome")
         if event.get("streaming") and outcome in {"completed", "failed", "cancelled"}:
             self.streams.labels(provider, outcome).inc()
@@ -120,7 +118,7 @@ class GatewayMetrics:
                 1 if event["status_code"] >= 400 and outcome != "cancelled" else 0
             )
             if failures:
-                self.provider_errors.labels(provider).inc(failures)
+                self.provider_errors.labels(app, provider).inc(failures)
             if retries:
                 self.provider_retries.labels(provider).inc(retries)
         if event.get("guardrail_action") == "block":
@@ -128,7 +126,7 @@ class GatewayMetrics:
         for kind in ("prompt", "completion"):
             value = event.get(f"{kind}_tokens")
             if value is not None and event.get("cache_status") != "hit":
-                self.tokens.labels(provider, kind).inc(value)
+                self.tokens.labels(app, provider, kind).inc(value)
         cache_status = event.get("cache_status")
         if cache_status in {"hit", "miss"}:
             self.cache_requests.labels(cache_status).inc()

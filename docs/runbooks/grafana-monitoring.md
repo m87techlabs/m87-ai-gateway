@@ -193,7 +193,7 @@ promtool test rules observability/prometheus/alerts.test.yml
 
 The source checker validates scrape/rule configuration, evaluates nine alert rules against
 synthetic hold/firing/recovery/disabled/low-traffic cases, and parses/evaluates all
-24 overview queries on empty input. Python tests also verify the queries reference
+27 overview queries on empty input. Python tests also verify the queries reference
 real emitted metric names, metrics privacy, unknown state and persistence/recovery.
 CI downloads a checksum-pinned official Prometheus 3.5.0 `promtool` to temporary storage.
 No gateway user must install that tool to run the product. See
