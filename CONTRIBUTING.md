@@ -31,10 +31,10 @@ pytest -q
 python scripts/check_docs.py
 ```
 
-When packaging changes, also build a wheel. Use synthetic data and mocked
-providers in normal tests; live provider checks must be deliberate and opt-in.
-Docker is enabled on demand to conserve local resources. See
-[validation status](docs/validation.md) for deferred checks and when it is needed.
+Console changes also need `npm test --prefix console`, and a check in a real browser. Image changes need
+`python scripts/smoke_container.py` as described in [local development](docs/runbooks/local-development.md).
+Use synthetic data and mocked providers in normal tests; live provider checks must be deliberate and
+opt-in. Record what was checked in [validation](docs/validation.md).
 
 ## Branches and commits
 

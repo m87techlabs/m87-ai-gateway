@@ -1,213 +1,54 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-This project follows Semantic Versioning and the Keep a Changelog format.
+All notable changes to this project are documented here. It follows Semantic Versioning and the
+Keep a Changelog format.
 
 ## [Unreleased]
 
-### Added
+## [0.1.1] - 2026-11-03
 
-- A rebuilt console in React and TypeScript, in `console/`: live dashboards, grouped navigation,
-  request details in a side panel, a streaming Playground, light and dark themes, and clear
-  loading, error and outage states. The Docker image and packages include it; a source checkout
-  builds it with `npm ci --prefix console && npm run build --prefix console`.
-- A **Features** page and `/admin/api/features`, one list of switches and settings. Blocklists,
-  task routing, metrics and container logs can now be changed without YAML, including on the
-  Docker path, and all of them survive restarts and appear in configuration history.
-- Console sessions: `POST /admin/api/session` sets an `HttpOnly` cookie, so refreshing no longer
-  signs you out. Bearer admin keys keep working for API clients.
-- Per-application views: an application filter across the dashboard, charts, logs and exports,
-  and an application page with activity, models, endpoints, keys and recent requests.
-- `key_id` on log events and exports, and **Last used** on each application key (schema 11),
-  so an old key can be confirmed idle before it is revoked.
-- `app_id` on the token, latency and provider failure metrics, with three new Grafana panels.
-- `POST /v1/embeddings` with allowlists, limits, guardrails and separate usage reporting.
-- Upstream model names such as `qwen3:14b`, resolved through the default provider and
-  reported back as requested. `GET /v1/models` lists them alongside `provider:model`.
-- Forwarding of fields the gateway does not model, including tools, content parts, `n`,
-  `reasoning_effort` and vendor options, plus an optional Strict mode that rejects them.
-- `endpoint` and `upstream_status` on log events and metadata exports (schema 10).
-- Compose settings for bind address and operator key, and a shared `m87-gateway` network.
-- Linux arm64 images, and image publication on each passing push to `main`.
-- [Connect your app](docs/connect-your-app.md).
+The first release. Put M87 AI Gateway between your app and any LLM by changing only its base URL and key.
 
-### Changed
+### Highlights
 
-- The console's URLs moved to `/admin#/...`. `/admin?request_id=` still opens that request.
-- The `overview` and `usage` backend methods take an optional `app_id`, and backends must provide
-  `known_app_ids`. Trusted third-party backends need the same additions.
-- Failed logins appear as **Unauthenticated** in the console rather than as a blank application.
-- The Ollama adapter now uses Ollama's OpenAI-compatible `/v1` API, so tools and reasoning
-  controls work. It needs an Ollama version that provides `/v1`.
-- Stream validation accepts extra delta fields, several choices and per-chunk timestamps.
-- Provider failures now state the provider's HTTP status in the message.
-- Heavy log, usage and export reads no longer run on the event loop, a provider key lookup
-  writes `last_used_at` at most once a minute, and provider clients share one TLS context.
-- Portable ZIPs are no longer published.
+- **Drop-in OpenAI API:** chat completions, streaming and embeddings. Tools, images and vendor options are
+  forwarded unchanged, and upstream model names like `qwen3:14b` just work.
+- **Providers:** Ollama, OpenAI and any OpenAI-compatible server.
+- **One application, one key:** per-app allowed models, limits, logs, usage and metrics, with key rotation.
+- **Web console:** live dashboards, request logs with optional input and output capture, a streaming
+  Playground, and a Features page to turn gateway features on and off.
+- **Safe changes:** encrypted provider keys, configuration history with rollback, and encrypted backups.
+- **Docker first:** one Compose file for amd64 and arm64, with optional Prometheus, Grafana and Loki.
 
-### Security
+### Get started
 
-- `config.example.yaml` and its demo key are no longer loaded implicitly.
-- The API reference is no longer served (`/docs`, `/redoc`, `/openapi.json`).
-- Captured messages keep text only; image and other parts are marked as omitted.
+```bash
+curl -fsSLO https://github.com/m87techlabs/m87-ai-gateway/releases/download/v0.1.1/docker-compose.yml
+docker compose up -d
+docker compose exec m87-ai-gateway cat /data/gateway/admin.key
+```
 
-### Fixed
+Open http://localhost:8087 and sign in. See the
+[README](https://github.com/m87techlabs/m87-ai-gateway#readme).
 
-- A concurrency rejection is now logged as `queue_outcome: rejected`, not `immediate`.
-- `/v1/models` no longer performs a catalog lookup that had no effect.
+### Known limitations
 
-### Added
+- Early software: the API and configuration can change before 1.0.
+- Verified live against Ollama. OpenAI and other compatible providers are implemented but not yet
+  checked live, nor are tool calls through a real model, macOS, or a Linux host with a real model server.
+- One instance per data volume. Limits and the cache are per process.
+- Binds to `127.0.0.1` by default. **Not ready for direct internet exposure:** `/metrics` needs no key, and
+  there is no built-in TLS. Put a TLS proxy with path rules in front. This is the focus of 0.2.
+- Guardrails and capture read message text only, not tool arguments or images.
+- Captured content is stored unencrypted, and capture is off by default.
 
-- Optional Linux/WSL x86-64 Grafana/Prometheus setup with root start/stop/status helpers,
-  checksum-pinned downloads, private initial credentials, loopback listeners and
-  identity-checked lifecycle. Existing services, passwords and data are preserved.
-- Native local monitoring runbook and live provisioning/query/alert-health verification.
-  Loki and external notification routing remain separate opt-in setup.
+See [what has been verified](https://github.com/m87techlabs/m87-ai-gateway/blob/main/docs/validation.md).
 
-### Added
+### Removed since the `v0.1.0` scaffold and earlier previews
 
-- Optional Grafana overview and Loki metadata dashboards, datasource/provider templates,
-  private Prometheus scraping and nine alert rules with transition/query verification.
-- Read-only logging health metrics with fixed labels and unknown counts omitted during
-  export storage failure; native ZIPs include monitoring assets and documentation.
-- Monitoring runbook covering setup, scopes, thresholds, validation, notifications and
-  shutdown. Automatic service lifecycle and live rendering/notification checks remain deferred.
-
-### Added
-
-- Loki JSON push adapter with fixed stream labels, original event timestamps, stable
-  delivery JSON across retries, strict 204 acknowledgement and existing encrypted
-  credentials/console controls. Supports single-tenant Loki and bearer-authenticated proxies.
-- Eighteenth sample flow and native backup/recovery smoke for Loki protocol delivery,
-  plus operator setup, LogQL, limits and recovery in `docs/runbooks/loki-export.md`.
-  Live Loki/Grafana, direct Basic/tenant headers and managed containers remain deferred.
-
-### Fixed
-
-- Pin SQLite sidecars during storage-health permission/size checks so background
-  export polling cannot remove them mid-check. Native smoke reports safe diagnostics
-  and cleans up its owned Windows server on failure.
-
-### Added
-
-- Log export console with destination/authentication/bounds configuration, encrypted
-  receiver credentials, non-saving synthetic connection tests and immediate activation.
-- Schema-9 atomic export settings/key/history/audit, binding-safe restore and encrypted
-  backup validation; existing data and queue remain preserved.
-- Seventeenth sample scenario for app-to-inference metadata delivery and console setup.
-  Operator instructions are in `docs/runbooks/configure-log-export.md`.
-
-### Added
-
-- Schema-8 transactional metadata outbox and optional webhook adapter with stable
-  delivery IDs, persisted leases/retries, capacity/expiry and destination binding.
-- Persistent export health in Logs, native/source environment settings, a private
-  deduplicating receiver example and outage/restart/native delivery checks.
-
-- Schema-7 separate captured content, independent retention/read expiry and audited
-  project content/log deletion preserving usage.
-- Log search/paging, readable input/output, separate token counts, explicit capture
-  states, recording-health counters and sample request-to-console links.
-- Sixteen sample scenarios and packaged logging/backup recovery smoke.
-
-- Schema-6 encrypted configuration history, validated rollback, ETag save/restore
-  preconditions and transactional settings/connection/provider-key management audit.
-- Configuration history and Storage health console pages, safe basic checks,
-  explicit integrity/reversible write verification and missing-store protection.
-- Current-credential preservation, confirmed changed-binding credential removal,
-  15 sample acceptance scenarios and native revision/recovery smoke checks.
-
-- Text SSE streaming for built-in providers, usage chunks, bounded parsing/capture,
-  terminal errors, cache/retry bypass and full-lifecycle admission.
-- Single-owner disconnect monitoring, upstream HTTP cancellation, final outcome
-  metrics and schema-5 traffic fields preserving prior keys/usage/audit.
-- Sample streaming/Stop UI, SDK/real TCP cleanup tests and native stream smoke.
-
-- Authenticated model listing, adapter capability declarations/console matrix,
-  bounded generation parameters and hashed gateway-only user attribution.
-- Optional global/per-app bounded request queues, wait/overflow errors, cancellation
-  cleanup, queue metrics/log fields and schema-4 preservation migration.
-- SDK compatibility checks and sample model/parameter and queue recovery scenarios.
-
-- Schema-3 application/key separation, overlapping key replacement, optional expiry,
-  scoped revocation and transactional identity management audit in the console/API.
-- Shared key-lifecycle adapter contracts and an isolated sample rotation scenario.
-
-- Five SQLite repositories, trusted backend registration/configuration and shared
-  adapter contracts; independent schema-2 usage records with atomic writes,
-  duplicate-delivery protection, retention and migration preserving existing keys.
-
-- Proposed backend architecture for embedded storage, secret/key lifecycle,
-  configuration revisions, independent usage history and optional exporters.
-- Explicit CI container packaging option while backend development takes priority.
-
-- Setup Test connection probes draft endpoints without saving or generating completions,
-  reports safe outcomes and protects stored credentials across endpoint changes.
-- Explicit Docker image updates and documented native development/container checkpoints,
-  separate persistence and encrypted migration guidance.
-
-- Root Docker start/stop/status helpers with prerequisite checks, health waits,
-  local source-build option and port/image-preserving resume.
-
-- Optional single-app Docker image and prebuilt Compose on localhost:8087,
-  non-root runtime, persistent private storage and included provider setup UI.
-- Real container smoke checks for run/Compose, host inference, tokens/content
-  capture, credential persistence, recreation and graceful shutdown.
-- CI-gated immutable/preview GHCR images and durable native preview release assets.
-- Console redirect at the root URL and an option to hide operator keys from stdout.
-- Native Windows/Linux portable preview artifacts and checksums, current-user Windows
-  ACLs, instance locks/identity, native lifecycle commands and optional browser launch.
-- Encrypted offline SQLite/key backups, fresh-directory restore, schema compatibility
-  gates, native smoke checks and workstation upgrade/rollback guidance.
-- Persistent console traffic/logging controls, editable application rate/concurrency
-  limits, gateway admission caps, readiness diagnostics, scoped log deletion, and
-  nine isolated sample HTTP failure/recovery scenarios.
-- Single-process per-app rate limits, opt-in exact-response caching, bounded
-  transient provider retries, console outcome fields, and traffic-control runbook.
-- Initial public repository scaffold.
-- Project documentation foundation.
-- GitHub issue templates and CI workflow.
-- Product design, roadmap, glossary, lifecycle, stack, and Mermaid diagrams.
-- Runbooks for development, deployment, configuration, incidents, providers, and releases.
-- Documentation checks, dependency updates, and repository hygiene defaults.
-- Complete Apache 2.0 license text with the existing project copyright in NOTICE.
-- Correlated JSON outcome events, optional bounded private traffic capture, and
-  Prometheus request/provider/guardrail/token/log-sink metrics.
-- A Worker-to-local-inference reference integration and traffic logging runbook.
-- A Docker-free Windows/WSL browser flow application with an ephemeral gateway
-  identity, coordinated launcher, and local testing runbook.
-- An optional local control plane with SQLite event retention, request/token
-  analytics, opted-in LLM input/output inspection, JSON export, and a packaged
-  operator console.
-- Runtime application-key creation/revocation and encrypted local OpenAI-key
-  storage with separate operator authentication.
-- Configuration, routing, policy, provider-failure, metrics, and logging tests.
-- FastAPI gateway skeleton.
-
-### Changed
-- Adopted direct-to-main development with local checks and hosted CI verification.
-- Documented deferred runtime checks and resource-conscious, on-demand Docker validation.
-- Defined public gateway framework scope and major cloud provider targets.
-- Replaced personal package contact metadata with a generic project identity.
-- Documented actual implementation gaps and preserved the historical release tag.
-- Bound development Compose access to loopback and added host-provider resolution.
-- Made Python packaging explicit and expanded release/readiness guidance.
-- Updated CI action pins and fixed the hosted runner to Ubuntu 24.04.
-- Validate configuration at startup and reject unknown or malformed settings.
-- Authorize resolved routes, apply configured request guardrails/provider flags,
-  preserve Ollama chat semantics, and normalize provider failures.
-
-### Fixed
-- Close backup SQLite connections before removing temporary snapshots on Windows.
-
-### Security
-
-### Changed
-
-- The console's URLs moved to `/admin#/...`. `/admin?request_id=` still opens that request.
-- Operator JSON exports omit captured content by default; include_content=true
-  explicitly includes retained content. Repository compatibility exports remain unchanged.
+- Portable Windows and Linux ZIPs, and preview prereleases. Use Docker.
+- Native start scripts at the repository root. Contributors use `scripts/dev-*.sh`.
+- The native Grafana installer. Use `docker compose --profile monitoring up -d`.
 
 ## [0.1.0] - Historical scaffold
 

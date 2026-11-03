@@ -9,9 +9,7 @@ security mailbox:
 m87admin@m87techlabs.com
 ```
 
-If GitHub private vulnerability reporting is enabled, the repository Security tab
-provides another private reporting path. Verify reporting availability before a
-public release.
+You can also use GitHub's private vulnerability reporting, from the repository's Security tab.
 
 Include the affected version/commit, impact, and a minimal reproduction. Remove
 credentials, personal data, and real prompt content. Share sensitive reproduction
@@ -19,9 +17,8 @@ material only through the agreed private channel.
 
 ## Supported versions
 
-The project is in early development. Fixes target the latest released version;
-there is no long-term support commitment for older versions. A historical tag
-does not establish production readiness. See the [lifecycle](docs/lifecycle.md).
+The project is in early release. Fixes target the latest released version; there is no long-term
+support commitment for older versions. See the [lifecycle](docs/lifecycle.md).
 
 ## Security design
 

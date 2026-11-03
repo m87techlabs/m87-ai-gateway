@@ -11,18 +11,14 @@ The initial product is a deployable HTTP service. Its framework capabilities are
 documented adapter and policy interfaces, reusable configuration, and deployment
 examples. A separately supported embedded SDK is a future decision.
 
-The end product is a full AI gateway ecosystem: one setup experience for model
-connections, project/application access, API testing, logs, tokens, usage, and
-dashboards. It should also manage optional Grafana, Prometheus, logging, Vault,
-and other service containers, including supported container-engine startup,
-configuration, readiness, start/stop, persistence, and recovery. Users can choose
-the included local capabilities or expand them through managed service profiles.
-See [ecosystem design](ecosystem.md) for the planned lifecycle and extension boundaries.
+The product is one application with an included console for model connections, application access,
+API testing, logs, usage and feature switches. Optional services such as Prometheus, Grafana and Loki
+are Compose profiles rather than something the console manages.
 
 ## Plug-and-play product vision
 
 The intended experience is one self-hosted application with an included browser
-UI, usable on a workstation or a cloud server. Users retain control over provider
+UI, usable on a laptop or a server. Users retain control over provider
 connections, credentials, application access, logs, retention, and traffic policies.
 The gateway owns the operational controls for requests routed through it.
 
@@ -50,11 +46,8 @@ in gateway-controlled storage. Cloud workload identity should be preferred where
 available. Local endpoints may also require credentials. Restrict direct backend
 access when policy enforcement must cover all inference traffic.
 
-Aim for native distributions that bundle the runtime, backend, UI, and embedded
-database. Users should not install Python, Node, Docker, PostgreSQL, or Grafana
-for the default single-instance experience. Produce and test separate artifacts
-for supported operating systems and architectures. A container image is an
-additional deployment option for existing cloud/container environments.
+It ships as one Docker image and Compose file, for a laptop or a server. Users do not need Python, Node,
+PostgreSQL or Grafana for the default single-instance experience.
 
 Model servers, model downloads, accelerator drivers, cloud accounts, and network
 access remain prerequisites supplied by the user. Multi-instance deployments
@@ -67,13 +60,9 @@ adapters. Live vLLM compatibility, Anthropic, and Bedrock remain unverified or
 planned. Streaming, tools,
 and other provider differences must be declared rather than silently dropped.
 
-The console now includes persistent provider connection setup, model discovery,
-default routing and content-capture choices, inspection, and key operations. A
-loopback launcher starts without demo credentials. Portable Windows/Linux builds are development previews, with native lifecycle
-commands and encrypted offline backup/restore. Rate/concurrency, request bounds, cache/retry, and log-retention editing are included.
-Budget and response-policy editing, clean-workstation validation, artifact signing,
-and production service management remain planned. See
-[guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
+The console covers provider connections, model discovery, default routing, a Features page for every
+switch, inspection and key operations. Budgets, response policies and production service management
+remain planned. See [guided setup](runbooks/guided-setup.md) and the [adapter contract](adapters.md).
 
 Projects now group application keys and preserve request-time attribution in
 audit events. The dashboard can filter project usage/logs and show hourly trends
@@ -105,7 +94,7 @@ provide separate operator roles or tenant isolation. See
 | Observability | Request IDs, outcome logs, latency, usage, cost estimates, metrics | Partial: correlated events, metrics, and optional local traffic capture; cost/export planned |
 | Resource controls | Per-app rate limits and documented budget semantics | Partial: single-process rate/concurrency enforcement, UI controls and opt-in response cache; budgets planned |
 | Projects and dashboard | Project/application usage, logs, API testing and trends | Implemented local grouping; roles, project budgets and billing remain planned |
-| Ecosystem services | Optional managed dashboards, metrics, logging and secrets | Planned lifecycle adapters and service profiles; no automatic Docker startup yet |
+| Optional services | Dashboards, metrics and log storage | Implemented as a Compose profile |
 | Operations | Local and container setup, health/readiness, upgrade and rollback procedures | Implemented liveness/configuration readiness, non-root container and Compose; live/cloud scope in validation |
 
 ## Target request path
@@ -208,23 +197,10 @@ Update this page when a decision changes the product contract.
 
 ## Container product distribution
 
-The optional image uses the same CLI, console, provider interfaces and SQLite as
-the workstation application. It binds internally on 8087, publishes host loopback,
-and retains private state in a named volume. No YAML/demo-key prerequisite is needed.
-Container startup does not start inference or ecosystem services. The default
-image hides operator keys from logs; the operator retrieves the key with Docker
-exec. Source builds and prebuilt images use the same Dockerfile. CI checks the
-image before publishing immutable commit and preview tags. Native ZIPs and Compose
-are retained as commit preview release downloads; public release gates remain.
-See the [container runbook](runbooks/container-deployment.md).
-
-## Backend development priority
-
-See [backend architecture proposal](backend-architecture.md) for the next storage
-work: retain embedded SQLite, separate backend responsibilities and introduce
-independent usage records and explicit key/configuration lifecycles. These changes
-remain proposed. Native source development is the current focus; Docker remains a
-packaging option to verify for the final functional release scope.
+The image runs the CLI, console, adapters and SQLite as a non-root user on a read-only filesystem. It
+binds to 8087 inside the container, publishes to host loopback by default and keeps private state in a
+named volume. It needs no YAML or demo key, and it does not start model servers. Operator keys stay out
+of logs. See [run with Docker](runbooks/container-deployment.md).
 
 ## Implemented backend foundation
 

@@ -19,7 +19,7 @@ from m87_gateway.main import create_app
 from m87_gateway.backup import backup, restore, validate_database
 from m87_gateway.config.settings import LogExportConfig
 from m87_gateway.private_storage import prepare_file
-from m87_gateway.workstation import instance_lock
+from m87_gateway.instance import instance_lock
 
 ADMIN = {"Authorization": "Bearer synthetic-admin-key-long-enough"}
 TOKEN = "synthetic-receiver-token"

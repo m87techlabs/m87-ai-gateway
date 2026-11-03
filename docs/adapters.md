@@ -63,7 +63,7 @@ The same registered adapter appears in **Providers** when the control plane is e
 Persisted custom connections require registration again on restart. Adapter names
 are unique; registrations cannot replace built-ins. Code extensions are trusted
 server code. The UI cannot import modules or install arbitrary plugins. Extensions
-must be included when rebuilding a standalone artifact; runtime plugin loading is
+must be included when building the image; runtime plugin loading is
 not implemented.
 
 ## Verification required for an adapter
@@ -90,7 +90,7 @@ flowchart TD
 
 ## Capability declarations
 
-Each registered Adapter carries a frozen Capabilities declaration. Setup displays
+Each registered Adapter carries a frozen Capabilities declaration. The **Providers** page displays
 its matrix. Built-in Ollama, OpenAI and generic compatible adapters support text
 chat, streaming, seed and text/JSON object/schema formats. Tools, embeddings,
 images and multiple choices remain unavailable. Ollama lacks the penalty

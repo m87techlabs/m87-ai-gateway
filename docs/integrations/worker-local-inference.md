@@ -57,7 +57,7 @@ steps below summarize the integration-specific setup.
    containing both `auto` and its concrete model.
 3. Optionally enable gateway-wide traffic capture using the
    [logging runbook](../runbooks/traffic-logging.md).
-4. Arrange an on-demand Docker session. Verify local health/auth/chat first.
+4. Start the gateway with Docker. Verify local health, authentication and chat first.
 5. Route a separate Access-protected test hostname through the tunnel to the
    gateway. Keep `/metrics`, files, and unrelated app routes private.
 6. Use the [Worker example](../../examples/cloudflare-worker/README.md). Its
@@ -77,10 +77,10 @@ steps below summarize the integration-specific setup.
 | Local model offline | Safe gateway 502/504 and provider-error metrics |
 | Host or tunnel offline | Worker/edge failure; no gateway event is expected |
 | Content capture disabled | Metadata exists without messages or completion text |
-| Streaming or embeddings requested | Explicit unsupported behavior; existing app routes remain on their current origin |
+| Streaming or embeddings requested | Served through the gateway, with usage recorded |
 
-All live tunnel, Worker, Docker, and model checks remain deferred. Unit tests use
-mocked providers. See [validation status](../validation.md).
+Horizon runs this path in daily use; see [validation](../validation.md). Keep the tunnel's path rule, so
+the console and `/metrics` stay private.
 
 ## Rollback
 

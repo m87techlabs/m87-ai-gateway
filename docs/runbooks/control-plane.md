@@ -1,33 +1,17 @@
-# Local control-plane runbook
+# Control-plane runbook
 
-Use this runbook to start and operate the developer-preview console on one
-gateway instance.
+Use this runbook to operate the console on one gateway instance. Start the gateway with
+[Docker](container-deployment.md), open `/admin` and sign in with the operator key. Then confirm, after
+sending a synthetic request from the **Playground**:
 
-## Start
-
-1. Create a private storage directory and ignored environment file.
-2. Generate separate random application and admin keys.
-3. Enable the control plane and start the gateway.
-4. Open `/admin` on the operator network and enter the admin key.
-
-For the Docker-free Ollama path, the Flow Lab performs those steps:
-
-```bash
-. .venv/bin/activate
-LOCAL_TEST_MODEL='ollama:gemma3:1b' python -m examples.local_test_app.start
-```
-
-The launcher prints the Flow Lab URL, console URL, and one-time admin key. Send a
-synthetic chat in the Flow Lab, open the console, and confirm:
-
-- Overview token totals increased by the provider-reported usage.
-- Logs contain the same `X-Request-ID` shown by the Flow Lab.
-- Request detail shows the selected route, status, latency, input, and output.
-- Destinations shows SQLite, stdout, JSONL, and Prometheus state.
+- **Overview** token totals increased by the provider-reported usage.
+- **Logs** contains the same `X-Request-ID` shown in the Playground.
+- Request details show the selected route, status and latency.
+- **Log export** lists where data goes.
 
 ```mermaid
 sequenceDiagram
-    participant App as Flow Lab or application
+    participant App as Playground or application
     participant Gateway as Gateway data plane
     participant Model as Ollama or OpenAI
     participant Store as Local event store
@@ -60,7 +44,7 @@ Use **Logs → Export JSON** for a bounded operator export. Exports can contain
 captured prompts and completions. Store them as sensitive data and delete them
 under the same retention policy as the source events.
 
-The gateway prunes expired SQLite events at startup, on Controls saves, and on event
+The gateway prunes expired SQLite events at startup, on settings saves, and on event
 writes. Change retention in **Features**; its saved value overrides the startup
 `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` value. Back up `control.db` and
 `master.key` together while access is restricted. Keep the master key separate

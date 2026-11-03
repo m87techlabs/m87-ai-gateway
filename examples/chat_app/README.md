@@ -31,9 +31,9 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-1. Start the gateway with `./start.sh` from the repository root.
-2. Open the gateway's printed console URL (normally `http://localhost:8087/admin`). In **Providers**, save an inference connection
-   and default model. Local Windows Ollama can remain on Windows.
+1. Start the gateway with [Docker](../../docs/runbooks/container-deployment.md), from the repository root.
+2. Open the gateway's console, normally `http://localhost:8087`. In **Providers**, save an inference connection
+   and default model.
 3. Optionally create a project called `sample-chat`. In **Applications**, create
    an app in that project, allowing `auto` **and** the selected concrete model.
    Copy its application key shown once. Do not use the operator/admin key here.
@@ -56,12 +56,10 @@ python3 -m venv .venv
 6. In the gateway console, select the project's dashboard/logs and match that
    request ID. Enable gateway-wide content capture in **Providers** to inspect input/output
    there; metadata and usage do not require content capture.
-7. Run `./examples/chat_app/stop.sh` to stop the sample. The gateway stays running. Use `./stop.sh`
+7. Run `./examples/chat_app/stop.sh` to stop the sample. The gateway stays running. Use `docker compose stop`
    separately when you want to stop the gateway.
 
-No Docker, extra database, Node installation, or browser credential storage is
-needed. This is a source example; the standalone gateway executable does not
-include a sample-app runtime.
+The sample needs Python and a checkout. It is not in the Docker image.
 
 ## Everyday lifecycle
 
@@ -96,7 +94,7 @@ stop the gateway or Ollama. Status returns 3 when no managed sample is running.
 
 `SAMPLE_GATEWAY_URL` and `SAMPLE_MODEL` can also set the gateway URL/model.
 Without an explicit URL, the sample detects a live gateway started by this checkout's
-`./start.sh`, including custom ports. It verifies the private process record against
+`docker compose up -d`, including custom ports. It verifies the private process record against
 the running process; missing or stale records fall back to `http://127.0.0.1:8087`.
 The selected gateway URL appears in the terminal and page. A custom `GATEWAY_RUN_DIR`
 must match the setting used to start the gateway. Explicit `--gateway-url` takes
@@ -112,8 +110,7 @@ when testing is finished.
 - Tokens reflect provider-reported usage; unavailable values read **Unknown**.
 - Revoking the app key causes a safe authentication error with a request ID.
   For an unexpected key rejection, compare the sample's displayed gateway URL with
-  the console URL where the key was created. An older Flow Lab may occupy 8080
-  while your managed gateway runs on a different port. Stop the sample with its stop script
+  the console URL where the key was created. Stop the sample with its stop script
   and restart with `--gateway-url` set to the intended gateway; keep that gateway's
   application key. Each gateway data directory has its own application keys.
 - A disallowed model causes an authorization error. A low app rate limit produces
@@ -152,7 +149,7 @@ This starts an isolated sample app, gateway, and synthetic OpenAI-compatible
 inference service on reserved, temporary loopback ports. It exercises 18 scenarios
 and reports PASS for each. It uses a private temporary database and generated keys;
 all test services/data are cleaned up afterward. Your running gateway, existing
-keys/logs, Windows Ollama, and Docker are unaffected. No cloud calls are made.
+keys and logs, and Docker are unaffected. No cloud calls are made.
 
 The scenarios cover streamed text/final usage/capture, application model listing, generation parameters, bounded queue
 overflow/recovery, successful input/output capture, cache hits and token accounting,

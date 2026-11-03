@@ -1,380 +1,75 @@
 # Roadmap
 
-The destination is a public, self-hostable gateway framework with a stable core
-and supported provider adapters. Releases follow acceptance criteria rather than
-calendar promises. See [design](design.md) for scope and [lifecycle](lifecycle.md)
-for release gates.
-
-## End-product vision: full gateway ecosystem
-
-Deliver a full AI gateway ecosystem through one setup and operations experience.
-Users should connect inference, manage projects and application keys, test APIs,
-browse exchanges, inspect tokens/usage, and use dashboards. The application should
-also configure and manage selected Grafana, Prometheus, logging, Vault, and future
-service containers rather than requiring users to assemble the ecosystem manually.
-Detect/start supported container engines through explicit platform integration
-when authorized; keep the built-in local features usable without containers.
-Source users can extend providers, secret stores, exporters, and service lifecycle
-adapters. See [ecosystem design](ecosystem.md).
-
-### Projects and built-in operations
-
-- [x] Add persistent projects and application-key membership.
-- [x] Attribute events from authenticated keys and preserve historical project usage.
-- [x] Filter dashboard, logs, and exports by project; show hourly requests/tokens
-  and per-application/per-model breakdowns without counting cache hits as new tokens.
-- [x] Add a console API tester using the normal authenticated gateway path.
-- Add project policy/budget controls, longer-term accounting, operator roles,
-  and tested access boundaries before promising tenant isolation or billing.
-
-### Managed ecosystem services — planned
-
-- Define extensible service profiles and lifecycle adapters with versioned images,
-  resource/storage plans, credentials, readiness, and upgrade/rollback contracts.
-- Add container-engine detection and approved platform startup, then start/status/
-  stop controls for only the gateway-owned services. Existing engines can be reused.
-- Provision Grafana/Prometheus and log collection/storage, with preconfigured
-  dashboards, request correlation, sanitized events, and tested retention behavior.
-- Add a secret-store adapter for an existing or managed Vault service, including
-  secure initialization/unseal or workload identity, scoped access, and recovery.
-- Add browser service links, health/resource reporting, backups, selective shutdown,
-  and clear recovery for unavailable services without disrupting core inference.
-- Verify workstation/cloud behavior and publish service-specific runbooks before
-  advertising automatic setup. Docker-in-WSL checks remain on demand.
-
-**Exit:** a user can choose a supported service profile in setup, see its resource
-requirements, provision and start it, use configured dashboards/logs/secrets,
-restart without losing data, stop only that profile, and recover or roll back
-through documented procedures. No plaintext secrets or captured prompts appear
-in metrics, process arguments, generated manifests, or default logs.
-
-## Direction: plug-and-play for developers
-
-The gateway is public and aimed at developers building locally or using any LLM API. Judge
-work by time to first request and by how little a calling app has to change. Docker Compose
-is the primary package, so the same setup runs on a laptop or a cloud host.
-
-1. **Runnable by a stranger** — [x] demo key no longer loaded implicitly; [x] Compose settings
-   and shared network; [x] multi-architecture image published from `main`; make the package
-   public; add a clean-machine test from install to first completion.
-2. **Drop-in** — [x] upstream model names; [x] forwarding of unmodelled fields with an optional
-   strict mode; [x] embeddings; [x] upstream status in logs; [x] live Ollama verification with a
-   real RAG client; named connections for several providers of one type; live OpenAI check.
-3. **Per-application reporting** — [x] application filter and page; [x] key use and last-used;
-   [x] token, latency and failure metrics by application.
-4. **Console** — [x] rebuilt in React and TypeScript with live data and clear loading, error and
-   outage states; [x] a Features page driven by one backend list, where blocklists, routing rules,
-   metrics and container logs become editable; [x] sessions that survive a refresh.
-5. **Cloud** — TLS Compose profile, authenticated `/metrics`, admin key throttling, and a
-   verified deployment on a real cloud host.
-
-Optional services are Compose profiles rather than containers started from the UI: controlling
-containers needs the Docker socket, which is effectively root on the host. PyPI (`pipx`) becomes
-the non-Docker route; portable ZIPs are no longer published.
-
-## Streaming and disconnect cancellation — implemented; live checks deferred
-
-- [x] Stream text SSE from Ollama and compatible/OpenAI adapters, with
-  declared capabilities and include_usage support; missing usage stays unknown.
-- [x] Hold admission through the full response and bypass cache/retry for streams.
-- [x] Validate before headers; terminate later failures with safe SSE error events.
-- [x] Bound parsing/capture, redact credentials across deltas and flag partial output.
-- [x] Cancel upstream HTTP on client disconnect in both response modes; test direct
-  and sample-to-gateway TCP cleanup, slot release and one final event (A3).
-- [x] Add sample streaming/Stop UI, streaming HTTP scenarios, SDK streaming tests,
-  final-outcome metrics and schema-5 data preservation contracts.
-- [x] Extend native bundle smoke to exercise streamed inference and captured output.
-- Record live Ollama/OpenAI/vLLM and Worker/tunnel/proxy evidence for A1; local
-  Ollama discovery was unavailable on 2026-10-06. Verify backend generation stops
-  separately from gateway transport cancellation. Final Docker work stays deferred.
-
-See [streaming operations](runbooks/streaming-and-cancellation.md) and
-[validation](validation.md#streaming-and-disconnect-cancellation).
-
-## Backlog first batch — implemented
-
-- [x] **A2** authenticated app-filtered `/v1/models`, endpoint-bound discovery
-  snapshots, and a standard OpenAI SDK listing test over local HTTP.
-- [x] **A4** bounded sampling/stop/seed/penalty and JSON object/schema parameters,
-  explicit unsupported-option errors, and hashed gateway-only user attribution.
-- [x] **P2** adapter declarations, pre-inference validation and a console matrix.
-- [x] **R3** optional bounded queue with global/per-app waiting caps, eligible FIFO,
-  wait timeout, queued cancellation/disconnect cleanup, depth/wait metrics and logs.
-- [x] Add sample HTTP catalog/parameter and queue-overflow/recovery scenarios.
-- [x] Schema 4 adds nullable attribution and queue fields while preserving keys,
-  usage, captured content and identity audit through upgrade.
-
-See [operating/testing procedures](runbooks/inference-api-and-queueing.md) and
-[validation](validation.md#inference-api-and-request-queueing). Live streaming verification (A1), fallback routing and shared queues
-remain in [backlog](backlog.md). Queue admission and response caching remain local
-to one process. Live provider/model compatibility is a separate release gate.
-
-## Configuration recovery and storage health — implemented
-
-- [x] Keep 100 encrypted console-managed settings snapshots; validate restores and
-  reject stale restore/save preconditions before activation.
-- [x] Commit revisions/settings/credential changes and management audit together.
-- [x] Preserve current credentials for unchanged bindings; require explicit removal
-  for changed endpoints/bindings and never restore historical secrets.
-- [x] Add Configuration history/Storage health UI, safe diagnostics, reversible
-  write/integrity checks and missing-file failure without replacement.
-- [x] Extend the sample suite to 15 scenarios and native smoke with restore,
-  storage checks and encrypted recovery of revisions.
-- Verify visual browser/Windows Ollama, clean-host/cross-version rollback and final
-  Docker packaging separately. Crypto key versions and stable connection IDs remain planned.
-
-See [recovery runbook](runbooks/configuration-recovery.md) and
-[validation](validation.md#configuration-recovery-and-storage-health).
-
-## Current priority: logging showcase — local stage implemented
-
-Logging is the primary showcase: sample request → gateway → inference → searchable
-input/output, tokens and outcome. See [logging plan](logging-plan.md) for the staged
-sequence and remaining development scope.
-
-- [x] Schema-7 separate content storage, independent retention/read expiry and audited deletion.
-- [x] Exact request/application/outcome search, deterministic paging and clear capture states.
-- [x] Readable input/output, raw JSON, separate tokens and sample-to-console request links.
-- [x] Metadata-only default export and explicit content inclusion, with recording health.
-- [x] Extend sample acceptance to 18 scenarios and native logging/recovery smoke.
-- [x] Add bounded schema-8 metadata outbox and optional webhook delivery, with stable
-  IDs, persisted leases/retries, capacity/expiry, destination binding and receiver tests.
-- [x] Add console export configuration, encrypted credentials, draft tests and schema-9 backup/recovery.
-- [x] Add Loki JSON push with fixed labels, stable retry payloads, strict acknowledgement
-  and synthetic sample/native coverage. Live Loki/Grafana verification remains deferred.
-- [x] Add optional Grafana overview/Loki dashboards, provisioning templates, Prometheus
-  alerts and query/transition tests; include assets/docs in native downloads.
-- [x] Add optional native Linux/WSL Grafana/Prometheus lifecycle with pinned downloads,
-  private login, fallback-port detection and live datasource/query/rule verification.
-- Verify visual Grafana, live Loki/notifications, then add managed service profiles and OTLP;
-  direct Basic/tenant headers remain follow-up scope.
-  and managed observability profiles. Live/manual release evidence remains separate.
-
-## Backend foundations — in progress
-
-Native source development takes priority. Keep existing Docker packaging files and
-helpers, with explicit packaging CI when a functional release candidate is ready.
-Routine main pushes do not rebuild Docker. Container acceptance remains a release gate.
-
-Follow [backend architecture](backend-architecture.md):
-
-- [x] Extract five SQLite repositories behind a compatibility facade.
-- [x] Add named backend configuration/registration and reusable behavioral contracts.
-- [x] Migrate retained traffic to independent usage records; verify key preservation.
-- [x] Separate captured content from metadata and add independent retention.
-- Add remaining service boundaries and optional content encryption/access roles.
-- [x] Separate applications and keys; add overlap rotation, expiry, revocation and
-  transactional identity audit with console controls and shared tests.
-- [x] Audit configuration, control, connection and provider-key changes transactionally.
-- Define encryption/digest key versions and remaining management audit actions.
-- [x] Add encrypted bounded configuration revisions, validated restore, ETag preconditions and atomic activation.
-- Add stable provider connection identities for multiple connections of one adapter.
-- [x] Preserve usage through log deletion, with separate retention and duplicate-delivery protection.
-- [x] Add safe storage health, explicit integrity/write verification and schema-5 preservation migration.
-- Extend remaining management audit actions and remaining remote exporter integrations.
-- Add optional PostgreSQL/Vault/export adapters after the local contracts are tested.
-
-Checked items are implemented; the remaining items are planned. Existing Docker
-startup evidence remains valid for its verified commits; further container work is
-on hold while the backend is developed.
-
-## Phase 1: gateway controls and sample acceptance — implemented locally
-
-- [x] Edit managed application rate and concurrency limits without replacing keys.
-- [x] Add a gateway concurrency cap and configurable request/message bounds.
-- [x] Manage cache, retry, SQLite retention, and capture limits through Controls.
-- [x] Persist controls and use them after restart; clear cache on configuration updates.
-- [x] Separate `/health` liveness from `/ready` configuration/storage readiness.
-- [x] Show actionable checks and keep live connectivity discovery explicit.
-- [x] Add confirmed, project-scoped SQLite log deletion and truncation indicators.
-- [x] Exercise nine isolated sample → gateway → synthetic inference scenarios.
-
-See [controls acceptance runbook](runbooks/gateway-controls-testing.md). Live Ollama
-failure/recovery exercises, visual browser checks, Docker and cloud validation
-remain separate evidence requirements. Limits/cache are per process; budgets,
-shared enforcement and remote exporters are follow-up milestones.
-
-## Phase 2: portable workstation preview — implementation and verification
-
-- [x] Build native Linux and Windows preview executables, ZIPs, manifests and checksums.
-- [x] Add portable start/stop/status helpers and optional browser launch.
-- [x] Add private platform storage, a data-directory lock, and verified instance identity.
-- [x] Add encrypted offline backup and restore into a fresh directory.
-- [x] Version the database schema and reject newer schemas before migration.
-- [x] Document upgrade verification and backup-based rollback.
-- [x] Add native executable backup/restore/inference and platform safety CI checks.
-- [x] Verify native Windows/Linux CI builds, platform safety and packaged recovery smoke.
-- Verify clean Windows/Linux workstations and native Windows Ollama/browser behavior
-  before declaring general workstation support.
-- Verify rollback across distinct released artifacts and complete signing/release review.
-
-Version `0.1.1.dev0` identifies this development preview. The historical `v0.1.0`
-tag is unchanged; no public release is created by these builds. See
-[workstation runbook](runbooks/workstation-distribution.md) and validation records.
-
-## Phase 3: single-container distribution — implemented and verified in hosted CI
-
-- [x] Run the gateway, setup UI and embedded persistence in one non-root image.
-- [x] Provide image-based Docker run and Compose startup on localhost:8087.
-- [x] Keep credentials and logs in a private persistent volume; hide operator keys from stdout.
-- [x] Document host/network/remote inference endpoints, lifecycle and recovery.
-- [x] Gate immutable image publication and durable preview downloads on CI checks.
-- [x] Verify hosted Docker run/Compose, host inference, completion/token/capture,
-  recreation and graceful shutdown; exact commit recorded in validation.
-- Verify Windows Docker Desktop with live Ollama, container backup/restore,
-  clean-host pull and setup, signing, ARM and cloud hosting separately.
-
-This phase is an additional setup option. It does not provision model servers or
-managed Grafana/Vault profiles. See [container runbook](runbooks/container-deployment.md)
-and [validation](validation.md). Current private access is preserved until public
-release review; development preview publication does not establish production readiness.
-
-## Next product milestone: guided setup and standalone distribution
-
-Prioritize the first-run experience alongside completion of core controls:
-
-- [x] Add draft connection testing with safe reachability/timeout/rejection feedback,
-  no persistence changes and stored-credential endpoint protection.
-- [x] Add guided console setup for provider connections, model discovery, default
-  selection, and application-key creation; launcher supplies private operator access.
-- [x] Add a generic OpenAI-compatible text adapter and source adapter registration;
-  live vLLM verification and Anthropic/Bedrock adapters remain follow-up work.
-- [x] Manage provider connections, models, app rate/concurrency policies, retention,
-  and traffic controls through the included UI with validated, persistent updates.
-- [x] Show the current text/non-streaming contract, configuration readiness, and
-  explicit model-discovery connectivity diagnostics.
-- Build the runtime, UI, and embedded persistence as native platform artifacts;
-  native preview builders and CI paths exist, with clean-host verification pending.
-- [x] Implement platform-private credentials, encrypted backup/restore, native lifecycle
-  and artifact checksums. OS services, signing and cross-release rollback remain gates.
-- Publish short workstation and single-server cloud setup instructions.
-
-**Exit:** on a clean supported workstation without Python or Docker, a user can
-launch the gateway, connect an existing supported model service through the UI,
-create an app key, send a request, and inspect usage and logs. The same application
-can run on a supported cloud host with documented networking and credentials.
-External inference services and cloud accounts are user-supplied prerequisites.
-
-## Current baseline
-
-The repository contains validated configuration, bearer-key authentication,
-requested/resolved-model authorization, deterministic rules, non-streaming
-OpenAI/Ollama text chat, configured request guardrails, safe upstream errors,
-request IDs, JSON outcome events, an optional private rotating traffic file,
-Prometheus metrics, and a local SQLite control plane with token analytics,
-opted-in exchange inspection, application keys, encrypted provider keys, and an
-operator console. The repository also includes Docker files and an expanded test suite. A
-native Windows/WSL flow has also returned a real Ollama completion. Mocked tests
-alone do not establish provider compatibility, and live tunnel/container-provider
-behavior remains unverified. Hosted container flow is verified with synthetic inference.
-
-The historical `v0.1.0` tag points to the initial scaffold. Preserve published
-tags. The next release must use a new version and document the capabilities it
-actually verifies. Package metadata alone does not indicate release readiness.
-
-```mermaid
-flowchart LR
-    A[Complete local gateway] --> B[Operational visibility]
-    B --> C[Security and resource controls]
-    C --> D[Cloud providers and deployment]
-    D --> E[Extension and developer experience]
-    E --> F[Stable public contract]
-```
-
-## Local MVP completion — next 0.1.x release
-
-- [x] Wire provider and guardrail configuration into runtime behavior.
-- [x] Validate provider/model identifiers and authorize resolved `auto` targets.
-- [x] Define the supported text chat API subset and reject unsupported options clearly.
-- [x] Normalize provider errors and define missing-credential behavior.
-- [x] Preserve message semantics and supported generation settings in both initial adapters.
-- [x] Add request IDs, outcome logs, optional traffic capture, and `/metrics`.
-- [x] Add a local console for request/token analytics and opted-in exchange inspection.
-- [x] Add runtime application-key lifecycle and encrypted local OpenAI-key storage.
-- [x] Verify the native gateway path against a reachable Ollama model.
-- Verify the documented Docker quickstart against a reachable Ollama endpoint and an OpenAI route.
-- Verify a Worker/tunnel/non-streaming Ollama request using the reference integration.
-- [x] Add guardrail, provider, failure, configuration, logging, and packaging checks.
-
-**Exit:** a new user can follow the quickstart, authenticate, receive a real model
-response, inspect safe logs and metrics, and reproduce the documented failure
-cases. CI and the release runbook pass. Provider smoke checks are opt-in and use
-maintainer-supplied credentials; ordinary tests make no billable calls.
-
-## 0.2 — Operational visibility
-
-- Stabilize the audit event schema and request ID propagation contract.
-- Evolve the local console and event store from developer preview using operator feedback.
-- Add dashboard/alert guidance for the implemented latency, outcome, provider
-  error, guardrail, token usage, and log-sink metrics.
-- Add explicitly labeled cost estimates with documented pricing maintenance.
-- Supply a usable Grafana example and structured log ingestion guidance.
-- [x] Define configuration/storage readiness separately from liveness; keep live
-  provider connectivity and completion checks explicit.
-
-**Exit:** operators can trace a failed request and distinguish gateway failures
-from provider failures without accessing full prompts or credentials.
-
-## 0.3 — Security and resource controls
-
-- [x] Enforce configured request size and message limits.
-- [x] Enforce per-app rate limits within one process; shared enforcement remains planned.
-- Define budget accounting and enforcement before claiming budget support.
-- Add key rotation guidance and configuration validation at startup.
-- Introduce additional identity or policy mechanisms only with a concrete use case.
-- Document trust boundaries, sensitive-data handling, and security reporting.
-
-**Exit:** negative tests show that authorization, size limits, and configured
-resource controls fail closed. Operators can rotate an app key and investigate
-rejections using documented procedures.
-
-## 0.4 — Cloud providers and deployment
-
-- Add AWS Bedrock, Azure OpenAI, and Google Cloud Vertex AI adapters.
-- Add Anthropic access through its own adapter.
-- Define capability reporting and credential configuration for every adapter.
-- Prefer platform workload identity where the chosen service supports it.
-- Validate a container deployment path on each major cloud.
-- Turn Kubernetes and Terraform placeholders into runnable examples only when tested.
-
-**Exit:** every advertised integration passes shared contract tests, an opt-in
-live smoke check, and documented configuration/error cases. Every advertised
-deployment has recorded startup, health, request, and rollback evidence.
-
-## 0.5 — Framework and developer experience
-
-- Stabilize the provider extension interface and publish a minimal adapter example.
-- Add configuration validation tooling and JavaScript/Python client examples.
-- [x] Introduce text streaming through explicit capability contracts; add tools/multimodal later.
-- [x] Add opt-in exact-response caching and bounded transient retries.
-- Add authorized fallback routes and shared state.
-- Document migration paths and extension compatibility.
-
-**Exit:** an external developer can implement an adapter and validate it using
-the documented contract suite without changing gateway routing or authentication.
-
-## 1.0 — Stable public contract
-
-- Stabilize the API, configuration schema, and extension interface.
-- Complete provider/deployment support tables with versioned evidence.
-- Publish upgrade, rollback, security, and operational guidance.
-- Resolve release-blocking defects and complete a security review.
-- Document supported versions and a realistic maintenance policy.
-
-**Exit:** all [public release gates](lifecycle.md) pass. Public preview releases
-may happen earlier when the same gates are satisfied for a smaller declared scope.
-
-## Provider support targets
-
-| Integration | State | Next requirement |
+The gateway is for developers who want one place between their apps and any LLM, local or hosted:
+quick to start, easy to change, and fully under their control. Work is judged by time to first request
+and by how little a calling app has to change. Releases follow readiness rather than dates.
+
+## Released
+
+**0.1.1, the first release.** Drop-in OpenAI-compatible API with chat, streaming and embeddings. Ollama,
+OpenAI and OpenAI-compatible adapters. Per-application keys, reporting and limits. A web console with a
+Features page. Docker Compose packaging, with optional monitoring. See the [changelog](../CHANGELOG.md)
+and [what has been verified](validation.md).
+
+## Next
+
+### 0.2: ready for a server
+
+Run safely on a cloud host such as EC2.
+
+- A Compose profile with TLS through a reverse proxy.
+- `/metrics` that needs authentication.
+- Throttling for admin key attempts, and a `Secure` session cookie behind a TLS proxy.
+- A runbook verified on a real cloud host.
+
+**Done when:** someone can deploy to a fresh server from the runbook, with no unauthenticated
+operator surface exposed.
+
+### 0.3: more providers
+
+- Named connections, so several providers of one type can run at once.
+- A live check against OpenAI and at least one other compatible provider.
+- An Anthropic adapter.
+- Fallback routes between providers.
+
+**Done when:** each advertised provider has a recorded live check and passes shared contract tests.
+
+### 0.4: spend and safety
+
+- Budgets per application and project, with cost estimates.
+- Response policies, and guardrails that cover tool arguments and images.
+- Provider health and circuit breaking.
+
+**Done when:** a hard budget stops traffic at its limit, and policies are tested on complete and
+streamed responses.
+
+### Later
+
+AWS Bedrock, Azure OpenAI and Vertex AI adapters, shared state for several gateway instances, operator
+roles, and tracing. See the [backlog](backlog.md) for scope and acceptance criteria.
+
+### 1.0: stable contract
+
+Stable API, configuration and adapter contracts, with documented migration and support. See the
+[lifecycle](lifecycle.md).
+
+## Not planned
+
+These were considered and dropped, to keep one clear way to run the gateway:
+
+- Portable Windows or Linux installers, OS services and code signing. Docker covers these platforms.
+- A console that starts or manages containers. Controlling Docker needs the Docker socket, which is
+  effectively root on the host. Optional services are Compose profiles instead.
+- Kubernetes and Terraform examples, until someone needs them and they can be tested.
+
+## Provider support
+
+| Provider | Adapter | Status |
 | --- | --- | --- |
-| OpenAI | Partial adapter | Live complete/streaming compatibility checks |
-| Ollama | Partial adapter | Live streaming/container/tunnel checks |
-| OpenAI-compatible server | Partial text adapter | Live vLLM/server complete/streaming checks |
-| Anthropic | Planned | Adapter, contract tests, credential and operations guide |
-| AWS Bedrock | Planned | Adapter, cloud credentials, contract and live smoke checks |
-| Azure OpenAI | Planned | Adapter, deployment/model mapping, contract and live smoke checks |
-| Google Cloud Vertex AI | Planned | Adapter, project/location configuration, contract and live smoke checks |
+| Ollama | `ollama` | Verified live |
+| OpenAI | `openai` | Implemented; live check pending |
+| OpenAI-compatible servers, such as vLLM | `openai_compatible` | Implemented; live check pending |
+| Anthropic | Planned | 0.3 |
+| AWS Bedrock, Azure OpenAI, Google Vertex AI | Planned | Later |
 
-No cloud platform or additional provider is supported merely because it appears
-in this table. Deployment coverage is tracked separately in [stack](stack.md).
+Hosting the gateway on a cloud and calling that cloud's models are separate goals.

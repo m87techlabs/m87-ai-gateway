@@ -29,7 +29,7 @@ flowchart LR
 
 ## Local demonstration
 
-Back up first: startup upgrades the private database to **schema 9**. Existing keys,
+Back up first: startup can upgrade the private database. Existing keys,
 logs, captured content, configuration history, usage and audit are preserved. An
 older binary rejects the newer store; restore its matching backup into a fresh
 directory for rollback. Do not copy individual SQLite files while the gateway runs.
@@ -42,12 +42,12 @@ export EXAMPLE_EXPORT_TOKEN="$M87_LOG_RECEIVER_TOKEN"
 export GATEWAY_LOG_EXPORT_ENABLED=true
 export GATEWAY_LOG_EXPORT_ENDPOINT=http://127.0.0.1:9087/events
 export GATEWAY_LOG_EXPORT_API_KEY_ENV=EXAMPLE_EXPORT_TOKEN
-./start.sh
+scripts/dev-start.sh
 .venv/bin/python -m examples.log_receiver.start
 ```
 
-If the gateway is already running, use `./stop.sh` before this `./start.sh`; a repeated
-start does not reconfigure that process. The start script leaves the gateway running
+If the gateway is already running, use `scripts/dev-stop.sh` first; a repeated start does not reconfigure
+that process. The start script leaves the gateway running
 in the background, and the receiver runs in the foreground. Start the existing chat
 sample from another terminal or use the gateway's console Playground.
 
@@ -55,10 +55,10 @@ The receiver listens at `http://127.0.0.1:9087/events`. It stores accepted deliv
 in `var/lib/log-receiver/deliveries.db`, keyed by delivery ID to discard duplicates.
 The example is a loopback demonstration, without production retention, resource
 limits or service management. Stop it with Ctrl+C. Restart in the same shell to reuse
-its token. It is included in the source repository, separate from the gateway binary.
+its token. It is included in the source repository, separately from the image.
 
-These export variables also work with the native binary. The local launcher uses
-environment configuration and does not read YAML. Secrets stay in the process
+Export variables can also be set on the container through `docker-compose.yml`, though the console's
+**Log export** page is usually simpler. Secrets stay in the process
 environment, outside the database, manifests and command arguments. Supply them again
 in a fresh shell or through the deployment's secret mechanism. Do not commit them.
 
@@ -178,9 +178,8 @@ adapters remain usable with export disabled. Adapt the tests before claiming sup
 
 ```bash
 .venv/bin/python -m pytest -q tests/test_log_export.py
-npm test --prefix tests/console
+npm test --prefix console
 ```
 
-Native package smoke also exercises metadata delivery. Live collectors, OTLP,
-Windows workstation interaction and Docker profiles remain deferred; see
-[validation](../validation.md) and [logging plan](../logging-plan.md).
+OTLP remains planned; see the [backlog](../backlog.md). Loki has been checked live, and other collectors
+have not; see [validation](../validation.md).

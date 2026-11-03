@@ -2,19 +2,14 @@
 
 ## Use this when
 
-Use the included monitoring assets with an existing or separately installed
-Prometheus and Grafana, plus Loki if you want remote metadata browsing. Gateway
-setup remains standalone; these services are optional and are not automatically
-installed or started. Docker is not needed to validate the queries/rules.
+Use this to run dashboards and alerts for the gateway. Prometheus, Grafana and Loki are an optional
+Compose profile, off by default. The gateway works without them.
 
-Prerequisites: operator access to the monitoring services and the gateway's private
-network, `/metrics` enabled, and synthetic traffic for testing. No provider, application
-or gateway operator key is needed to scrape `/metrics`. Never forward those keys to
-Prometheus or Grafana. Keep metrics and monitoring service ports on trusted networks.
+No provider, application or operator key is needed to scrape `/metrics`, so never forward those keys to
+these services. Keep metrics and monitoring ports on trusted networks.
 
-Source files live in `deploy/observability/`. Standalone ZIPs include the same files
-under `observability/` and this guide as `MONITORING.md`. Adjust paths in commands
-below for an extracted ZIP. The templates contain no passwords or deployment identity.
+Source files live in `deploy/observability/`, so the profile needs a checkout of this repository. They
+contain no passwords or deployment identity.
 
 ```mermaid
 flowchart LR
@@ -29,26 +24,41 @@ flowchart LR
     Loki --> Logs[Grafana metadata dashboard]
 ```
 
-For the optional native Linux/WSL helper, use [local monitoring setup](local-monitoring.md)
-to install and run Grafana/Prometheus without Docker. The steps below cover services
-you manage yourself.
+## Start with Compose
 
-## 1. Point Prometheus at the gateway
+```bash
+echo "GRAFANA_ADMIN_PASSWORD=choose-a-password" >> .env
+docker compose --profile monitoring up -d
+```
 
-Run `./status.sh` to find the actual gateway URL. Default workstation port is 8087;
-if it fell back to 8187 or later, edit the target in a private copy of
-`prometheus/prometheus.yml`. Preserve job name **m87-gateway**, which scopes the
-bundled queries and rules. Multiple targets get separate `instance` labels.
+| Service | Address | Notes |
+| --- | --- | --- |
+| Grafana | http://localhost:3000 | Sign in as `admin`. Dashboards are in the **M87 Gateway** folder |
+| Prometheus | http://localhost:9090 | Scrapes the gateway and loads the alert rules |
+| Loki | http://localhost:3100 | Receives request metadata once you turn on export |
 
-For tools running on the same workstation, the example target is `127.0.0.1:8087`.
-A container or remote service needs an address reachable from its own network;
-its loopback address points to itself. Do not expose metrics through a public tunnel.
+These ports always bind to `127.0.0.1`. Set `GRAFANA_PORT`, `PROMETHEUS_PORT` or `LOKI_PORT` in `.env` to
+change them. Without `GRAFANA_ADMIN_PASSWORD`, Grafana starts with `admin` and asks you to change it.
+
+To send request metadata to Loki, open **Log export** in the console, choose **Loki**, and enter
+`http://loki:3100/loki/api/v1/push` with no authentication. Then select **Send test event** and save.
+
+To stop only these services, run `docker compose stop prometheus grafana loki`. `docker compose stop`
+without the profile leaves them running, so use `docker compose --profile monitoring stop` to stop
+everything. Their data stays in Docker volumes.
+
+## Use your own services
+
+Skip this section if you use the Compose profile.
+
+The example target in `prometheus/prometheus.yml` is `m87-ai-gateway:8087`, for the Compose network.
+Edit it in a private copy for your deployment, using an address reachable from Prometheus's own
+network. Preserve job name **m87-gateway**, which scopes the bundled queries and rules. Multiple targets
+get separate `instance` labels. Do not expose metrics through a public tunnel.
 Use a trusted reverse proxy/TLS where a private network connection requires it.
 
-If Prometheus is already running, merge the example scrape job and `rule_files`
-entry into its private configuration; do not replace unrelated jobs/rules. If it is
-installed but not running, this explicit foreground command uses isolated project
-storage and a loopback listener:
+Merge the example scrape job and `rule_files` entry into your Prometheus configuration, keeping unrelated
+jobs and rules. To try it in the foreground with isolated storage and a loopback listener:
 
 ```bash
 prometheus \
@@ -183,14 +193,6 @@ From a source checkout with development dependencies and an existing `promtool` 
 .venv/bin/python -m examples.chat_app.scenarios
 ```
 
-From an extracted native ZIP you can check the included rules directly without the
-source test suite:
-
-```bash
-promtool check config observability/prometheus/prometheus.yml
-promtool test rules observability/prometheus/alerts.test.yml
-```
-
 The source checker validates scrape/rule configuration, evaluates nine alert rules against
 synthetic hold/firing/recovery/disabled/low-traffic cases, and parses/evaluates all
 27 overview queries on empty input. Python tests also verify the queries reference
@@ -199,9 +201,8 @@ CI downloads a checksum-pinned official Prometheus 3.5.0 `promtool` to temporary
 No gateway user must install that tool to run the product. See
 [Prometheus rule tests](https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/).
 
-Actual Grafana import/rendering, Loki ingestion/querying and notification routing
-remain separate operational checks. See [validation](../validation.md). When those
-services are available, verify one sample request ID and token usage across the app,
+The Compose profile has been verified live; see [validation](../validation.md). Notification routing
+is yours to configure and test. To check your own setup, verify one sample request ID and token usage across the app,
 local Logs and remote metadata; briefly stop only a disposable receiver to check
 backlog/recovery. Use a disposable gateway/storage failure for alert drills, never
 change live keys or permissions to create failures.
@@ -221,10 +222,6 @@ change live keys or permissions to create failures.
 
 ## Shutdown and recovery
 
-Stop only the foreground Prometheus process you started with Ctrl+C. If Grafana/Loki
-already serve other workloads, leave them running. Remove only the private copies
-of this gateway's provisioning/scrape/rule entries when retiring the integration;
-back up first. Stop the sample with `./examples/chat_app/stop.sh` and the gateway
-with `./stop.sh` when finished. Preserve gateway and monitoring data directories.
-Docker provisioning, managed service lifecycle and automatic ecosystem installation
-remain planned; this bundle does not change Docker runtime state.
+Stop the profile with `docker compose --profile monitoring stop`, which keeps its data. For your own
+services, stop only what you started, and remove only this gateway's scrape, rule and provisioning
+entries when retiring the integration.

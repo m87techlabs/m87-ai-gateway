@@ -2,13 +2,11 @@
 
 ## Status and release intent
 
-The project is in early development. The intent is public availability once a
-declared preview scope is usable, documented, and supportable. A public preview
-may precede full cloud coverage; its limitations must be explicit.
+The project is in early release. Each version declares what it supports and states its limits. Public
+releases may precede full provider or cloud coverage.
 
-The historical `v0.1.0` tag describes the initial scaffold. Preserve that tag and
-use a new version for subsequent releases. Read [roadmap](roadmap.md) for the
-next milestones rather than treating that tag as proof that the MVP is complete.
+`v0.1.1` is the first real release. The historical `v0.1.0` tag describes the initial scaffold and stays
+in place. Read the [roadmap](roadmap.md) for what comes next.
 
 ```mermaid
 stateDiagram-v2
@@ -36,7 +34,7 @@ stateDiagram-v2
 A new provider additionally needs shared contract tests, an opt-in live smoke
 check, a capability table, credential guidance, and a troubleshooting procedure.
 
-## Public release gates
+## Release gates
 
 | Gate | Evidence required |
 | --- | --- |
@@ -44,7 +42,7 @@ check, a capability table, credential guidance, and a troubleshooting procedure.
 | Policy | Negative checks for auth, model access, configured guardrails, and any advertised limits |
 | Compatibility | Explicit supported request/response features and provider matrix |
 | Operations | Health behavior, safe logs, required metrics, configuration change and rollback procedures |
-| Packaging | Clean install/build and container smoke check for the release commit |
+| Packaging | Image build, container smoke check and a clean quickstart from the published image |
 | Documentation | Quickstart, configuration, design, glossary, lifecycle, stack, roadmap, and applicable runbooks agree |
 | Repository hygiene | Generic examples and project identity; no personal contact details, secrets, local paths, or tool attribution in new content |
 | History review | Review tracked history, tags, release assets, and commit metadata before changing visibility; resolve findings deliberately |
@@ -52,9 +50,7 @@ check, a capability table, credential guidance, and a troubleshooting procedure.
 | Automation | Required CI checks pass; dependency and action updates are configured |
 | Release | Version/changelog agree, tag is new, release notes state limitations, rollback target is available |
 
-Public availability is a release decision. Routine documentation work does not
-change repository visibility or publish packages/images. Never imply that a
-planned cloud integration passed these gates.
+Never imply that a planned cloud integration passed these gates.
 
 ## Git and review policy
 
@@ -68,20 +64,11 @@ planned cloud integration passed these gates.
 - Preserve existing tags and published history. Any history cleanup needs a
   separate, reviewed plan because it changes commit identifiers and downstream clones.
 
-## Repository hosting settings
+## Repository settings
 
-The repository is public. Squash merging, automatic deletion of
-merged branches, dependency alerts, and automated dependency security fixes are
-enabled. Workflow permissions are restricted to read-only repository contents.
-Branch protection is a separate setting to review now that the repository is public;
-local checks and hosted CI remain required under the direct-to-main workflow.
-Before public release, reassess the review workflow and enable appropriate
-protection against force pushes/deletion and required `test` and `docs` checks
-when available. Verify private vulnerability reporting separately.
-
-Docker is an on-demand validation dependency, not a prerequisite for ordinary
-documentation work. See [validation status](validation.md) for completed checks,
-deferred container/provider checks, and their prerequisites.
+The repository and its image are public. Dependency alerts and automated security fixes are on, and
+workflow permissions are read-only by default. Private vulnerability reporting is on. Pushes go directly
+to `main` under the current workflow, with hosted CI verified afterward.
 
 ## Compatibility and maintenance
 
@@ -105,9 +92,5 @@ flowchart LR
     Observe --> Rollback[Restore previous artifact and config]
 ```
 
-Use the [release runbook](runbooks/release.md) for publication and the
+Use the [release runbook](runbooks/release.md) to publish and the
 [configuration runbook](runbooks/configuration-changes.md) for runtime changes.
-Local SQLite persistence and additive migrations are implemented for configuration,
-keys, projects, and events. Encrypted offline backup/restore and native lifecycle commands are implemented.
-Clean-host, cross-release rollback and signed-artifact checks remain release gates.
-Portable ZIPs are no longer published; the build scripts remain for CI validation.

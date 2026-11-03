@@ -1,83 +1,61 @@
-# Release and rollback
+# Release
 
-## Trigger and prerequisites
+How to publish a version. Pushing a `v*` tag does the rest.
 
-Use this procedure to prepare a public preview or stable release. It requires a
-reviewed commit, publication permissions, a new version, CI evidence, an available
-previous artifact, and the completed [lifecycle gates](../lifecycle.md).
+## What a release produces
 
-Publishing a release, changing repository visibility, and shipping a package or
-container are separate actions. Complete the relevant gates before each action.
+A version tag makes CI run every check, then publish:
+
+- Images for amd64 and arm64 at `ghcr.io/m87techlabs/m87-ai-gateway`, tagged with the commit,
+  the version (`0.1.1`), the minor line (`0.1`) and `latest`.
+- A GitHub release, with notes taken from the changelog and a `docker-compose.yml` pinned to that image.
+
+Pushes to `main` publish only the commit tag and `preview`. `latest` moves only on a release.
 
 ## Prepare
 
-1. Choose an unused version. The historical `v0.1.0` tag already exists; do not
-   move or recreate it.
-2. Update package/API version declarations and the changelog in a reviewed change.
-   Record breaking changes, migration steps, known limitations, and support scope.
-3. From a clean checkout of the intended commit, install and validate:
+1. Choose an unused version. Do not move or recreate an existing tag. `v0.1.0` is the historical scaffold.
+2. Set the version in `pyproject.toml` and `src/m87_gateway/__init__.py`. CI refuses a tag that does
+   not match them, or that has no changelog section.
+3. Move the changelog's `Unreleased` notes under `## [x.y.z] - YYYY-MM-DD`. Include upgrade steps,
+   breaking changes and known limitations. This text becomes the release notes.
+4. Run the [lifecycle gates](../lifecycle.md#release-gates) and update [validation](../validation.md).
+5. Scan for secrets:
 
    ```bash
-   python3 -m venv .venv
-   . .venv/bin/activate
-   python -m pip install -e '.[dev]'
-   ruff check src tests scripts examples
-   ruff format --check src tests scripts examples
-   pytest -q
-   python scripts/check_docs.py
-   python -m pip wheel --no-deps . --wheel-dir dist
+   gitleaks git --no-banner --redact .
    ```
 
-4. Check [deferred validation](../validation.md) and arrange an on-demand Docker
-   session. Follow [container deployment](container-deployment.md) and record health,
-   valid/invalid auth, allowed/disallowed models, and a real chat result for each
-   advertised provider. Run guardrail and safe-error checks for the declared scope.
-5. Review files, package contents, history, tags, and release assets for secrets,
-   personal details, local paths, and tool attribution. Review commit metadata as
-   well as file contents. If historical findings remain, resolve them through a
-   separate history-cleanup or clean-public-repository plan before changing visibility.
-6. Confirm a working private security-reporting path, issue templates, and
-   dependency update automation. Enable appropriate CI/branch protections when the
-   repository's hosting plan permits them. Do not change visibility to bypass a plan limit.
+6. Commit, push to `main`, and confirm CI passes on that commit.
 
 ## Publish
 
-1. Commit and push the validated release preparation to `main` using the current
-   direct-push workflow; verify CI on that exact commit. Check `git status --short`
-   is empty. Do not open a pull request unless explicitly requested.
-2. Set a generic project author/committer identity for release metadata.
-3. Create a new annotated tag for that exact reviewed commit. Inspect the tag
-   before pushing it. `scripts/release-tag.sh` creates and immediately pushes a
-   tag; use it only after all release gates and version checks are complete.
-4. Publish release notes with the scope, validation environment, known limitations,
-   upgrade steps, and artifact checksums when artifacts are distributed.
-5. Publish only artifacts built from the tagged commit. Retain the previous
-   verified version and its matching configuration.
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+gh run watch
+```
 
-## Success checks
+## Check
 
-- Tag, release notes, package/API versions, and artifacts agree.
-- A clean installation from the published artifact passes the quickstart.
-- Advertised providers/deployments have recorded smoke-check evidence.
-- The security-reporting path and documentation links work for the intended audience.
+Run the quickstart the way a new user would, in an empty folder, while signed out of the registry:
 
-## Rollback
+```bash
+docker logout ghcr.io
+curl -fsSLO https://github.com/m87techlabs/m87-ai-gateway/releases/latest/download/docker-compose.yml
+docker compose up -d
+docker compose exec m87-ai-gateway cat /data/gateway/admin.key
+```
 
-Deploy the previous verified image/package with its matching configuration and
-rerun auth, health, and chat checks. Preserve release tags and publish a corrective
-patch; do not silently replace released artifacts. If a release is unsafe, mark
-it accordingly and document the supported replacement.
+Sign in, connect a provider, create an application and send a request. Confirm that the version in
+`docker compose exec m87-ai-gateway m87-gateway --version` matches, then clean up with
+`docker compose down --volumes`.
 
-SQLite schema versions and additive migration are implemented. Preserve the local
-master key and operator key with the database. Restore a pre-upgrade encrypted
-backup into a fresh directory for rollback; never assume an older binary can read
-a migrated database. Distinct-version rollback remains a release gate.
+## If something is wrong
 
-## Automated development previews
+Fix it in a new patch version. Do not move a published tag or overwrite a version's image. If a
+release is harmful, mark it clearly in its notes, or delete the GitHub release so that `latest` falls
+back to the previous one, and publish the fix.
 
-Each push to main that passes the source, docs and container jobs publishes a Linux
-amd64 and arm64 image with immutable commit and moving preview tags. These are development
-previews, distinct from reviewed stable releases. See
-[container publication](container-deployment.md). Failed runs do not advance the preview.
-Package visibility is a separate setting in GitHub. Portable ZIPs are built and tested in CI
-but no longer published.
+For a failed tag run, nothing is released until the `release` job passes. Fix the cause, then use
+the next patch version if images were already published.

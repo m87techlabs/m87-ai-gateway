@@ -15,7 +15,7 @@ import uvicorn
 from m87_gateway import __version__
 from m87_gateway.config import GatewaySettings
 from m87_gateway.config.settings import log_export_environment
-from m87_gateway.workstation import default_data_dir, instance_lock, manage
+from m87_gateway.instance import default_data_dir, instance_lock, manage
 from m87_gateway.backup import backup, restore
 from m87_gateway.control.store import _prepare_private_file
 from m87_gateway.main import create_app

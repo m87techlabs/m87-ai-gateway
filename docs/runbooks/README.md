@@ -1,62 +1,57 @@
 # Runbooks
 
-These procedures describe the current gateway unless a step is explicitly marked
-as a release requirement. Run commands from the repository root. Use synthetic
-prompts and private credentials; redact logs before attaching them to issues.
+Step-by-step procedures for running the gateway.
 
-| Runbook | Use when |
+## Get started
+
+| Runbook | Use it to |
 | --- | --- |
-| [Local development](local-development.md) | Installing, testing, or starting a development instance |
-| [Portable workstation preview](workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
-| [Guided setup](guided-setup.md) | Start the included console, configure inference, or use the source/native preview |
-| [Gateway controls acceptance](gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
-| [Projects and usage](projects-and-usage.md) | Create projects, inspect usage, move applications, and use the Playground |
-| [Windows/WSL flow lab](windows-wsl-flow-lab.md) | Exercise browser, relay, gateway, and Windows Ollama without Docker |
-| [Container deployment](container-deployment.md) | Starting a single gateway container and checking provider connectivity |
-| [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |
-| [Provider troubleshooting](provider-troubleshooting.md) | A chat request fails or returns unexpected behavior |
-| [Traffic controls](traffic-controls.md) | Configure and verify per-app limits, cache, and retries |
-| [Traffic logging](traffic-logging.md) | Enable and inspect bounded private LLM request/response records |
-| [Local control plane](control-plane.md) | Inspect usage and exchanges; manage local application/provider keys |
-| [End-to-end flow testing](end-to-end-flow-testing.md) | Verify Worker, Access, Tunnel, gateway, Ollama, logs, and metrics |
-| [Incident response](incident-response.md) | Requests fail broadly or credentials may be exposed |
-| [Release](release.md) | Preparing, publishing, or rolling back a version |
+| [Run with Docker](container-deployment.md) | Start, stop, configure, back up and upgrade |
+| [Guided setup](guided-setup.md) | Go from a running gateway to your first request |
+| [Daily operations](daily-operations.md) | Everyday checks and log inspection |
+| [Provider troubleshooting](provider-troubleshooting.md) | Diagnose connection and model failures |
+| [Incident response](incident-response.md) | Handle a gateway failure |
 
-## Additional operational procedures
+## Apps, usage and limits
 
-| Runbook | Use when |
+| Runbook | Use it to |
 | --- | --- |
-| [Everyday gateway and sample how-to](daily-operations.md) | Start/stop/status, configure a sample, showcase logs and resolve common errors |
-| [Backend storage acceptance](backend-storage-testing.md) | Verify repository contracts, migrations and independent retention |
-| [Application-key rotation](application-key-rotation.md) | Replace keys with overlap/expiry, revoke credentials and inspect audit |
-| [Inference API and queueing](inference-api-and-queueing.md) | Test model catalog, generation options and bounded admission |
-| [Streaming and cancellation](streaming-and-cancellation.md) | Test streaming, Stop, partial capture and cancellation |
-| [Configuration recovery and storage health](configuration-recovery.md) | Review/restore settings and investigate private-store failures |
-| [Logging showcase](logging-showcase.md) | Inspect input/output, tokens, capture states, search, exports and deletion |
-| [Local monitoring without Docker](local-monitoring.md) | Install/start/stop native Grafana and Prometheus with private credentials |
-| [Grafana dashboards and alerts](grafana-monitoring.md) | Set up optional metrics/log dashboards, validate rules and troubleshoot alerts |
-| [Loki metadata export](loki-export.md) | Configure an existing Loki endpoint, query request metadata and recover delivery |
-| [Configure log export](configure-log-export.md) | Set destinations and encrypted credentials, test drafts and enable delivery |
-| [Metadata webhook export](log-export.md) | Configure the receiver, test outages/restarts and recover pending delivery |
+| [Projects and usage](projects-and-usage.md) | Group applications and read per-app reports |
+| [Application key rotation](application-key-rotation.md) | Rotate keys without downtime |
+| [Traffic controls](traffic-controls.md) | Set limits, queueing, retries and caching |
+| [Inference API and queueing](inference-api-and-queueing.md) | Use and test the API |
+| [Streaming and cancellation](streaming-and-cancellation.md) | Understand stream outcomes and errors |
 
-## Runbook standard
+## Logs and monitoring
 
-Every implemented operator workflow needs a runbook or how-to in this directory,
-linked here and from the related feature documentation. Keep setup, commands,
-prerequisites, success checks, troubleshooting, recovery and stop instructions in
-these pages; chat updates are summaries. Update the procedure with its implementation.
-Preserve existing pages and link to shared procedures instead of duplicating them.
-Distinguish source, native and Docker commands, data directories and verification.
-Document unimplemented integrations as planned and deferred tests in
-[validation](../validation.md). Never include actual keys or personal workstation details.
+| Runbook | Use it to |
+| --- | --- |
+| [Traffic logging](traffic-logging.md) | Control what is recorded |
+| [Logging showcase](logging-showcase.md) | Follow one request through Logs |
+| [Log export](log-export.md) | Understand metadata delivery to a webhook |
+| [Configure log export](configure-log-export.md) | Set up a destination in the console |
+| [Loki export](loki-export.md) | Send metadata to Loki |
+| [Monitoring with Grafana](grafana-monitoring.md) | Run dashboards and alerts with Compose |
 
-```mermaid
-flowchart TD
-    Task[Operational task] --> Daily[Everyday how-to]
-    Daily --> Local[Setup and sample]
-    Daily --> Logs[Logging showcase]
-    Logs --> Export[Metadata export and receiver]
-    Daily --> Trouble[Provider troubleshooting]
-    Trouble --> Recovery[Storage recovery or incident response]
-    Daily --> Upgrade[Backup, upgrade and release]
-```
+## Configuration and recovery
+
+| Runbook | Use it to |
+| --- | --- |
+| [Control plane](control-plane.md) | Understand the console and its API |
+| [Configuration changes](configuration-changes.md) | Change settings safely |
+| [Configuration recovery](configuration-recovery.md) | Restore settings and check storage |
+
+## Developing and releasing
+
+| Runbook | Use it to |
+| --- | --- |
+| [Local development](local-development.md) | Build, run and test from source |
+| [Gateway controls testing](gateway-controls-testing.md) | Exercise limits with the sample app |
+| [End-to-end flow testing](end-to-end-flow-testing.md) | Test the Worker, tunnel and gateway path |
+| [Backend storage testing](backend-storage-testing.md) | Check storage changes and migrations |
+| [Release](release.md) | Publish a version |
+
+## Writing runbooks
+
+Each implemented operator workflow needs a runbook with prerequisites, commands, success checks,
+troubleshooting and shutdown. Link it here. Use generic examples, and never include real keys.

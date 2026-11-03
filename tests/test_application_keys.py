@@ -222,7 +222,7 @@ def test_rotation_http_auth_shared_limits_and_usage(tmp_path, monkeypatch):
 def test_encrypted_backup_preserves_rotated_keys_and_audit(store, tmp_path):
     from m87_gateway.backup import backup, restore
     from m87_gateway.cli import operator_key
-    from m87_gateway.workstation import instance_lock
+    from m87_gateway.instance import instance_lock
 
     operator_key(store.database_path.parent)
     initial, old = store.create_app_key("sample", ["auto"], False)

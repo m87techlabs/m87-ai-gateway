@@ -1,7 +1,6 @@
 # Inference API and request queueing
 
-Use the native/source gateway for development. These checks require no Docker or
-paid provider. They use synthetic input; keep real credentials in the gateway.
+These checks run from a [source checkout](local-development.md), with no Docker or paid provider. They use synthetic input; keep real credentials in the gateway.
 
 ## Automated flow checks
 
@@ -40,7 +39,7 @@ Verify real inference and model-specific options separately before production us
 
 ## Enable bounded waiting
 
-In Controls, enable Queue requests while concurrency is full. Start small for a
+In **Features**, turn on **Request queue**. Start small for a
 single local inference worker: concurrency 1, global waiting depth 4, per-app waiting
 depth 2 and wait 10 seconds. Adjust to available capacity and client timeout budgets.
 Queueing defaults off; depth 0 preserves immediate concurrency rejection.
@@ -75,7 +74,7 @@ Multi-worker/shared enforcement and durable jobs remain planned.
 
 ## Inspect and recover
 
-- Controls readiness shows active and queued requests; diagnostics exposes both.
+- **Storage** shows active and queued requests under readiness; diagnostics exposes both.
 - Logs/detail/export contain queue_wait_ms and queue_outcome (immediate, admitted,
   full, timeout or cancelled). Old events have null queue metadata.
 - Prometheus exposes m87_gateway_queue_depth and
@@ -92,14 +91,13 @@ gateway upstream HTTP request; streaming shares these lifecycle controls. Live
 backend generation-stop behavior remains a separate check. See
 [streaming and cancellation](streaming-and-cancellation.md).
 
-## Upgrade and deferred evidence
+## Upgrade and limits
 
 Back up private state before upgrading. Schema 4 adds nullable traffic columns for
 queue metadata and hashed attribution; schema-3 keys, policies, usage and identity
 audit remain intact. Older binaries reject a schema-4 database; use an encrypted
 pre-upgrade backup and a fresh private destination for rollback, following
-[backup and recovery](workstation-distribution.md).
+[backup and restore](container-deployment.md#backup-and-restore).
 
-Live Ollama/Windows, OpenAI/vLLM JSON mode, cloud/tunnel integration, visual browser
-behavior and container packaging are separate operator/release checks. These
-synthetic tests do not establish model option support or cloud readiness.
+These synthetic tests do not establish a model's option support. See [validation](../validation.md)
+for what has been checked live.

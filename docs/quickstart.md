@@ -2,15 +2,12 @@
 
 ## Choose a setup option
 
-- With Docker running, follow the [README](../README.md#start-it) or
-  [container deployment](runbooks/container-deployment.md). This is the recommended option.
-- Developers can use [local source setup](runbooks/local-development.md).
+- With Docker running, follow [run with Docker](runbooks/container-deployment.md).
+- To change the code, use [local development](runbooks/local-development.md).
 
-The Docker image exposes the included console at **http://localhost:8087**.
-Retrieve its private operator key using the container runbook, connect your
-inference service in **Providers**, select a model, and create an application key.
-Provider keys are managed in the gateway. Existing inference/cloud access is a
-prerequisite; the gateway does not bundle an LLM.
+The console is at **http://localhost:8087**. Follow [guided setup](runbooks/guided-setup.md) to sign
+in, connect your model server or provider, select a model and create an application. The gateway does
+not include models.
 
 ## Check and send a request
 
@@ -42,4 +39,4 @@ To point an existing application at it, see [connect your app](connect-your-app.
 - [Traffic logging](runbooks/traffic-logging.md)
 - [Worker-to-local inference](integrations/worker-local-inference.md)
 - [Configuration and limitations](configuration.md)
-- [Roadmap and release readiness](roadmap.md)
+- [Roadmap](roadmap.md)

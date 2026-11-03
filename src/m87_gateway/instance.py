@@ -1,4 +1,4 @@
-"""Portable workstation paths, exclusive instance locks, and safe lifecycle clients."""
+"""Default data paths, exclusive instance locks, and safe lifecycle clients."""
 
 from contextlib import contextmanager
 import json

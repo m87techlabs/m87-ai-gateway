@@ -9,16 +9,17 @@ local **Logs**. No new database migration, agent or Docker dependency is require
 for the gateway adapter. Loki and Grafana are separate services you supply.
 
 Direct Grafana Cloud Basic authentication, `X-Scope-OrgID` tenant selection, custom
-labels, remote content, OTLP and managed service containers remain planned. A trusted
+labels, remote content and OTLP remain planned. A trusted
 proxy can provide authentication/tenant routing externally. Do not put credentials
 in URLs. Do not assume direct Grafana Cloud compatibility from a successful local test.
 
 ## Configure and test
 
-1. Back up your gateway data using [portable backup](workstation-distribution.md#backup-and-restore).
+1. Back up your gateway data using [backup and restore](container-deployment.md#backup-and-restore).
 2. Open the console → **Log export** and choose adapter **loki**.
 3. Enter the complete ingestion URL, for example
-   `http://127.0.0.1:3100/loki/api/v1/push`. The adapter does not append a path.
+   `http://127.0.0.1:3100/loki/api/v1/push`, or `http://loki:3100/loki/api/v1/push` with the
+   [monitoring profile](grafana-monitoring.md). The adapter does not append a path.
    Use HTTPS for a remote authenticated proxy. A Docker-hosted gateway needs an
    endpoint reachable from its container; container localhost refers to that container.
 4. Select no authentication for a private single-tenant Loki, or store the proxy's
@@ -121,17 +122,16 @@ Loki deduplication. Stop with Ctrl+C.
 ```bash
 .venv/bin/python -m pytest -q tests/test_loki_export.py tests/test_log_export.py
 .venv/bin/python -m examples.chat_app.scenarios
-npm test --prefix tests/console
+npm test --prefix console
 ```
 
 The sample suite has 18 isolated scenarios, including both webhook and Loki flows.
 Tests check exact timestamps/wire bodies, strict acceptance, retry/restart privacy,
-credential binding and draft probes. Native smoke verifies Loki selection, stored-key
-backup/restore and post-restore delivery. These use synthetic endpoints; a live Loki
-and Grafana end-to-end check remains deferred. See [validation](../validation.md).
+credential binding and draft probes. A live Loki and Grafana check passed through the
+[monitoring profile](grafana-monitoring.md). See [validation](../validation.md).
 
 To finish, disable export and save, stop the sample with `./examples/chat_app/stop.sh`
-and the gateway with `./stop.sh`, and stop the demonstration receiver with Ctrl+C.
+and the gateway with `scripts/dev-stop.sh`, and stop the demonstration receiver with Ctrl+C.
 Your private queue and local logs remain. Operate an existing Loki separately.
 
 ## Included Grafana dashboard

@@ -10,8 +10,8 @@ supports single-tenant and bearer-proxy receivers; OTLP and remote content remai
 Prerequisites: the gateway is running, you have its operator key, and a webhook
 receiver is reachable. The bundled SQLite backend supports this workflow. External
 backends need both the outbox and transactional export-credential management contracts.
-Back up before upgrading: schema 9 preserves existing data and adds encrypted export
-credential storage. See [portable backup/restore](workstation-distribution.md#backup-and-restore).
+Back up before upgrading: migrations preserve existing data and add encrypted export
+credential storage. See [backup and restore](container-deployment.md#backup-and-restore).
 
 ## Start a demonstration receiver
 
@@ -35,7 +35,7 @@ inspection commands, outage exercises and optional startup environment settings.
 ## Configure, test and save
 
 1. Open the gateway console, authenticate as operator, and select **Log export**.
-2. Choose **webhook** (or follow [Loki setup](loki-export.md)) and enter the exact receiver endpoint. For the local example,
+2. Choose **webhook** (or follow [Loki setup](loki-export.md)) and enter the exact receiver endpoint. For the local example, which assumes a [source run](local-development.md),
    use `http://127.0.0.1:9087/events`. Use HTTPS for remote authenticated receivers.
 3. Choose authentication:
 
@@ -132,14 +132,13 @@ that an enabled stored credential matches its configured destination. Local dele
 ```bash
 .venv/bin/python -m pytest -q tests/test_export_configuration.py tests/test_log_export.py
 .venv/bin/python -m examples.chat_app.scenarios
-npm test --prefix tests/console
+npm test --prefix console
 ```
 
 These checks use temporary stores and synthetic endpoints. The sample suite has
-18 scenarios, including console export testing and metadata delivery. Native smoke
-also tests saved tokens and encrypted recovery without relying on startup token
-variables. See [validation](../validation.md) for live/manual and packaging limits.
+18 scenarios, including console export testing and metadata delivery. See
+[validation](../validation.md) for what has been checked live.
 
 To finish the demonstration, disable export and save, stop the sample with
-`./examples/chat_app/stop.sh`, then stop the gateway with `./stop.sh`. Stop the
+`./examples/chat_app/stop.sh`, then stop the gateway with `scripts/dev-stop.sh`. Stop the
 foreground receiver with Ctrl+C. Private databases remain available for next time.

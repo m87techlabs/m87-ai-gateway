@@ -9,21 +9,7 @@ Status terms follow the [documentation conventions](README.md#read-implementatio
 Every item here is **planned**. When an item is implemented, remove it from this page
 and record its tests and verification in the roadmap, [validation](validation.md) and the relevant runbook.
 
-Completed first batch: **A2 model listing, A4 generation parameters, P2 adapter
-capabilities, R3 bounded queueing**. A3 disconnect cancellation and the streaming
-runtime are also implemented, along with configuration recovery/provider-key audit
-and storage health; live streaming verification remains below. See [roadmap](roadmap.md#backlog-first-batch--implemented)
-and the [testing runbook](runbooks/inference-api-and-queueing.md).
-
-The authenticated inference API exposes `GET /v1/models` and
-`POST /v1/chat/completions` (complete or streaming text). Operator APIs live under `/admin`; `/health`,
-`/ready` and `/metrics` provide operational endpoints. Supported fields are
-documented in [configuration](configuration.md#chat-generation-parameters).
-
-Local showcase/content separation/search/
-recording-health work is implemented. **O2** now has a bounded metadata outbox and
-webhook delivery. The current priority is the [plug-and-play direction](roadmap.md#direction-plug-and-play-for-developers).
-See [logging plan](logging-plan.md) for what remains of logging.
+The current priorities are on the [roadmap](roadmap.md).
 
 ## Priority summary
 
@@ -62,11 +48,10 @@ The streaming runtime, adapter contracts and browser Stop flow are implemented;
 see [streaming and cancellation](runbooks/streaming-and-cancellation.md). Remaining
 work is live evidence before the original A1 acceptance gate is satisfied.
 
-Verified against Windows Ollama on 2026-11-03, including final usage and generation stopping
-on disconnect; see [validation](validation.md).
+Verified against Ollama on 2026-11-03, including final usage and generation stopping on
+disconnect, and through the Worker and tunnel in daily use; see [validation](validation.md).
 
-**Scope:** repeat against OpenAI and another compatible server, and through the
-Worker/tunnel/proxy path with buffering and timeout checks. Preserve unknown
+**Scope:** repeat against OpenAI and another compatible server. Preserve unknown
 counts when no provider usage arrives; do not introduce token estimates.
 
 **Acceptance:** record provider/model versions and successful completion, token
@@ -95,7 +80,7 @@ arguments and results, image size, count and type limits, and capture of tool de
 
 ### R1 Fallback routes
 
-**Why:** when the primary provider is unreachable (for example, a workstation GPU
+**Why:** when the primary provider is unreachable (for example, a home GPU
 is switched off), requests fail even when another authorized provider exists.
 
 **Scope:** ordered fallback targets per route, triggered only on retryable failure
@@ -226,20 +211,11 @@ claim is made.
 
 ### O2 Remote log exporters
 
-**Status: partial.** Schema-8 transactional metadata outbox, webhook adapter, stable IDs,
-persisted lease/retry/capacity/expiry counters, restart recovery and a deduplicating
-receiver example are implemented. Schema 9 adds UI settings, encrypted receiver credentials
-and non-saving draft probes. Loki JSON push is implemented with fixed labels and
-strict 204 acknowledgement; synthetic sample/native tests cover delivery/recovery.
-OTLP, direct Loki Basic/tenant headers and remote content policy remain planned.
-See [Loki setup](runbooks/loki-export.md); live Loki/Grafana remains deferred.
-See [console configuration](runbooks/configure-log-export.md). See [metadata export](runbooks/log-export.md).
+Webhook and Loki delivery are implemented, with a bounded queue that survives restarts.
 
-**Scope:** an exporter interface with OTLP logs, Loki and webhook implementations,
-bounded durable delivery (an outbox with retry), and sanitized events by default.
+**Scope:** OTLP logs, direct Loki Basic and tenant headers, and an explicit policy for exporting content.
 
-**Acceptance:** delivery survives restarts and provider outages without duplicates
-beyond the documented semantics, and no captured content is exported unless explicitly enabled.
+**Acceptance:** delivery survives outages and restarts, and no captured content leaves unless enabled.
 
 ### O3 Distributed tracing
 
@@ -293,7 +269,7 @@ opt-in live smoke check.
 
 ### P3 Live verification of existing adapters
 
-OpenAI, generic OpenAI-compatible servers (vLLM) and the Worker/tunnel path still need recorded live evidence in [validation](validation.md).
+OpenAI and generic OpenAI-compatible servers (vLLM) still need recorded live evidence in [validation](validation.md).
 
 ---
 
@@ -301,17 +277,7 @@ OpenAI, generic OpenAI-compatible servers (vLLM) and the Worker/tunnel path stil
 
 | Item | Scope |
 | --- | --- |
-| D1 Backend storage | Content encryption/access roles; PostgreSQL and Vault adapters behind the existing contracts |
-| D2 Managed ecosystem services | Service profiles, container-engine detection, lifecycle controls for Grafana/Prometheus/log storage/Vault, backups and recovery (see [ecosystem](ecosystem.md)) |
-| D3 Workstation release gates | Clean Windows/Linux host checks, native Windows Ollama and browser checks, OS service installation, code signing, rollback between released versions |
-| D4 Cloud deployment | Container deployment tested on each major cloud; runnable Kubernetes and Terraform examples only once tested |
-| D5 Developer experience | JavaScript and Python client examples, configuration validation tooling, a stable published adapter interface with a minimal example adapter |
-
-Each item keeps the acceptance criteria already defined in the [roadmap](roadmap.md)
-and [lifecycle](lifecycle.md) release gates.
-
-
-The optional monitoring assets now include overview/Loki dashboards, provisioning
-and nine Prometheus rules with query/transition tests. Managed service lifecycle,
-actual Grafana rendering, live Loki and notifications remain separate gates. See
-[monitoring setup](runbooks/grafana-monitoring.md).
+| D1 Backend storage | Content encryption and access roles; PostgreSQL and Vault adapters behind the existing contracts |
+| D4 Cloud deployment | TLS Compose profile, authenticated metrics, admin throttling, and a runbook verified on a real cloud host |
+| D5 Developer experience | JavaScript and Python client examples, a stable published adapter interface with a minimal example adapter |
+| D6 Compose profiles | An Ollama profile, so a model server can start with the gateway |

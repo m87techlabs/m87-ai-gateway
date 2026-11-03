@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-import shutil
 import socket
 import subprocess
 import sys
@@ -29,7 +28,7 @@ def runner(tmp_path):
 
     def invoke(action, *args, root=ROOT):
         return subprocess.run(
-            [str(root / f"{action}.sh"), *args],
+            [str(root / "scripts" / f"dev-{action}.sh"), *args],
             cwd=tmp_path,
             env=env,
             text=True,
@@ -142,23 +141,3 @@ def test_default_gateway_sequence_skips_first_two_busy_ports(runner):
         invoke("stop")
         for listener in listeners:
             listener.close()
-
-
-def test_standalone_fallback(runner, tmp_path):
-    bundle = ROOT / "dist" / "m87-gateway"
-    if not bundle.exists():
-        pytest.skip("Experimental Linux bundle has not been built")
-    invoke, env = runner
-    checkout = tmp_path / "bundle-checkout"
-    (checkout / "scripts").mkdir(parents=True)
-    (checkout / "dist").mkdir()
-    for name in ("start.sh", "stop.sh", "status.sh", "scripts/gateway-lifecycle.sh"):
-        shutil.copy2(ROOT / name, checkout / name)
-    (checkout / "dist" / "m87-gateway").symlink_to(bundle)
-    env.pop("GATEWAY_PYTHON")
-    try:
-        started = invoke("start", root=checkout)
-        assert started.returncode == 0, started.stderr
-        assert invoke("status", root=checkout).returncode == 0
-    finally:
-        assert invoke("stop", root=checkout).returncode == 0

@@ -1,19 +1,13 @@
-# Optional monitoring assets
+# Monitoring assets
 
-Use these with your own Prometheus, Grafana and optionally Loki. They do not start
-services or change gateway setup. The gateway remains useful without them.
+Configuration for the optional monitoring profile: `docker compose --profile monitoring up -d`. You can
+also use these with your own Prometheus, Grafana and Loki. The gateway works without them.
 
-- `prometheus/prometheus.yml`: private workstation scrape example, default port 8087.
-- `prometheus/alerts.yml`: nine alert rules; notifications require your Alertmanager.
+- `prometheus/prometheus.yml`: scrape configuration for the Compose network.
+- `prometheus/alerts.yml`: nine alert rules; notifications need your own Alertmanager.
 - `prometheus/alerts.test.yml`: synthetic firing, hold and recovery tests.
-- `grafana/dashboards/gateway-overview.json`: traffic, tokens, latency and logging health.
-- `grafana/dashboards/gateway-logs.json`: Loki metadata filtered by project/app/request.
-- `grafana/provisioning/`: optional datasource/dashboard templates; edit server URLs
-  and dashboard path for your deployment. No credentials are included.
+- `grafana/dashboards/gateway-overview.json`: traffic, tokens, latency and logging health, including per application.
+- `grafana/dashboards/gateway-logs.json`: Loki metadata filtered by project, application and request.
+- `grafana/provisioning/`: datasource and dashboard provisioning. No credentials are included.
 
-Start with the [monitoring runbook](../../docs/runbooks/grafana-monitoring.md). In a
-standalone ZIP, these files are under `observability/` with `MONITORING.md` beside it.
-Only structural/metric/query/rule and native packaging checks are automated here;
-actual Grafana rendering and live Loki ingestion/querying remain separate checks.
-
-Use the source checkout’s [native local monitoring helper](../../docs/runbooks/local-monitoring.md) for a private Linux/WSL installation. It provisions metrics and alerts; Loki and notification routing remain separate.
+See the [monitoring runbook](../../docs/runbooks/grafana-monitoring.md).

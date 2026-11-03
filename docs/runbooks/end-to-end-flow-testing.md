@@ -25,8 +25,7 @@ flowchart LR
 
 ## Prerequisites
 
-- Docker with Compose is enabled for the WSL distribution only for the container
-  phase. Native checks can run before Docker is enabled.
+- Docker with Compose.
 - Ollama responds on the host and has the selected test model installed.
 - A dedicated gateway app key permits `auto` and the resolved Ollama model.
 - A dedicated Access-protected test hostname routes through the Tunnel to the
@@ -64,12 +63,11 @@ ambiguous.
 ```mermaid
 flowchart TD
     P0[0. Preflight] --> P1[1. Automated baseline]
-    P1 --> P2[2. Native gateway and Ollama]
-    P2 --> P3[3. Compose gateway and Ollama]
-    P3 --> P4[4. Tunnel origin]
-    P4 --> P5[5. Worker relay]
-    P5 --> P6[6. Negative and outage cases]
-    P6 --> P7[7. Cleanup and record results]
+    P1 --> P3[2. Compose gateway and Ollama]
+    P3 --> P4[3. Tunnel origin]
+    P4 --> P5[4. Worker relay]
+    P5 --> P6[5. Negative and outage cases]
+    P6 --> P7[6. Cleanup and record results]
 ```
 
 ### Phase 0: preflight
@@ -85,9 +83,7 @@ flowchart TD
 5. Confirm the gateway, Worker, and Access credentials are distinct.
 
 Success means each dependency is available and the intended model is installed.
-If Docker is unavailable, continue through Phase 2 and defer Phases 3 through 6.
-If the model is absent, finish the gateway failure-path check in Phase 2 and
-install a model only during a separately approved resource window.
+If the model is absent, install it during a separately approved resource window.
 
 ### Phase 1: automated baseline
 
@@ -98,18 +94,17 @@ pytest -q
 ruff check src tests scripts examples
 ruff format --check src tests scripts examples
 python scripts/check_docs.py
-python -m compileall -q src tests examples/local_test_app
+python -m compileall -q src tests
 npm test --prefix examples/cloudflare-worker
 ```
 
 Success means every command exits zero. Fix baseline failures before interpreting
 an integration result.
 
-### Phase 2: native gateway and Ollama
+### Phase 2: Compose gateway and Ollama
 
-Use the [Windows/WSL flow lab](windows-wsl-flow-lab.md) for the browser and relay
-path, or start the gateway directly with Ollama configured at the reachable host
-URL. Then verify these cases through `http://127.0.0.1:8080`:
+Follow [run with Docker](container-deployment.md), with Ollama configured at its reachable host URL.
+Then verify these cases through `http://127.0.0.1:8087`:
 
 | ID | Request | Expected result |
 | --- | --- | --- |
@@ -122,27 +117,11 @@ URL. Then verify these cases through `http://127.0.0.1:8080`:
 | N7 | Configured blocklist marker | Safe 400 before a provider attempt |
 | N8 | Ollama stopped or model absent | Safe 502/504 and provider-error metric |
 
-Match the `X-Request-ID` from N5 to one metadata event. With content capture off,
-search for the synthetic marker and require no match. If content capture is being
-tested, enable it globally and for only the test app, repeat N5, and require one
-matching private traffic record. Follow the [traffic logging runbook](traffic-logging.md).
+Match the `X-Request-ID` from N5 to one metadata event. With content capture off, require that its
+details show no input or output. If testing capture, turn it on in **Features**, repeat N5, and check
+that the input and output appear. See the [traffic logging runbook](traffic-logging.md).
 
-### Phase 3: Compose gateway and Ollama
-
-Use the [container deployment runbook](container-deployment.md). In one bounded
-Docker session:
-
-1. Run `docker compose config --quiet`.
-2. Build and start the gateway.
-3. Require the container to remain running and `/health` and `/metrics` to return
-   200 on the loopback-published port.
-4. Repeat N3, N5, N6, and N7.
-5. Confirm the container reaches host Ollama through the configured address.
-
-This phase verifies image contents, configuration mounts, port binding, and
-container-to-host networking. A successful native check does not substitute for it.
-
-### Phase 4: Tunnel origin
+### Phase 3: Tunnel origin
 
 1. Point a dedicated test hostname at the gateway's local HTTP origin.
 2. Request `/health` through Access using the test service token.
@@ -153,7 +132,7 @@ container-to-host networking. A successful native check does not substitute for 
 Success means the edge reaches the intended local service only while the host,
 gateway, and Tunnel are available.
 
-### Phase 5: Worker relay
+### Phase 4: Worker relay
 
 Deploy or configure the test Worker from `examples/cloudflare-worker`. Send one
 non-streaming `model: auto` request containing a unique synthetic marker.
@@ -168,7 +147,7 @@ Require all of the following:
 - The marker is absent from metadata and metrics. It appears in the private
   traffic file only when gateway-wide content capture is enabled.
 
-### Phase 6: negative and outage cases
+### Phase 5: negative and outage cases
 
 Run one case at a time and restore service before continuing:
 
@@ -185,13 +164,13 @@ Run one case at a time and restore service before continuing:
 Do not deliberately expose a secret or send sensitive content to test redaction.
 Use synthetic credential-shaped strings in unit tests for that behavior.
 
-### Phase 7: cleanup and result recording
+### Phase 6: cleanup and result recording
 
 1. Restore every changed permission, route, and service.
 2. Run `docker compose down` for this project.
 3. Disable traffic content capture and apply the configured retention policy.
 4. Remove temporary Worker and Access secrets if the test route will not remain.
-5. Record pass, fail, or deferred for every phase in `docs/validation.md`, with
+5. Record pass, fail, or not checked for every phase in `docs/validation.md`, with
    the commit and sanitized evidence.
 
 ## Release decision

@@ -72,7 +72,7 @@ Free-form prompts and responses can still contain sensitive text: enable capture
 only when the operator intends to capture authorized gateway traffic, and use
 synthetic data during initial tests.
 
-Native runs can use the relative `var/log/gateway/` path, ignored by Git and
+Source runs can use the relative `var/log/gateway/` path, ignored by Git and
 Docker builds. Container files are ephemeral unless that path is mounted on a
 private host directory or volume. No volume or remote collector is provisioned
 automatically. See the [traffic logging runbook](runbooks/traffic-logging.md).
@@ -195,7 +195,7 @@ states. Metadata-only exports are the default; content requires explicit inclusi
 Content retention defaults to 30 days and is independent of metadata/usage.
 `/admin/api/logging-health` reports private destination write failures/recovery even
 when metrics are disabled. Process counters reset on restart; recording remains best
-effort. See [showcase runbook](runbooks/logging-showcase.md) and [logging plan](logging-plan.md).
+effort. See [showcase runbook](runbooks/logging-showcase.md) and [backlog](backlog.md).
 
 ## Persistent metadata webhook export
 
@@ -220,7 +220,7 @@ and fixed `service_name`/`log_kind` labels. Request/project/model/token fields r
 in the log body. It shares queue, credentials, console tests and recovery with webhook.
 Only 204 acknowledges ingestion; blocked/old/out-of-order records retry within expiry.
 See [Loki runbook](runbooks/loki-export.md) for LogQL, supported authentication, live
-verification limits and duplicate handling. Grafana provisioning templates are included; managed service lifecycle remains planned.
+verification limits and duplicate handling. Grafana provisioning templates are included.
 
 ## Included monitoring assets
 

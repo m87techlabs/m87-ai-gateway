@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -54,9 +55,7 @@ jobs:
         run: |
           ruff check src tests scripts examples
           ruff format --check src tests scripts examples
-          bash -n start.sh stop.sh status.sh scripts/gateway-lifecycle.sh
-          bash -n docker-start.sh docker-stop.sh docker-status.sh scripts/docker-lifecycle.sh
-          bash -n monitoring-start.sh monitoring-stop.sh monitoring-status.sh
+          bash -n scripts/dev-start.sh scripts/dev-stop.sh scripts/dev-status.sh scripts/gateway-lifecycle.sh
           bash -n examples/chat_app/start.sh examples/chat_app/stop.sh examples/chat_app/status.sh
 
       - name: Test
@@ -72,57 +71,6 @@ jobs:
 
       - name: Build package
         run: python -m pip wheel --no-deps . --wheel-dir dist
-
-  bundle:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, windows-2022]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    needs: test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.11"
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "22"
-      - name: Build the console
-        run: |
-          npm ci --prefix console --no-audit --no-fund
-          npm run build --prefix console
-      - name: Install bundle dependencies
-        run: python -m pip install -e '.[bundle]'
-      - name: Check platform storage and backup safety
-        run: |
-          python -m pip install pytest
-          pytest -q tests/test_backup_workstation.py
-      - name: Build portable preview executable
-        run: python scripts/build_standalone.py
-      - name: Verify bundled setup and request flow
-        run: python scripts/smoke_standalone.py dist/m87-gateway${{ runner.os == 'Windows' && '.exe' || '' }}
-      - name: Verify lifecycle scripts with the standalone executable
-        if: runner.os == 'Linux'
-        run: |
-          python -m pip install pytest
-          pytest -q tests/test_lifecycle_scripts.py -k standalone_fallback
-
-      - name: Upload preview archives and checksums
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: gateway-preview-${{ runner.os }}-${{ runner.arch }}
-          path: |
-            dist/*.zip
-            dist/*.sha256
-          if-no-files-found: error
-          retention-days: 14
 
   docs:
     runs-on: ubuntu-24.04
@@ -152,7 +100,7 @@ jobs:
 
   container:
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_container)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -162,15 +110,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Check Compose configuration
+        run: docker compose config --quiet
       - name: Build image
         run: docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" -t m87-ai-gateway:check .
       - name: Exercise Docker run and Compose
         run: python scripts/smoke_container.py m87-ai-gateway:check
 
-  publish-preview:
+  publish:
     if: >-
-      github.ref == 'refs/heads/main' && (github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.package_container))
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.package_container && github.ref == 'refs/heads/main')
     needs: [test, docs, container]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -188,6 +138,13 @@ jobs:
           platforms: arm64
       - name: Set up multi-architecture builds
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Check a version tag matches the code
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$version\"$" pyproject.toml
+          grep -q "^__version__ = \"$version\"$" src/m87_gateway/__init__.py
+          grep -q "^## \[$version\]" CHANGELOG.md
       - name: Publish amd64 and arm64 images
         env:
           GH_TOKEN: ${{ github.token }}
@@ -199,5 +156,35 @@ jobs:
             --build-arg SOURCE_REVISION="$GITHUB_SHA" \
             --tag "$image:sha-$GITHUB_SHA" --push .
           docker run --rm --platform linux/arm64 "$image:sha-$GITHUB_SHA" --version
-          docker buildx imagetools create --tag "$image:preview" "$image:sha-$GITHUB_SHA"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            docker buildx imagetools create --tag "$image:$version" --tag "$image:${version%.*}" --tag "$image:latest" "$image:sha-$GITHUB_SHA"
+          else
+            docker buildx imagetools create --tag "$image:preview" "$image:sha-$GITHUB_SHA"
+          fi
           docker logout ghcr.io
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Publish the release with a Compose file pinned to its image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir release
+          sed -e "s#m87-ai-gateway:latest#m87-ai-gateway:$version#" -e '/^    build: \.$/d' docker-compose.yml > release/docker-compose.yml
+          (cd release && docker compose config --quiet)
+          awk -v section="## [$version]" 'index($0, section) == 1 {found = 1; next} found && /^## \[/ {exit} found' CHANGELOG.md > release/notes.md
+          test -s release/notes.md
+          gh release create "$GITHUB_REF_NAME" release/docker-compose.yml --verify-tag \
+            --title "M87 AI Gateway $version" --notes-file release/notes.md

@@ -3,9 +3,7 @@
 ## Direction and status
 
 Keep the gateway as one application with an embedded SQLite default and clear
-backend interfaces. Source development is the current priority. Docker files and
-helpers remain available; further container work is deferred until a functional
-release candidate needs packaging verification.
+backend interfaces, packaged with Docker.
 
 Repository separation, explicit backend registration/configuration and independent
 usage accounting are implemented with SQLite. Encrypted provider keys, application-key
@@ -38,8 +36,7 @@ without captured content; deleting traffic does not change those aggregates.
 Traffic/usage writes share a transaction, and repeated request IDs do not add usage.
 Usage retention defaults to 365 days independently of 30-day traffic retention.
 
-Native and Docker instances select different storage directories by default.
-That is a storage-selection difference, not a different gateway data model. A
+Each Compose project has its own volume, and a source run has its own folder. A
 backup must retain the database and matching local keys; sharing a live SQLite
 folder between two instances is unsupported.
 
@@ -152,7 +149,7 @@ with Grafana as an optional visualization surface. See
 
 - One canonical data-directory setting, stable store identity, schema version and
   backup status. Make the selected store visible to operators so an empty new
-  instance can be distinguished from the existing native store.
+  instance can be distinguished from an existing store.
 - Explicit ordered migrations and transactional rollback where supported. Verify
   old applications, digests, provider secrets, projects and logs survive migration.
 - Consistent encrypted backups, fresh-destination restore and verified export/import.
@@ -162,7 +159,7 @@ with Grafana as an optional visualization surface. See
   controls. Capture/content deletion and usage retention are separate decisions.
 - PostgreSQL is an optional future implementation for shared deployment. Redis is
   optional only if shared cache/rate enforcement is required. Neither is a default
-  workstation prerequisite. Multi-instance correctness requires additional tests.
+  prerequisite. Multi-instance correctness requires additional tests.
 
 ## Proposed implementation sequence
 
@@ -179,8 +176,7 @@ with Grafana as an optional visualization surface. See
    Loki adapters share the delivery contract. Add OTLP and verify live collectors
    before claiming production integration support.
 6. Add PostgreSQL or external secret-store adapters only with a demonstrated use case
-   and a shared contract suite. Validate container/native packaging for the final
-   functional scope before publishing a release.
+   and a shared contract suite.
 
 Each step needs a migration, compatibility tests and an operational runbook. These
 steps include implemented foundations and remaining planned scope. Existing user

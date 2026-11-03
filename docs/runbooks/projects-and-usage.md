@@ -92,14 +92,12 @@ sequenceDiagram
 - Projects are organizational grouping under one operator key. Per-project operator
   roles, isolation, budgets, deletion, and billing are not implemented.
 
-## Recovery and deferred checks
+## Recovery
 
 If usage appears empty, check the selected project, application membership, time
 window, retention, and provider usage availability. For a changed app assignment,
 move it back; this affects future requests only. Do not edit historical events to
 make a dashboard match the current membership. Revoke/recreate a lost app key.
 
-Before upgrading, protect the database and separate master key. Additive migration
-preserves existing keys and events; operational backup/restore remains a release
-check. Optional Grafana/logging/Vault service management is planned in the
-[ecosystem design](../ecosystem.md); it is not necessary for this runbook.
+Before upgrading, create a [backup](container-deployment.md#backup-and-restore). Additive migration
+preserves existing keys and events.

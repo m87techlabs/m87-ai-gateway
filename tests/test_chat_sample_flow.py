@@ -13,7 +13,7 @@ import time
 import httpx
 import pytest
 
-from scripts.smoke_standalone import Inference
+from scripts.synthetic_inference import Inference
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Linux/WSL sample launcher")

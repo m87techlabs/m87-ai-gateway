@@ -2,51 +2,27 @@
 
 ## Use this when
 
-Use this page to start or stop a local gateway, run the sample, and demonstrate
-LLM logs. Commands below are for the Linux/WSL source checkout, from the repository
-root. For Windows or an unpacked native bundle, follow
-[portable workstation operations](workstation-distribution.md).
+Use this page to start or stop the gateway, run the sample app and read LLM logs. Commands run from the
+folder holding `docker-compose.yml`.
 
 ## Prerequisites
 
-- Install the source package once using [local development](local-development.md).
-- Have an existing supported inference service and a model available there.
-- Back up existing data before upgrading, using [backup and restore](workstation-distribution.md#backup-and-restore).
-  Current startup upgrades to schema 9; older binaries require their compatible backup.
-- Keep the operator key and application key private. They serve different roles.
-
-The scripts use the checkout's `.venv` automatically; manual activation is unnecessary.
-They do not install dependencies or start the inference service. Docker is optional
-and remains separate from this local procedure.
+- A running gateway; see [run with Docker](container-deployment.md).
+- A model server or provider, with a model available.
+- Back up existing data before upgrading; see [backup and restore](container-deployment.md#backup-and-restore).
+- Keep the operator key and application keys private. They serve different roles.
 
 ## Start, status and stop
 
 ```bash
-# Gateway
-./start.sh
-./status.sh
-
-# Sample app, after gateway setup
-./examples/chat_app/start.sh
-./examples/chat_app/status.sh
-
-# Stop the sample and gateway when finished
-./examples/chat_app/stop.sh
-./stop.sh
+docker compose up -d
+docker compose ps
+docker compose stop
 ```
 
-Run the stop commands when finished testing, rather than immediately after startup.
-Start prints the selected URLs. The gateway tries 8087, 8187, 8287 and subsequent
-increments of 100; the sample selects an available port. Use the printed URLs.
-Repeated start reuses the managed process; stop preserves data. Status returns
-code 3 when stopped. Separate native, source and container data directories can
-have different keys and logs.
+Stopping keeps data. The gateway publishes port 8087; set `GATEWAY_PORT` in `.env` to change it.
 
-An exact gateway port can be selected with `./start.sh --port 8187`. If it is
-occupied, startup fails without stopping the existing service. The same applies to
-an explicit sample port; omit `--port` or use `--port 0` for automatic sample selection.
-Full script/storage options are in [guided setup](guided-setup.md) and the
-[sample instructions](../../examples/chat_app/README.md).
+To try the sample app from a checkout, see [its instructions](../../examples/chat_app/README.md).
 
 ## Configure and demonstrate logs
 
@@ -98,14 +74,14 @@ sanitized metadata; captured input/output stays in the local viewer.
 | No log yet | Wait for completion/cancellation, refresh, check project/search filters and recording health. Investigate write failures in Storage. |
 | Sample port occupied | Omit the explicit port or use `--port 0`; preserve the service already using that port. |
 | Changed settings not applied | Console-managed settings apply as documented. Startup export environment changes require stopping and restarting the gateway in the configured shell. Repeated start reuses the current process. |
-| Different keys/logs in Docker | Native and container storage are separate by default. Select the intended instance; use supported encrypted backup/restore for migration. |
+| Different keys or logs than expected | Each Compose project has its own volume, and a source run has its own folder. Select the intended instance; use encrypted backup and restore to move data. |
 
 ## Automated checks and success criteria
 
 ```bash
 .venv/bin/python -m examples.chat_app.scenarios
 .venv/bin/python -m pytest -q tests/test_logging_showcase.py tests/test_log_export.py
-npm test --prefix tests/console
+npm test --prefix console
 ```
 
 The scenario suite and tests use isolated temporary stores and synthetic inference.
@@ -140,9 +116,6 @@ without Docker; live indexing and Grafana browsing require your actual Loki serv
 
 ## Optional monitoring
 
-Use the included [monitoring setup](grafana-monitoring.md) with existing Prometheus,
-Grafana and optionally Loki. The overview reports traffic/tokens and logging delivery;
-the Loki dashboard searches project/app/request metadata. Alerts evaluate in Prometheus;
-notifications require separate routing. No optional service starts with the gateway.
-
-For a native Linux/WSL setup, use `./monitoring-start.sh --install`, then `./monitoring-status.sh` or `./monitoring-stop.sh`. Follow [local monitoring](local-monitoring.md) for requirements and the private password file.
+Run Prometheus, Grafana and Loki with `docker compose --profile monitoring up -d` from a checkout. See
+[monitoring with Grafana](grafana-monitoring.md). Alerts evaluate in Prometheus; notifications need
+separate routing.

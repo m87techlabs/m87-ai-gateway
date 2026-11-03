@@ -3,13 +3,11 @@
 ## Trigger and prerequisites
 
 Use this procedure to undo a console settings change, inspect management changes,
-or investigate local storage failures. Start the source gateway with `./start.sh`,
-open the printed console URL, and use the private operator key. These operations
-require operator access; application keys cannot use them. Keep Docker deferred
-unless explicitly testing container packaging.
+or investigate local storage failures. Sign in to the console with the operator key. These operations
+require operator access; application keys cannot use them.
 
 Before upgrading, stop the gateway and create an encrypted backup using the
-[workstation procedure](workstation-distribution.md). Schema 6 adds encrypted
+[backup and restore](container-deployment.md#backup-and-restore). Schema 6 adds encrypted
 configuration revisions, a reversible write-probe table and optional audit reference
 columns. Existing keys, traffic, usage and audit records are preserved. An older
 binary rejects schema 6; binary rollback requires restoring its compatible backup
@@ -127,7 +125,7 @@ From the repository root:
 ```bash
 .venv/bin/pytest -q tests/test_configuration_history.py tests/test_backend_contracts.py
 .venv/bin/python -m examples.chat_app.scenarios
-cd tests/console
+cd console
 npm test
 ```
 
@@ -137,15 +135,10 @@ keys, usage and audit. Repository tests cover audit-write rollback, current-secr
 preservation, changed-endpoint/all-alias removal, environment-binding safety,
 100-entry encrypted history, ETag conflicts, missing/corrupt data and schema-5
 migration. Browser tests cover safe review rendering, confirmation, stale feedback,
-late responses after lock and explicit verification. Native smoke verifies restore,
-storage and revision preservation through encrypted backup/recovery.
+late responses after lock and explicit verification. 
+Rollback between released versions has not been tested. Record results in
+[validation](../validation.md).
 
-Live Windows Ollama, visual browser review, clean-host distribution, cross-version
-rollback and final Docker packaging remain separate manual/release checks. Record
-results in [validation](../validation.md); automated synthetic checks do not establish
-those environments.
-
-Current startup uses schema 9, preserving the schema-6 configuration foundations.
 Backups also contain pending metadata deliveries, which may replay after restore.
 Review [export recovery](log-export.md#delivery-and-storage-boundaries) when export is enabled.
 

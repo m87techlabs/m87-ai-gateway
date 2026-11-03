@@ -11,7 +11,7 @@ from m87_gateway.backup import backup, restore
 from m87_gateway.cli import local_settings, operator_key
 from m87_gateway.control.store import LocalControlStore, SCHEMA_VERSION
 from m87_gateway.private_storage import check_private, prepare_directory, prepare_file
-from m87_gateway.workstation import instance_lock
+from m87_gateway.instance import instance_lock
 
 PASSWORD = "synthetic-backup-password"
 
@@ -151,7 +151,7 @@ def test_lifecycle_identity_probe_never_sends_key_to_foreign_listener(tmp_path, 
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import threading
     import json
-    from m87_gateway.workstation import manage
+    from m87_gateway.instance import manage
 
     seen = []
 

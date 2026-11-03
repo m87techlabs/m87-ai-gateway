@@ -11,10 +11,9 @@ Docker is needed only for the container variant.
 
 1. Follow the [observability configuration](../observability.md). Set a traffic
    file path or enable the local control store, then enable capture in gateway
-   Setup or configuration. This applies to all authorized applications.
+   **Features** or configuration. This applies to all authorized applications.
    Replace example keys in ignored configuration only.
-2. For a native process, run from the intended working directory so the relative
-   path resolves predictably. For Docker, mount a private directory/volume at the
+2. For a JSONL file with Docker, mount a private directory/volume at the
    configured path before enabling capture. Do not place it under a web/static root.
 3. Ensure existing files have owner-only permissions and the process can write
    them. The gateway fails startup if the configured sink cannot initialize safely.

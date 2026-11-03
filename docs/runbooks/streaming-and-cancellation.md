@@ -128,7 +128,6 @@ cache bypass, missing usage, strict options, credential redaction across deltas,
 truncation and real OpenAI SDK streaming. Real TCP tests close clients in both
 response modes, directly and through the sample, and require upstream closure,
 slot release and exactly one cancellation event within a bounded interval.
-Native bundle CI smoke also exercises streaming and SQLite capture.
 
 On 2026-10-06 local Ollama discovery at loopback port 11434 timed out; no live
 inference was attempted. Once Ollama is reachable, run the browser flow, compare
@@ -141,4 +140,4 @@ Schema 5 adds nullable outcome/wire-status metadata and default-off streaming/pa
 flags. Schema-3/4 upgrade tests preserve keys, usage and identity audit. Back up
 before upgrading; older binaries reject newer databases. Restore a pre-upgrade
 backup to a fresh private destination for rollback using the
-[workstation recovery procedure](workstation-distribution.md).
+[backup and restore](container-deployment.md#backup-and-restore).

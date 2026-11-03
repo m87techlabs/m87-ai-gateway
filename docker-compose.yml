@@ -1,11 +1,13 @@
-# First start from a checkout:
-#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-# Then: docker compose stop, and docker compose start. Both keep your data.
-# Plain "up" pulls the prebuilt image instead, which needs registry access for now.
+# Run a release:        docker compose up -d
+# Build this checkout:  docker compose up -d --build
+# Stop or start again:  docker compose stop | docker compose start
+# Update a release:     docker compose pull && docker compose up -d
+# Add monitoring:       docker compose --profile monitoring up -d (needs a checkout)
 # Optional settings come from .env; see .env.example.
 services:
   m87-ai-gateway:
-    image: ${GATEWAY_IMAGE:-ghcr.io/m87techlabs/m87-ai-gateway:preview}
+    image: ${GATEWAY_IMAGE:-ghcr.io/m87techlabs/m87-ai-gateway:latest}
+    build: .
     ports:
       - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-8087}:8087"
     environment:
@@ -30,6 +32,54 @@ services:
     restart: unless-stopped
     stop_grace_period: 60s
 
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.13.5
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./deploy/observability/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  loki:
+    profiles: [monitoring]
+    image: grafana/loki:3.7.9
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+    volumes:
+      - loki-data:/loki
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:13.2.5
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      # Grafana asks you to change this default at first sign-in.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/opt/m87-observability/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
 networks:
   # Other Compose projects can join this and call http://m87-ai-gateway:8087/v1.
   m87-gateway:
@@ -37,3 +87,6 @@ networks:
 
 volumes:
   gateway-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:

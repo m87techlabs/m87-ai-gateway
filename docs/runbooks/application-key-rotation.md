@@ -89,7 +89,7 @@ digests, prompts and completions. Migration does not invent historical actions.
 
 Audit retention defaults to 365 days. Set
 `control_plane.management_audit_retention_days` in YAML or
-`GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS` for YAML/native startup. Pruning runs at
+`GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS` for YAML or command-line startup. Pruning runs at
 startup and audited writes. The current UI displays the latest 250 entries in the
 selected project scope. There is no idle pruning timer. Traffic deletion preserves
 these records. Audit is local administrative history, not a tamper-proof ledger.
@@ -104,7 +104,7 @@ Run isolated synthetic acceptance tests:
 ```bash
 .venv/bin/pytest -q tests/test_application_keys.py tests/test_backend_contracts.py tests/test_gateway_controls.py tests/test_backup_workstation.py
 .venv/bin/python -m examples.chat_app.scenarios
-node --test tests/console/*.test.mjs
+npm test --prefix console
 ```
 
 The sample suite exercises replacement access, overlap, old-key revocation and
@@ -118,5 +118,4 @@ separate `applications` and `app_keys` tables, preserving digests, policies, pro
 membership, provider credentials and usage. A migrated active key stays active;
 inactive applications remain inactive. Schema-1/2 binaries reject schema 3. Restore
 an earlier backup into a fresh private directory for rollback; see
-[backend storage acceptance](backend-storage-testing.md). Native and Docker stores
-remain separate, and Docker packaging is deferred.
+[backend storage acceptance](backend-storage-testing.md).

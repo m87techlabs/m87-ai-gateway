@@ -136,11 +136,8 @@ case "$action" in
             launcher=("$GATEWAY_PYTHON" -m m87_gateway)
         elif [[ -x $repo_root/.venv/bin/python ]]; then
             launcher=("$repo_root/.venv/bin/python" -m m87_gateway)
-        elif [[ $profile == gateway && -x $repo_root/dist/m87-gateway ]]; then
-            launcher=("$repo_root/dist/m87-gateway")
         else
-            echo "Install the source package in .venv or build dist/m87-gateway first." >&2
-            echo "See docs/runbooks/guided-setup.md. No virtual environment activation is needed." >&2
+            echo "Install the source package in .venv first; see docs/runbooks/local-development.md." >&2
             exit 1
         fi
         args=(--host 127.0.0.1)

@@ -7,7 +7,7 @@ use temporary SQLite stores and synthetic data. Docker, inference services and
 cloud credentials are unnecessary.
 
 ```bash
-.venv/bin/pytest -q tests/test_backend_contracts.py tests/test_control_store.py tests/test_projects.py tests/test_backup_workstation.py
+.venv/bin/pytest -q tests/test_backend_contracts.py tests/test_control_store.py tests/test_projects.py tests/test_backup_instance.py
 ```
 
 Run the full source suite before publication. Future backend implementations must
@@ -36,27 +36,25 @@ plus their external-service failure/recovery suite.
 ## Existing-store upgrade
 
 Before starting this version against an existing store, stop that gateway and take
-an encrypted backup with its current binary. Follow the
-[workstation backup procedure](workstation-distribution.md). Preserve the matching
-master/operator keys and the compatible binary for rollback.
+an encrypted backup with its current image. Follow
+[backup and restore](container-deployment.md#backup-and-restore), and keep the previous image for rollback.
 
 Startup migrates schema 0/1/2 to schema 3 and backfills usage from events that still
 exist, before normal retention pruning. It cannot recover already deleted traffic.
 Usage defaults to 365 days and traffic to 30 days. Set
 `control_plane.usage_retention_days` before startup if a different window is needed.
-Pruning runs at startup and event writes; traffic also prunes when Controls is saved.
+Pruning runs at startup and event writes; traffic also prunes when settings are saved.
 There is no idle expiry timer. Deleting traffic does not clear usage, JSONL files,
 backups, or cached responses and is not secure erasure.
 
 An older schema-1/2 binary rejects a schema-3 database. Rollback requires the earlier
 backup restored into a fresh private directory; do not downgrade the live database
 or manually change its version. Upgrade checks here use isolated fixtures; no
-running workstation or Docker database is migrated by running the tests.
+running database is migrated by running the tests.
 
-## Deferred gates
+## Not yet checked
 
 Real PostgreSQL/Vault/export adapters, concurrent remote transactions, large-history
 migration performance, disk-full/crash recovery, and cross-release rollback need
 separate evidence. The existing recorder is best effort: atomic SQLite writes do
-not establish lossless accounting. Docker packaging remains deferred until a
-functional release checkpoint.
+not establish lossless accounting.

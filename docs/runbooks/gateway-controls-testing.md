@@ -4,7 +4,7 @@
 
 Use this procedure after changes to gateway policies, logging, or the sample relay.
 Automated scenarios need the source gateway's Python environment with its runtime
-packages installed. Docker, Windows Ollama and cloud credentials are unnecessary.
+packages installed. Docker and cloud credentials are unnecessary.
 Manual live checks need the running gateway, sample app, and a reachable installed
 Ollama model. Use a dedicated project/application for live tests.
 
@@ -54,7 +54,7 @@ HTTP behavior; synthetic inference does not establish live provider compatibilit
 ## Manual console and Ollama checks
 
 1. Start the gateway and sample with their existing scripts. Open **Features**.
-   Check readiness; use **Setup → Discover models** and a real completion to verify
+   Check readiness in **Storage**; use **Providers → Test connection** and a real completion to verify
    connectivity/inference. Readiness itself checks configuration and SQLite only.
 2. In **Applications**, use a dedicated test application's existing key. Set RPM to
    1. Start a fresh sample conversation and send a short synthetic prompt. The next
@@ -91,9 +91,7 @@ Shorter SQLite retention removes expired history on save, restart and event writ
 usage reports have separate retention and survive log deletion. There is no idle background pruning timer.
 Log deletion is logical, not secure erasure or a backup/recovery mechanism.
 
-If readiness fails, read the failed check in **Features** and correct Setup or storage
+If readiness fails, read the failed check in **Storage** and correct the provider or storage
 permissions. If a real chat fails while readiness passes, inspect its request ID
 and test upstream discovery/inference. Test runs must clean up only their own
-services. Live Ollama fault exercises, visual/accessibility browser checks, Docker,
-Windows packaging and cloud checks remain recorded separately in
-[validation](../validation.md).
+services. See [validation](../validation.md) for what has been checked live.

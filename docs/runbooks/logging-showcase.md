@@ -3,20 +3,16 @@
 ## Trigger and prerequisites
 
 Use this procedure to demonstrate how the gateway records an application's LLM
-interaction. Use synthetic prompts, the native/source gateway, private operator
-access, an application key and a reachable supported inference backend. Docker is
-unnecessary for the local showcase. Keep provider secrets in the gateway.
+interaction. Use synthetic prompts, operator access, an application key and a reachable model server.
+Keep provider secrets in the gateway.
 
 Before upgrading an existing instance, create an encrypted offline backup using the
-[workstation runbook](workstation-distribution.md). Current schema 9 includes the schema-7 migration of retained
-content into `exchange_content`, preserves metadata/usage/keys/configuration/audit,
-and leaves legacy content columns empty. Older binaries reject the new schema;
-rollback uses a compatible backup restored into a fresh destination. Tests do not
-migrate a live operator store.
+[backup and restore](container-deployment.md#backup-and-restore). Older images refuse a newer database, so rollback uses a compatible backup restored into a fresh
+destination. Tests do not migrate a live store.
 
 ## Demonstrate one exchange
 
-1. Start the gateway with `./start.sh`. Open its printed console URL.
+1. Start the gateway with [Docker](container-deployment.md) and open its console.
 2. In **Providers**, test/save the inference connection, choose a model and enable
    **Input and output capture** in **Features**.
 3. In **Features**, choose metadata/content retention and a capture limit large enough
@@ -53,7 +49,7 @@ frozen snapshot when records are modified/deleted during browsing.
 SQLite metadata and content default to 30 days; usage defaults to 365 days. Set
 `control_plane.content_retention_days`, `GATEWAY_CONTENT_RETENTION_DAYS`, or the
 Controls field to expire captured text earlier. Content expiry is enforced on
-reads; expired rows are physically pruned on writes, restart and controls save.
+reads; expired rows are physically pruned on writes, restart and settings saves.
 Deleting/expiring metadata cascades to content, even if content retention is longer.
 SQLite limits do not control a separately configured JSONL file, which rotates by
 size. Capture fields are bounded/redacted text, with filesystem privacy rather than
@@ -112,7 +108,7 @@ Run from the repository root:
 ```bash
 .venv/bin/pytest -q tests/test_logging_showcase.py tests/test_backend_contracts.py
 .venv/bin/python -m examples.chat_app.scenarios
-cd tests/console
+cd console
 npm test
 ```
 
@@ -121,19 +117,16 @@ provider-reported tokens, metadata/content export separation, content deletion a
 recording health. Tests additionally cover schema-6 preservation, atomic writes,
 independent retention on reads, pagination ties, malformed cursors, project filters,
 operator-only access, redaction/truncation, writer failure/recovery and safe browser
-rendering. Native smoke checks the same logging APIs through a packaged executable
-and encrypted backup/recovery.
-
+rendering. 
 On a write failure, inspect **Storage**, available disk, owner-only permissions
 and competing writers. Preserve failed-store evidence and use encrypted recovery
 when required; do not regenerate keys or grant broad permissions. Local recording
 remains best effort before commit. Metadata outbox/webhook and [Loki delivery](loki-export.md) are implemented;
-OTLP, remote content, traces and managed Grafana services remain planned in [logging plan](../logging-plan.md).
-Record live Ollama/browser/tunnel/Docker results separately in [validation](../validation.md).
+OTLP, remote content and traces remain planned in the [backlog](../backlog.md). See
+[validation](../validation.md) for what has been checked live.
 
 ## Optional remote metadata showcase
 
-Current startup uses schema 9, including the bounded queue introduced in schema 8.
 Back up before upgrading; older binaries require their matching backup for rollback.
 Follow [metadata webhook export](log-export.md) to demonstrate outage/restart recovery
 with a local receiver. Input/output stay in the local viewer; remote content export

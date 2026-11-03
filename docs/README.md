@@ -1,44 +1,44 @@
 # Documentation
 
-M87 AI Gateway is an early-stage, self-hostable gateway for developers and small
-organizations. The product direction is a reusable gateway service with documented
-provider and policy extension points. Public availability depends on the release
-gates in the lifecycle guide.
+M87 AI Gateway is a self-hosted gateway for developers, run with Docker Compose. Start with the
+[quickstart](quickstart.md) or [run with Docker](runbooks/container-deployment.md).
 
 ## Start here
 
-| Page | Purpose |
+| Page | Use it to |
 | --- | --- |
-| [Everyday operations](runbooks/daily-operations.md) | Start/stop/status, sample setup, logging showcase and troubleshooting |
-| [Quickstart](quickstart.md) | Run the current gateway and send a request |
+| [Quickstart](quickstart.md) | Run the gateway and send a request |
+| [Run with Docker](runbooks/container-deployment.md) | Start, stop, back up and upgrade |
+| [Guided setup](runbooks/guided-setup.md) | Connect a provider and create an application |
 | [Connect your app](connect-your-app.md) | Base URLs, model names, forwarded fields, embeddings and errors |
-| [Portable workstation preview](runbooks/workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
-| [Guided setup](runbooks/guided-setup.md) | Launch, connect a provider in the console, and create an application key |
-| [Provider adapters](adapters.md) | Extend the reusable core with trusted source adapters |
-| [Ecosystem vision](ecosystem.md) | Full gateway product and planned managed dashboard/logging/secrets services |
-| [Gateway controls acceptance](runbooks/gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
-| [Projects and usage](runbooks/projects-and-usage.md) | Group applications, filter dashboards/logs, and test APIs |
-| [Roadmap](roadmap.md) | Milestones, acceptance criteria, and provider coverage |
-| [Feature backlog](backlog.md) | Missing capabilities broken into scoped, prioritized work items |
-| [Design](design.md) | Product scope, boundaries, and design decisions |
-| [Backend adapters](backend-adapters.md) | Storage contracts, extension registration and reusable tests |
-| [Application-key rotation](runbooks/application-key-rotation.md) | Overlap, expiry, revocation and transactional management audit |
-| [Backend storage acceptance](runbooks/backend-storage-testing.md) | Migration, retention, rollback and future adapter gates |
-| [Backend architecture](backend-architecture.md) | Storage/service boundaries, logs, secrets, configuration and usage direction |
-| [Architecture](architecture.md) | Components and request flow |
-| [Glossary](glossary.md) | Shared terminology |
-| [Lifecycle](lifecycle.md) | Development, releases, compatibility, and retirement |
-| [Stack](stack.md) | Technology choices and infrastructure assumptions |
-| [Configuration](configuration.md) | Configuration inputs and current limitations |
-| [Security](security.md) | Trust boundaries and security controls |
-| [Observability](observability.md) | Current logging and planned operational signals |
-| [Local control plane](control-plane.md) | Token analytics, exchange inspection, keys, and persistence |
-| [Control-plane runbook](runbooks/control-plane.md) | Operate the local console and key stores |
-| [Windows/WSL flow lab](runbooks/windows-wsl-flow-lab.md) | Browser-to-Windows-Ollama testing without Docker |
-| [Chat sample](../examples/chat_app/README.md) | Independent conversation app using an existing gateway and an application key |
-| [Worker/local inference](integrations/worker-local-inference.md) | Reference tunnel integration and acceptance checks |
-| [Runbooks](runbooks/README.md) | Repeatable operational procedures |
-| [Validation status](validation.md) | Verified checks, deferred checks, and on-demand Docker policy |
+| [Runbooks](runbooks/README.md) | Find a procedure |
+
+## Reference
+
+| Page | Covers |
+| --- | --- |
+| [Configuration](configuration.md) | Settings and environment variables |
+| [Control plane](control-plane.md) | The console and its API |
+| [Observability](observability.md) | Logs, metrics and exports |
+| [Security](security.md) | Security model and current limits |
+| [Adapters](adapters.md) | Writing a provider adapter |
+| [Backend adapters](backend-adapters.md) | Storage adapters |
+| [Worker to local inference](integrations/worker-local-inference.md) | Calling a home GPU from a Cloudflare Worker |
+| [Glossary](glossary.md) | Shared terms |
+
+## Project
+
+| Page | Covers |
+| --- | --- |
+| [Roadmap](roadmap.md) | What comes next, and what is not planned |
+| [Backlog](backlog.md) | Scope and acceptance criteria for planned work |
+| [What has been verified](validation.md) | What was and was not checked |
+| [Design](design.md) | Product boundaries and decisions |
+| [Architecture](architecture.md) | Request path and components |
+| [Backend architecture](backend-architecture.md) | Storage design |
+| [Stack](stack.md) | Technology choices |
+| [Lifecycle](lifecycle.md) | Release gates and compatibility |
+| [Changelog](../CHANGELOG.md) | What changed in each version |
 
 ## Read implementation status literally
 
@@ -47,36 +47,5 @@ gates in the lifecycle guide.
 - **Planned:** a design target without a supported implementation.
 - **Verified:** evidence identifies the version, environment, and check performed.
 
-A configuration field or deployment placeholder does not establish support.
-Compatibility claims require tests, documentation, and an operational runbook.
-
-```mermaid
-flowchart LR
-    Scope[Design and scope] --> Plan[Roadmap]
-    Plan --> Build[Implementation and tests]
-    Build --> Operate[Runbooks and observability]
-    Operate --> Gate[Lifecycle release gates]
-    Gate --> Release[Public release]
-    Release --> Feedback[Issues and feedback]
-    Feedback --> Plan
-```
-
-- [Inference API and queue testing](runbooks/inference-api-and-queueing.md): model catalog, options, bounded waiting and recovery.
-
-- [Streaming and cancellation](runbooks/streaming-and-cancellation.md): SSE, sample Stop, partial capture, cleanup and live validation.
-
-- [Configuration recovery and storage health](runbooks/configuration-recovery.md): settings history/restore, management audit and safe storage verification.
-
-- [Logging showcase](runbooks/logging-showcase.md): sample request links, capture/search/retention/export and recording health.
-
-- [Logging development plan](logging-plan.md): current priority, remaining development and exporter/ecosystem stages.
-
-- [Metadata webhook export](runbooks/log-export.md): bounded queue, retries, receiver example and delivery recovery.
-
-- [Configure log export](runbooks/configure-log-export.md): console destinations, encrypted credentials, draft tests and recovery.
-
-- [Loki metadata export](runbooks/loki-export.md): existing receiver setup, LogQL, retry and authentication limits.
-
-- [Grafana dashboards and Prometheus alerts](runbooks/grafana-monitoring.md): optional provisioning, scrape setup, rule tests and notification boundaries.
-
-- [Native local monitoring](runbooks/local-monitoring.md): repeatable Grafana/Prometheus setup, private login, status and stop without Docker.
+A configuration field does not establish support. Compatibility claims need tests, documentation and
+a runbook.

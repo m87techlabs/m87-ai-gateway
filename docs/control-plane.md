@@ -42,32 +42,18 @@ limits, exact-response caching, and bounded retries.
 See [project operations](runbooks/projects-and-usage.md) for attribution and
 reporting rules. Project identity comes from the authenticated application; moving
 an app does not rewrite past events. The same operator key can view all projects.
-Managed Grafana, logging, and Vault services remain planned in the
-[ecosystem design](ecosystem.md).
+Optional Prometheus, Grafana and Loki run as a [Compose profile](runbooks/grafana-monitoring.md).
 
 ## Enable it
 
-Set these values in the gateway process environment:
+The Docker image and the `m87-gateway` command enable the control plane and create a private operator
+key, without demo application keys or enabled providers. See [guided setup](runbooks/guided-setup.md).
 
-```bash
-GATEWAY_CONTROL_PLANE_ENABLED=true
-GATEWAY_CONTROL_PLANE_DATABASE_PATH=var/lib/m87-gateway/control.db
-GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH=var/lib/m87-gateway/master.key
-GATEWAY_ADMIN_API_KEY=<random-operator-secret>
-```
-
-The admin key must contain at least 24 non-whitespace characters. Open
-`http://localhost:8080/admin` and enter it when prompted. The browser keeps the
-key in JavaScript memory for that page; it is not written to HTML, browser
-storage, or the database.
-
-The Windows/WSL Flow Lab enables this configuration automatically. Its launcher
-prints the console URL and a new admin key at startup.
-
-For normal local use, `m87-gateway` creates private operator access and starts the
-console without demo app keys or enabled providers. See [guided setup](runbooks/guided-setup.md).
-Its operator key is a private local file, distinct from app-key digests and encrypted
-provider keys. The existing Flow Lab and Uvicorn entry points remain available.
+Sign in at `/admin`. The console exchanges the key for a session cookie that scripts cannot read, and
+the key is not written to HTML, browser storage or the database. To run from YAML instead, set
+`GATEWAY_CONTROL_PLANE_ENABLED`, `GATEWAY_CONTROL_PLANE_DATABASE_PATH`,
+`GATEWAY_CONTROL_PLANE_MASTER_KEY_PATH` and `GATEWAY_ADMIN_API_KEY`, which needs at least 24
+non-whitespace characters.
 
 ## Content capture
 

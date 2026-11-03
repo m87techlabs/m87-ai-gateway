@@ -44,8 +44,8 @@ control_plane:
 Set a strong operator key through the existing private bootstrap or
 `GATEWAY_ADMIN_API_KEY`. `GATEWAY_BACKEND_ADAPTER` and
 `GATEWAY_USAGE_RETENTION_DAYS` override these YAML values. Backend selection and
-usage retention are bootstrap settings, outside the current Controls form.
-YAML applies to the YAML-configured server entry point. The native/source local
+usage retention are bootstrap settings, outside the **Features** page.
+YAML applies to the YAML-configured server entry point. The `m87-gateway` local
 launcher uses its private data directory and accepts these environment
 variables and `GATEWAY_MANAGEMENT_AUDIT_RETENTION_DAYS`; it does not load the YAML file. No database server, container engine or
 additional storage package is required.
@@ -79,7 +79,7 @@ close method is available. Factory initialization failures must clean up their
 own resources. `close()` should be safe to call after partial initialization.
 
 An extension may supply adapter-specific typed bootstrap settings in its own
-source. Integrating them with bundled CLI/backup/native distribution requires
+source. Integrating them with the bundled CLI and backup requires
 additional work and testing: the current backup/restore implementation assumes
 SQLite and matching local keys. A registered identifier alone does not establish
 support for an external service.
@@ -179,5 +179,5 @@ export remains available with the outbox contract alone.
 The built-in `loki` factory uses the same outbox and encrypted credential contracts
 as `webhook`; no schema change is needed. Preserve original timestamps and JSON lines
 on retry and acknowledge only 204. Run `tests/test_loki_export.py` alongside the shared
-exporter suite. Direct Basic/tenant headers and live collector evidence remain deferred.
+exporter suite. Direct Basic and tenant headers remain planned.
 See [Loki operations](runbooks/loki-export.md).

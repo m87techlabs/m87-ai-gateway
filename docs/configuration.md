@@ -143,7 +143,7 @@ concurrency cap does not cancel admitted work. Admission rejects excess work wit
 
 YAML supports `limits.max_concurrent_requests` (default 64) and application
 `max_concurrent_requests` (default null). These are single-process limits.
-SQLite retention is applied at startup, on Controls save, and on event writes.
+SQLite retention is applied at startup, on settings save, and on event writes.
 Idle instances do not run a background expiry timer. Shortening retention removes
 older traffic records. Usage has its own retention and survives traffic deletion. It does not manage separate JSONL
 files. See [acceptance runbook](runbooks/gateway-controls-testing.md).
@@ -195,7 +195,7 @@ the adapter name or gateway for auto. A listing establishes configured authoriza
 not upstream availability or a guarantee that auto resolves to an allowed target.
 
 Saved connection discovery populates an endpoint-bound, process-local snapshot
-(up to 2,048 models per adapter, 15-minute expiry). Setup/connection/control saves
+(up to 2,048 models per adapter, 15-minute expiry). Settings and connection saves
 and restart invalidate it. Discovery never widens an application's allowlist;
 manually allowed models remain listed without discovery. Draft Test connection
 results do not populate this catalog. No endpoint URLs or credentials are returned.
@@ -212,7 +212,7 @@ admission until completion or disconnect. See [stream lifecycle and errors](runb
 
 Console-managed provider/default/capture/controls/export changes create encrypted revisions
 and management audit. The console sends ETag preconditions to reject stale saves;
-API clients can pass `If-Match` from Setup/Controls GET responses. Restores require
+API clients can pass `If-Match` from `/setup`, `/controls` and `/features` responses. Restores require
 `expected_revision` and `RESTORE`, preserve current credentials for unchanged bindings,
 and explicitly remove credentials for changed bindings. History retains 100 snapshots
 and excludes bootstrap, application keys, logs and usage. See [recovery runbook](runbooks/configuration-recovery.md).
@@ -234,7 +234,7 @@ Defaults: disabled, adapter `webhook`, max_pending 5000, retention_hours 168,
 timeout_seconds 5, poll_seconds 1, retry_seconds 2, max_retry_seconds 300. Enabled
 export requires a persistent control plane and endpoint. `api_key_env` names an
 optional privately supplied bearer token; credentials are not stored in config.
-Each field accepts `GATEWAY_LOG_EXPORT_<UPPERCASE_FIELD>` in source and native/local
+Each field accepts `GATEWAY_LOG_EXPORT_<UPPERCASE_FIELD>` in source and local
 launchers. The local launcher does not load YAML. Bootstrap changes require restart.
 The **Log export** screen persists overrides and applies them without restart. It can
 store an encrypted destination-bound token (`use_stored_key`, default false), or select
