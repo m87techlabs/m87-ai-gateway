@@ -1,4 +1,7 @@
-# Start: docker compose up -d    Stop, keeping data: docker compose stop
+# First start from a checkout:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+# Then: docker compose stop, and docker compose start. Both keep your data.
+# Plain "up" pulls the prebuilt image instead, which needs registry access for now.
 # Optional settings come from .env; see .env.example.
 services:
   m87-ai-gateway:

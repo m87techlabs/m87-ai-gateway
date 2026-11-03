@@ -37,9 +37,9 @@ model, and create an application key in **Applications**.
 | To | Run |
 | --- | --- |
 | Stop, keeping data | `docker compose stop` |
-| Start again | `docker compose up -d` |
+| Start again | `docker compose start` |
 | Follow logs | `docker compose logs -f` |
-| Remove the container, keeping data | `docker compose down` |
+| Update after `git pull` | Repeat the build command above; data is kept |
 
 It restarts with Docker unless you stopped it. To run without Docker, see
 [local development](docs/runbooks/local-development.md).
