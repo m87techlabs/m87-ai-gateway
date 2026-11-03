@@ -51,10 +51,10 @@ Full script/storage options are in [guided setup](guided-setup.md) and the
 ## Configure and demonstrate logs
 
 1. Open the gateway console URL and authenticate with its operator key.
-2. In **Setup**, configure inference, use **Test connection**, save the connection,
+2. In **Providers**, configure inference, use **Test connection**, save the connection,
    and select an installed model as the default. Discovery tests reachability;
    a completion establishes that inference works.
-3. Enable **Capture LLM input and output for all applications**. In **Controls**,
+3. Enable **Input and output capture** in **Features**. In **Features**,
    select retention and a capture limit suitable for the demo.
 4. In **Applications**, create an application, optionally assigned to a project.
    Allow both `auto` and the selected concrete model, such as `ollama:gemma3:1b`
@@ -93,9 +93,9 @@ sanitized metadata; captured input/output stays in the local viewer.
 | --- | --- |
 | Sample key rejected | Confirm its displayed gateway URL matches the console where the key was created. Use the full application key; replace a lost/revoked key, then stop/start the sample with the new key. |
 | Model forbidden | In Applications, save permissions for both `auto` and the selected concrete route. Existing keys can keep working after this policy change. |
-| Gateway cannot complete request | Test the connection in Setup, confirm the model is installed, and inspect the request ID in Logs. See [provider troubleshooting](provider-troubleshooting.md). |
+| Gateway cannot complete request | Test the connection in **Providers**, confirm the model is installed, and inspect the request ID in Logs. See [provider troubleshooting](provider-troubleshooting.md). |
 | Input/output unavailable | Check the detail's capture state and gateway capture switch. New settings affect subsequent requests. Expired/deleted/previously disabled content cannot be restored from the inference response. |
-| No log yet | Wait for completion/cancellation, refresh, check project/search filters and recording health. Investigate write failures in Storage health. |
+| No log yet | Wait for completion/cancellation, refresh, check project/search filters and recording health. Investigate write failures in Storage. |
 | Sample port occupied | Omit the explicit port or use `--port 0`; preserve the service already using that port. |
 | Changed settings not applied | Console-managed settings apply as documented. Startup export environment changes require stopping and restarting the gateway in the configured shell. Repeated start reuses the current process. |
 | Different keys/logs in Docker | Native and container storage are separate by default. Select the intended instance; use supported encrypted backup/restore for migration. |
@@ -122,7 +122,7 @@ in [validation](../validation.md).
 
 Stop the sample with its script, then stop the gateway. Stop a foreground receiver
 with Ctrl+C; these actions preserve its private database. For storage failures,
-inspect Storage health and use [configuration/storage recovery](configuration-recovery.md).
+inspect Storage and use [configuration/storage recovery](configuration-recovery.md).
 Preserve the existing database/key pair and restore into a fresh directory when
 needed. Backups containing queued deliveries can replay after restore; review the
 [export lifecycle](log-export.md#delivery-and-storage-boundaries).

@@ -23,7 +23,7 @@ CI installs this extra so the test runs. It never calls a cloud provider.
 
 ## Model catalog and options
 
-1. In Setup, save an inference endpoint; use Discover models on the saved connection.
+1. in **Providers**, save an inference endpoint; use Discover models on the saved connection.
 2. In Applications, permit the concrete model and auto if needed; copy an app key.
 3. With that key, call GET /v1/models. Only the application's approved models appear.
    Manual allowlists work without discovery. Catalog listing makes no inference call.

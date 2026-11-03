@@ -181,7 +181,7 @@ Management audit includes configuration, controls, setup, connections, restore a
 provider-key changes with safe provider/alias/revision references. Select All projects
 to see gateway-wide actions; actor remains the shared operator role. No credential
 values, settings bodies or inference content are stored in this audit.
-Storage health provides basic access/privacy/credential checks and operator-triggered
+Storage provides basic access/privacy/credential checks and operator-triggered
 SQLite integrity/reversible write verification, sizes and free space. It does not
 repair data or prove upstream connectivity. See [recovery operations](runbooks/configuration-recovery.md).
 

@@ -9,7 +9,7 @@ It should be able to configure, start, monitor, stop, and recover optional Grafa
 Prometheus, logging, Vault, and future service containers. Starting a supported
 container engine is also a planned platform integration when authorized.
 
-The current core provides the console, project grouping, API tester, usage/logs,
+The current core provides the console, project grouping, Playground, usage/logs,
 encrypted local keys, and an experimental Linux bundle. Managed companion services,
 engine startup, Vault integration and managed service provisioning are
 **planned**. This page defines their design and acceptance criteria; it does not
@@ -42,7 +42,7 @@ requires testing the gateway's sanitization and delivery contract.
 ```mermaid
 flowchart TB
     User[Setup and operations UI] --> Core[Gateway core]
-    Core --> Projects[Projects, apps, API tester and usage]
+    Core --> Projects[Projects, apps, Playground and usage]
     Core --> Local[(Embedded events and encrypted keys)]
     Core --> Providers[Extensible inference adapters]
     User -. Planned .-> Manager[Service lifecycle manager]

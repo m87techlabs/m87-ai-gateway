@@ -20,3 +20,6 @@ htmlcov/
 var/log/
 var/lib/
 *.jsonl
+
+# Built from console/ by npm run build
+src/m87_gateway/control/static/

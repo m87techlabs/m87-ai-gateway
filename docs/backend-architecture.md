@@ -199,7 +199,7 @@ explicit removal of every affected stored alias and disable historical environme
 bindings; unchanged bindings preserve current credentials. Bootstrap and arbitrary
 file edits are outside this history. See [recovery operations](runbooks/configuration-recovery.md).
 
-Storage health checks private files, database access and matching/decryptable
+Storage checks private files, database access and matching/decryptable
 credentials. Explicit verification also checks SQLite/foreign-key integrity,
 revision encryption and a rolled-back write. It runs in a worker thread and never
 repairs the database or rotates keys. SQLite opens existing files with `mode=rw`;

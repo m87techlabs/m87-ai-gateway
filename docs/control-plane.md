@@ -13,10 +13,10 @@ API while leaving `POST /v1/chat/completions` as the application data plane.
   expiry and individual revocation, with identity management audit.
 - Persistent project grouping, app membership, filtered dashboards/logs/exports,
   hourly UTC request/token charts, and application/model usage breakdowns.
-- An API tester that calls the normal data plane with an application key.
+- An Playground that calls the normal data plane with an application key.
 - Encrypted registered-provider key storage and rotation.
 - Persistent provider connections, model discovery, default model selection,
-  and global content-capture configuration through Setup.
+  and global content-capture configuration through Features.
 - A destination inventory for SQLite, JSON stdout, private JSONL, and `/metrics`.
 
 ```mermaid
@@ -72,7 +72,7 @@ provider keys. The existing Flow Lab and Uvicorn entry points remain available.
 ## Content capture
 
 Full payload storage is off by default. Enable gateway-wide capture with
-`GATEWAY_CAPTURE_CONTENT=true`, the equivalent YAML setting, or the Setup capture
+`GATEWAY_CAPTURE_CONTENT=true`, the equivalent YAML setting, or the Features capture
 option. It applies to all authenticated applications. Legacy app capture fields
 are accepted for compatibility and do not affect logging. Enabling capture records
 future exchanges; previously uncaptured input/output cannot be recovered.
@@ -99,7 +99,7 @@ private channel, or stored provider credentials will be unrecoverable.
 
 The default database retains events for 30 days. Set
 `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` from 1 through 3650. Expired events are
-pruned at gateway startup, on Controls saves, and on event writes. The implementation uses SQLite WAL mode and targets
+pruned at gateway startup, on settings saves, and on event writes. The implementation uses SQLite WAL mode and targets
 one gateway instance. PostgreSQL and multi-instance migrations are planned.
 
 UI-managed provider connections, traffic/log controls, and default/capture settings are
@@ -112,7 +112,7 @@ export, and recovery procedures.
 
 ## Traffic controls and readiness
 
-The **Controls** page edits persistent traffic policies and shows configuration/
+The **Features** page edits persistent traffic policies and shows configuration/
 storage readiness. Managed application rate/concurrency limits can be changed
 without key replacement. `/health` is liveness; `/ready` returns 200 when the default
 provider configuration, required credential, and local storage checks pass, or 503.

@@ -11,8 +11,8 @@ key. Provider credentials stay in the gateway.
 | In another Compose project | `http://m87-ai-gateway:8087/v1` |
 | Elsewhere, through a proxy or tunnel you operate | `https://<your hostname>/v1` |
 
-Create the key in the console under **Applications** and allow the models the app may
-use. To join the shared Docker network from another project:
+Create an application in the console under **Applications** and allow the models it may
+use. It shows the key once, with setup snippets for Python, JavaScript, curl and environment variables. To join the shared Docker network from another project:
 
 ```yaml
 services:
@@ -54,7 +54,7 @@ it is stored only as a hash and never sent upstream.
 The gateway still validates the fields it does model, such as `temperature` and `stop`.
 Whether a model honours a forwarded field is up to that model.
 
-Turn on **Strict mode** in **Controls** to reject anything except plain text messages and
+Turn on **Strict mode** in **Features** to reject anything except plain text messages and
 modelled fields with `422 strict_mode_rejected`. Use it when you want every request to stay
 within what the gateway can inspect. Guardrails read message text only, so they do not see
 tool arguments or images, and capture records text and marks other parts as omitted.
@@ -91,9 +91,9 @@ data. The log entry records its HTTP status in `upstream_status`.
 
 ## Local models
 
-A large model can take minutes to load. Set the connection timeout in **Setup** to cover
+A large model can take minutes to load. Set the connection timeout in **Providers** to cover
 that; the included startup defaults Ollama to 300 seconds.
 
 From a container, the host is `host.docker.internal`. Ollama listens on `127.0.0.1` by
 default. Docker Desktop reaches that, but on Linux set `OLLAMA_HOST=0.0.0.0:11434` and
-firewall the port to the Docker network. Then use **Test connection** in **Setup**.
+firewall the port to the Docker network. Then use **Test connection** in **Providers**.

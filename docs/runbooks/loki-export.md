@@ -29,7 +29,7 @@ in URLs. Do not assume direct Grafana Cloud compatibility from a successful loca
    reports acceptance. Loki or its proxy may retain the synthetic event.
 6. Enable metadata export and save. Settings apply immediately. Switching from webhook
    requires a new key or explicit removal confirmation if a credential was configured.
-7. Send a synthetic inference request from the sample or API tester. In local **Logs**,
+7. Send a synthetic inference request from the sample or Playground. In local **Logs**,
    copy its request ID and check delivery health. In Grafana Explore, select your Loki
    data source and search the same time range:
 

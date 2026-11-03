@@ -17,6 +17,13 @@ def apply_overrides(settings: GatewaySettings, saved: dict) -> GatewaySettings:
         data["observability"]["traffic_log"]["capture_content"] = saved["capture_content"]
     if "log_export" in saved:
         data["observability"]["log_export"] = saved["log_export"]
+    if "blocklist" in saved:
+        data["guardrails"]["blocklist"] = saved["blocklist"]
+    if "routing_rules" in saved:
+        data["routing"]["rules"] = saved["routing_rules"]
+    for key in ("prometheus_metrics", "json_logs"):
+        if key in saved:
+            data["observability"][key] = saved[key]
     controls = saved.get("controls", {})
     for section in ("cache", "retry", "limits", "guardrails", "compatibility"):
         if section in controls:
@@ -53,6 +60,10 @@ def managed_snapshot(settings: GatewaySettings) -> dict:
         "default_model": settings.routing.default_model,
         "capture_content": settings.observability.traffic_log.capture_content,
         "log_export": settings.observability.log_export.model_dump(),
+        "blocklist": settings.guardrails.blocklist.model_dump(),
+        "routing_rules": [rule.model_dump() for rule in settings.routing.rules],
+        "prometheus_metrics": settings.observability.prometheus_metrics,
+        "json_logs": settings.observability.json_logs,
         "controls": {
             "cache": settings.cache.model_dump(),
             "retry": settings.retry.model_dump(),

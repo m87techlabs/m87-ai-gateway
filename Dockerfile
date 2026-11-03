@@ -1,7 +1,15 @@
+FROM node:22-slim AS console
+WORKDIR /build/console
+COPY console/package.json console/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY console ./
+RUN npm run build
+
 FROM python:3.11-slim-bookworm AS builder
 WORKDIR /build
 COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src ./src
+COPY --from=console /build/src/m87_gateway/control/static ./src/m87_gateway/control/static
 RUN pip wheel --no-cache-dir --wheel-dir /wheels .
 
 FROM python:3.11-slim-bookworm

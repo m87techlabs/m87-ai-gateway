@@ -50,6 +50,11 @@ It shares a port with the inference API and console. When publishing the gateway
 `/openapi.json`) is not served. `config.example.yaml` holds a public demo key, so it is
 loaded only when selected explicitly.
 
+The console exchanges the admin key for a session cookie that scripts cannot read, signed with
+that key and valid for 12 hours. It is `HttpOnly` and `SameSite=Strict`, is `Secure` over HTTPS,
+and writes also need a console-only header. Locking clears it from that browser. Changing the
+admin key ends every session. API clients can keep sending the admin key as a bearer token.
+
 Fields the gateway does not model are forwarded by default, so guardrails and capture cover
 message text only, not tool arguments or images. Enable Strict mode to reject such requests.
 

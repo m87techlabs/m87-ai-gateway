@@ -46,9 +46,9 @@ for the separate checks that require a container runtime.
    ./status.sh
    ```
 
-   Configure inference in Setup, use **Test connection** to probe the entered
+   Configure inference in **Providers**, use **Test connection** to probe the entered
    endpoint, then save the connection and discover models. Create an application
-   key and use the API tester or chat sample. Native ports start at 8087 and try
+   key and use the Playground or chat sample. Native ports start at 8087 and try
    subsequent increments of 100 when occupied. Docker may be using 8087 already;
    use `./start.sh --port 8187` for an explicit development port.
 

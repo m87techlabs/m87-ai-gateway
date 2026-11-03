@@ -30,9 +30,9 @@ run the portable gateway. Container ecosystem profiles are still planned.
 3. On Windows, double-click `start.cmd`. A console remains open and the browser
    opens after startup. On Linux, run `./start.sh` from the unpacked folder.
 4. Enter the printed admin key in the console. Keep the terminal/private logs out
-   of shared recordings. Connect inference in Setup, choose a default model, create
-   an application key, and use the API tester to send a synthetic completion.
-5. Inspect Logs and tokens. Enable gateway-wide input/output capture in Setup if
+   of shared recordings. Connect inference in **Providers**, choose a default model, create
+   an application key, and use the Playground to send a synthetic completion.
+5. Inspect Logs and tokens. Enable gateway-wide input/output capture in **Features** if
    desired. Use Controls for limits, caching, retries, retention and readiness.
 
 Windows checksum example, from PowerShell:

@@ -18,7 +18,7 @@ below for an extracted ZIP. The templates contain no passwords or deployment ide
 
 ```mermaid
 flowchart LR
-    Sample[Sample or API tester] --> Gateway[Gateway]
+    Sample[Sample or Playground] --> Gateway[Gateway]
     Gateway --> Metrics[Private metrics endpoint]
     Metrics --> Prometheus[Prometheus scrape and history]
     Prometheus --> Rules[Evaluate alert rules]
@@ -124,7 +124,7 @@ Rules are evaluated by Prometheus, not Grafana-managed alerting.
 | M87GatewayHighErrorRate | HTTP 5xx >5%, at least 10 requests/5m, held 5m | Inspect gateway/provider logs and connection configuration. |
 | M87GatewayHighLatency | p95 >5 seconds, at least 10 requests/5m, held 10m | Inspect provider speed and admission; local LLMs may need a higher threshold. |
 | M87GatewayLogWriteFailure | Last completed local log write failed for 1 minute | Check storage, permissions and last successful write. |
-| M87GatewayExportStorageFailure | Enabled export storage unhealthy for 1 minute | Check Storage health, disk and competing writers. |
+| M87GatewayExportStorageFailure | Enabled export storage unhealthy for 1 minute | Check Storage, disk and competing writers. |
 | M87GatewayExportBacklog | Enabled queue has records >2 minutes old, held 5m | Check receiver/TLS/auth and retry counters. |
 | M87GatewayExportDrops | Drops increased within 5 minutes | Inspect queue capacity/payload bounds and receiver outage. |
 | M87GatewayExportHeld | Enabled export holds another destination's records for 5m | Restore original binding before expiry or review intentional destination changes. |

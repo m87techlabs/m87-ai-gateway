@@ -93,8 +93,8 @@ docker exec m87-ai-gateway cat /data/gateway/admin.key
 
 Open **http://localhost:8087**, which redirects to `/admin`, and enter the operator
 key. Retrieve it in a private terminal; it never appears in default container logs.
-Connect an inference endpoint in Setup, discover/select a default model, create an
-application key, then use the API tester. No `.env`, demo credentials, Python,
+Connect an inference endpoint in **Providers**, discover/select a default model, create an
+application key, then use the Playground. No `.env`, demo credentials, Python,
 external database or configuration file is required. Enable gateway-wide content
 capture if you want retained LLM input/output. Metadata logs and metrics exclude
 prompt text and credentials.

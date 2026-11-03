@@ -16,7 +16,7 @@ Provider keys and the local master/operator keys have separate lifecycles.
 4. Update/restart the caller and send a synthetic request with the replacement.
 5. Revoke the old key from the application's key list. Confirm another request
    with that old key is rejected while the replacement still works.
-6. Open **Management audit** to inspect the issuance/revocation references.
+6. Open **Audit log** to inspect the issuance/revocation references.
 
 ```mermaid
 sequenceDiagram
@@ -35,7 +35,7 @@ sequenceDiagram
     Gateway-->>App: 401
 ```
 
-Before revoking the old key, open the application's keys and check that its **Last used**
+Before revoking the old key, open the application's **Keys** tab and check that its **Last used**
 has stopped changing. Each request's log entry also records the `key_id` that authenticated it.
 **Last used** starts recording with schema 11, so an older key shows *No use recorded* until its
 next request. It is written with the request's log entry, so it is best effort like local logging.

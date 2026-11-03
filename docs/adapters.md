@@ -59,7 +59,7 @@ apps:
     allowed_models: [auto, "example:small"]
 ```
 
-The same registered adapter appears in Setup when the control plane is enabled.
+The same registered adapter appears in **Providers** when the control plane is enabled.
 Persisted custom connections require registration again on restart. Adapter names
 are unique; registrations cannot replace built-ins. Code extensions are trusted
 server code. The UI cannot import modules or install arbitrary plugins. Extensions

@@ -32,7 +32,7 @@ python3 -m venv .venv
 ```
 
 1. Start the gateway with `./start.sh` from the repository root.
-2. Open the gateway's printed console URL (normally `http://localhost:8087/admin`). In **Setup**, save an inference connection
+2. Open the gateway's printed console URL (normally `http://localhost:8087/admin`). In **Providers**, save an inference connection
    and default model. Local Windows Ollama can remain on Windows.
 3. Optionally create a project called `sample-chat`. In **Applications**, create
    an app in that project, allowing `auto` **and** the selected concrete model.
@@ -54,7 +54,7 @@ python3 -m venv .venv
    conversation history is sent with each request. The page shows the last request's
    input/output/total tokens, round-trip latency, model, and request ID.
 6. In the gateway console, select the project's dashboard/logs and match that
-   request ID. Enable gateway-wide content capture in Setup to inspect input/output
+   request ID. Enable gateway-wide content capture in **Providers** to inspect input/output
    there; metadata and usage do not require content capture.
 7. Run `./examples/chat_app/stop.sh` to stop the sample. The gateway stays running. Use `./stop.sh`
    separately when you want to stop the gateway.
@@ -121,7 +121,7 @@ when testing is finished.
 - A disconnected gateway produces a clear connectivity error. Gateway health alone
   does not verify inference connectivity, the app key, or model access.
 
-If the provider is disabled, enable it in **Setup** and save the connection before
+If the provider is disabled, enable it in **Providers** and save the connection before
 discovering models. Choose an installed model as the gateway default. In
 **Applications**, edit the existing app's **Models** list and click **Save models**;
 include `auto` and the selected concrete route, such as `ollama:gemma3:1b`.
@@ -177,7 +177,7 @@ and sample after updating code. See [streaming checks](../../docs/runbooks/strea
 The acceptance suite also restores gateway settings, rejects stale restore attempts,
 then verifies sample inference still succeeds. Storage verification preserves keys,
 usage and audit. For manual settings review/recovery, use the gateway console's
-Configuration history and Storage health pages; see [recovery runbook](../../docs/runbooks/configuration-recovery.md).
+Configuration history and Storage pages; see [recovery runbook](../../docs/runbooks/configuration-recovery.md).
 
 
 **Open gateway log** links the latest request ID to operator-authenticated console

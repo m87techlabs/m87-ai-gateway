@@ -60,8 +60,8 @@ verify a real model during the next intentional local test session.
 
 ## Included console
 
-**Controls** edits and persists cache, retry, gateway concurrency, request bounds,
-SQLite retention, and capture limits. **Setup** edits provider timeouts and
+**Features** edits and persists cache, retry, gateway concurrency, request bounds,
+SQLite retention, and capture limits. **Providers** edits provider timeouts and
 connections. Changes affect new requests; saving clears cached responses.
 Application and gateway concurrency caps count admitted chat work through routing,
 policy, caching and retries. Excess work returns 429 immediately; cancellation,

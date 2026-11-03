@@ -17,9 +17,9 @@ migrate a live operator store.
 ## Demonstrate one exchange
 
 1. Start the gateway with `./start.sh`. Open its printed console URL.
-2. In **Setup**, test/save the inference connection, choose a model and enable
-   **Capture LLM input and output for all applications**.
-3. In **Controls**, choose metadata/content retention and a capture limit large enough
+2. In **Providers**, test/save the inference connection, choose a model and enable
+   **Input and output capture** in **Features**.
+3. In **Features**, choose metadata/content retention and a capture limit large enough
    for the demonstration (for example, 4,096 characters). Capture settings affect
    new requests; older missing content cannot be reconstructed.
 4. Create an application key with the chosen/default model allowed. Start the sample:
@@ -38,7 +38,7 @@ migrate a live operator store.
    partial/cancelled/failed outcomes. Backend computation stopping is a separate
    live-provider check; closing HTTP alone does not prove compute/billing stops.
 8. Check recording-health status and destination counters. A failed write can leave
-   a gap even when inference succeeds. Use **Storage health** to investigate.
+   a gap even when inference succeeds. Use **Storage** to investigate.
 
 Events are finalized after completion/failure/cancellation. A link opened while
 inference is active can show no result yet; refresh after completion or Stop.
@@ -124,7 +124,7 @@ operator-only access, redaction/truncation, writer failure/recovery and safe bro
 rendering. Native smoke checks the same logging APIs through a packaged executable
 and encrypted backup/recovery.
 
-On a write failure, inspect **Storage health**, available disk, owner-only permissions
+On a write failure, inspect **Storage**, available disk, owner-only permissions
 and competing writers. Preserve failed-store evidence and use encrypted recovery
 when required; do not regenerate keys or grant broad permissions. Local recording
 remains best effort before commit. Metadata outbox/webhook and [Loki delivery](loki-export.md) are implemented;

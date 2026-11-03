@@ -54,7 +54,7 @@ If `traffic_log_write_failed` appears, inspect permissions, free disk space, and
 mount availability locally. Error events deliberately omit file paths and content.
 A runtime sink failure does not block chat; account for the missing audit records.
 
-To stop capturing content, turn off capture in Setup, or set the global switch to
+To stop capturing content, turn off capture in **Features**, or set the global switch to
 false in startup configuration and restart. Existing
 files remain until rotated or explicitly removed under your retention policy.
 Before deleting them, decide whether an investigation requires preservation.

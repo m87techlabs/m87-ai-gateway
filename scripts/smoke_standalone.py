@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import os
 import socket
 import subprocess
@@ -188,7 +189,10 @@ def exercise(executable):
                 admin = (data_dir / "admin.key").read_text().strip()
                 assert admin.encode() not in (Path(temporary) / "process.log").read_bytes()
                 assert b"Gateway Console" in call("/admin")
-                assert b"loadSetup" in call("/admin/assets/app.js")
+                page = call("/admin").decode()
+                script = re.search(r'src="(/admin/assets/[^"]+\.js)"', page)
+                assert script, "The console was not built into this package"
+                assert b"Sign in to the console" in call(script.group(1))
                 try:
                     call("/admin/api/setup")
                     raise AssertionError("Admin access was not protected")

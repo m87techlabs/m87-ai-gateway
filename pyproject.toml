@@ -42,7 +42,7 @@ m87-gateway = "m87_gateway.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-m87_gateway = ["control/static/*"]
+m87_gateway = ["control/static/**/*"]
 
 [tool.ruff]
 line-length = 100

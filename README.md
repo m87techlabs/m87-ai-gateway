@@ -31,8 +31,8 @@ Get the operator key, then open **http://localhost:8087** and sign in:
 docker compose exec m87-ai-gateway cat /data/gateway/admin.key
 ```
 
-In the console, connect your model server or provider in **Setup**, choose a default
-model, and create an application key in **Applications**.
+In the console, connect your model server in **Providers**, choose a default model, and
+create an application in **Applications**. It gives you a key and copy-paste setup for your app.
 
 | To | Run |
 | --- | --- |
@@ -42,7 +42,7 @@ model, and create an application key in **Applications**.
 | Update after `git pull` | Repeat the build command above; data is kept |
 
 It restarts with Docker unless you stopped it. To run without Docker, see
-[local development](docs/runbooks/local-development.md).
+[local development](docs/runbooks/local-development.md). That route needs Node to build the console.
 
 ## Point your app at it
 
@@ -78,7 +78,8 @@ Most OpenAI SDKs also read `OPENAI_BASE_URL` and `OPENAI_API_KEY`. See
 | Rate limits, concurrency limits, queueing, retries and response cache | Implemented, per process |
 | Request logs, token usage, optional input/output capture | Implemented |
 | Per-application dashboards, log filters, key use and metrics | Implemented |
-| Web console, encrypted provider keys, configuration history and rollback | Implemented |
+| Web console with live dashboards, a Playground and on/off switches for each feature | Implemented |
+| Encrypted provider keys, configuration history and rollback | Implemented |
 | Prometheus metrics, Grafana dashboards, webhook and Loki export | Implemented; supply your own monitoring services |
 | Fallback routes, budgets, response policies | [Planned](docs/backlog.md) |
 | Anthropic, AWS Bedrock, Azure OpenAI and Vertex AI adapters | [Planned](docs/backlog.md) |

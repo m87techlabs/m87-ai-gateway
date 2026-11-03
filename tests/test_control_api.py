@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from m87_gateway.api import routes
 from m87_gateway.config import AppConfig, ControlPlaneConfig, GatewaySettings
-from m87_gateway.control.api import STATIC_DIR
 from m87_gateway.logging import middleware
 from m87_gateway.main import create_app
 
@@ -147,6 +146,3 @@ def test_console_manages_keys_and_displays_captured_exchange(tmp_path, monkeypat
                 assert summary.json()["total_tokens"] == 5
 
     asyncio.run(scenario())
-    dashboard = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    assert "Gateway Console" in dashboard
-    assert "test-admin-key-with-enough-entropy" not in dashboard

@@ -25,12 +25,12 @@ into a fresh private destination. Never delete the master key to fix a startup e
 3. If provider endpoints or credential environment bindings change, select the
    explicit credential-removal checkbox. Every stored alias for affected providers
    is deleted; historical environment bindings are disabled. Re-enter credentials
-   in **Setup** afterward. No old provider key or revoked application key is restored.
+   in **Providers** afterward. No old provider key or revoked application key is restored.
 4. Type `RESTORE`, then choose **Restore settings**. A new revision is committed
    with settings, any credential removal and audit records in one SQLite transaction.
    New requests use the restored settings; arrival snapshots of existing requests
    remain in use. Cached responses and discovered model snapshots are cleared.
-5. Check **Setup**, **Controls** readiness and the sample app. Submit a synthetic
+5. Check **Providers**, **Features** readiness and the sample app. Submit a synthetic
    prompt and inspect its logs and reported token usage.
 
 Unchanged endpoint/binding settings preserve the current provider credentials,
@@ -90,7 +90,7 @@ unreadable snapshots return safe 503 responses. Incompatible revisions are rejec
 
 ## Audit and storage checks
 
-Open **Management audit**, select **All projects** to include gateway-wide changes.
+Open **Audit log**, select **All projects** to include gateway-wide changes.
 Configuration, controls, setup, connection updates, restore and provider-key save/
 delete records include safe provider/alias/revision references. Existing identity
 changes remain available. Actor identifies the shared `operator` role. Records
@@ -98,7 +98,7 @@ exclude credential values, settings bodies and inference content. Retention uses
 `management_audit_retention_days`; history separately retains 100 revisions.
 Individual operator identity, crypto key versions and audit for cache-clear actions remain planned; explicit log/content deletion is now audited. This audit is local and is not tamper-proof.
 
-Open **Storage health** for basic checks. Choose **Verify integrity and write access**
+Open **Storage** for basic checks. Choose **Verify integrity and write access**
 when investigating storage or validating an upgrade. Verification runs off the API
 event loop and may briefly contend with other writes; SQLite busy waits are bounded
 at five seconds per connection. The test write is rolled back and does not create

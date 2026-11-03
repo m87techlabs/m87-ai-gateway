@@ -64,7 +64,7 @@ other Grafana installation. New accounts/signups and anonymous access are disabl
 external plugin preinstallation and analytics/update checks are disabled.
 
 Allow two 15-second scrapes before expecting rates. Send a synthetic request from
-the sample app or API tester to populate request/token panels. Empty traffic or
+the sample app or Playground to populate request/token panels. Empty traffic or
 unknown provider usage stays unknown; do not mistake an empty rate graph for a
 failed scrape. No fake requests or usage are inserted during setup.
 

@@ -11,6 +11,21 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Rebuilt console — 2026-11-03
+
+Verified **45 console tests** with Vitest and jsdom, **428 Python tests**, lint and links. A throwaway
+container was then driven in headless Chrome at 1440 pixels against Ollama 0.40.13 on an RTX 5080,
+from an empty store: connect a provider, set a default model, create an application, stream an answer
+in the Playground, open its log, turn capture on and read the input and output, edit a blocklist that
+then blocked real traffic, see Overview update without a refresh, refresh and stay signed in, restore
+an earlier configuration, rotate a key, stop the gateway and watch the page report it and recover, lock,
+and confirm a refresh did not sign back in. All **25 checks** passed with no script or CSP errors. That
+journey found an unticked **Enable** box on a first-time connection, now fixed, and repeated raw
+errors during an outage, now one banner. All 25 checks were re-run after those fixes.
+
+Screens were reviewed at 1440 pixels in both themes and at 420 pixels in light theme. Safari, Firefox, screen readers, and
+a full manual accessibility review have not been checked.
+
 ## Per-application reporting — 2026-11-03
 
 Verified **407 Python tests**, **43 console tests**, lint, links, and promtool with **9 alerts and

@@ -25,11 +25,11 @@ unattributed. The managed-app count lists runtime stored keys, excluding YAML ke
 
 Every request is attributed from its key, so a caller cannot report as a different application.
 
-- **Application filter:** the dropdown in the header narrows Overview, charts, Logs and exports.
+- **Application filter:** the dropdown above Overview and Logs narrows charts, logs and exports.
   It combines with the project filter and also lists deleted applications that still have usage.
-- **Application page:** select an application's name under **Usage by application** or in
-  **Applications**. It shows requests, tokens, errors, latency, hourly charts, usage by model and
-  endpoint, keys with **Last used**, and recent requests, over 24 hours, 7 days or 30 days.
+- **Application page:** select an application's name in Overview or **Applications**. Its tabs show
+  activity (requests, tokens, errors, latency, models and recent requests over 24 hours, 7 days or
+  30 days), keys with **Last used**, and settings.
 - **Failed logins:** requests with a missing or unknown key appear as **Unauthenticated**.
   They belong to no application, so the application filter excludes them.
 
@@ -38,7 +38,7 @@ and `/admin/api/app-names` for the list of names.
 
 ## Test an application API
 
-1. Open **API tester** and enter the application key, a model, synthetic prompt,
+1. Open **Playground** and enter the application key, a model, synthetic prompt,
    and output token limit. Provider calls may consume quota.
 2. Submit. The browser sends the normal `/v1/chat/completions` request using that
    app key. Authentication, allowlists, guardrails, rate limits, routing, caching,

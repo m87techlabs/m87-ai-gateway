@@ -8,6 +8,15 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- A rebuilt console in React and TypeScript, in `console/`: live dashboards, grouped navigation,
+  request details in a side panel, a streaming Playground, light and dark themes, and clear
+  loading, error and outage states. The Docker image and packages include it; a source checkout
+  builds it with `npm ci --prefix console && npm run build --prefix console`.
+- A **Features** page and `/admin/api/features`, one list of switches and settings. Blocklists,
+  task routing, metrics and container logs can now be changed without YAML, including on the
+  Docker path, and all of them survive restarts and appear in configuration history.
+- Console sessions: `POST /admin/api/session` sets an `HttpOnly` cookie, so refreshing no longer
+  signs you out. Bearer admin keys keep working for API clients.
 - Per-application views: an application filter across the dashboard, charts, logs and exports,
   and an application page with activity, models, endpoints, keys and recent requests.
 - `key_id` on log events and exports, and **Last used** on each application key (schema 11),
@@ -25,6 +34,7 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Changed
 
+- The console's URLs moved to `/admin#/...`. `/admin?request_id=` still opens that request.
 - The `overview` and `usage` backend methods take an optional `app_id`, and backends must provide
   `known_app_ids`. Trusted third-party backends need the same additions.
 - Failed logins appear as **Unauthenticated** in the console rather than as a blank application.
@@ -195,6 +205,7 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Changed
 
+- The console's URLs moved to `/admin#/...`. `/admin?request_id=` still opens that request.
 - Operator JSON exports omit captured content by default; include_content=true
   explicitly includes retained content. Repository compatibility exports remain unchanged.
 

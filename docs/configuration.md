@@ -11,8 +11,7 @@ The loader uses an explicit code-supplied path, then `M87_GATEWAY_CONFIG` or
 `GATEWAY_CONFIG`, then `config.yaml` in the working directory. `config.example.yaml`
 and its demo key are loaded only when selected explicitly. A selected file that is
 missing fails startup. The `m87-gateway` command and the container use the console and
-environment instead of YAML, so blocklists and routing rules cannot be set on that path
-yet. Without a file,
+environment instead of YAML; blocklists and routing rules are set in **Features**. Without a file,
 the default configuration has no app keys and denies application access. Ancestor
 directories are not searched for demonstration keys.
 
@@ -128,10 +127,10 @@ See [observability](observability.md) for content storage and retention,
 
 ## Persistent console controls
 
-Use **Controls** to edit gateway concurrency, queue depth/wait, request bytes/message characters,
+Use **Features** to edit gateway concurrency, queue depth/wait, request bytes/message characters,
 retry attempts/backoff, cache enablement/TTL/capacity, SQLite retention days, and
-capture character limits. Set the per-provider timeout in **Setup**, gateway-wide
-content capture in **Setup**, and managed application rate/concurrency limits in
+capture character limits. Set the per-provider timeout in **Providers**, gateway-wide
+content capture in **Features**, and managed application rate/concurrency limits in
 **Applications**. A blank application limit inherits the gateway concurrency cap
 or disables its rate allowance. Existing keys remain valid.
 
@@ -168,7 +167,7 @@ startup; follow [backend acceptance](runbooks/backend-storage-testing.md) before
 
 These fields are forwarded unchanged, along with any field the gateway does not model;
 see [connect your app](connect-your-app.md#what-is-forwarded). **Strict mode**
-(`compatibility.strict_requests`, also in **Controls**) rejects unmodelled fields instead.
+(`compatibility.strict_requests`, also in **Features**) rejects unmodelled fields instead.
 
 JSON schema mode requires a name and nonempty schema object (serialized maximum 65,536
 characters). All built-in adapters receive the response_format object, including optional
@@ -221,7 +220,7 @@ and excludes bootstrap, application keys, logs and usage. See [recovery runbook]
 
 ## Exchange content retention and log queries
 
-`control_plane.content_retention_days` defaults to 30 and is editable in Controls
+`control_plane.content_retention_days` defaults to 30 and is editable in **Features**
 or with `GATEWAY_CONTENT_RETENTION_DAYS`. Schema 7 stores captured text separately;
 read expiry and pruning enforce content retention, and metadata deletion cascades.
 Usage remains independent. Logs support exact request/application/outcome filters

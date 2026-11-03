@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import hashlib
+import hmac
 import json
 import os
+import re
 import secrets
 import sqlite3
 import time
@@ -9,7 +13,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from m87_gateway.api.errors import GatewayError
@@ -44,17 +48,52 @@ def _store(request: Request) -> Backend:
     return store
 
 
+SESSION_COOKIE = "m87_console_session"
+SESSION_SECONDS = 12 * 3600
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def _session_signature(admin_key: str, issued: str) -> str:
+    return hmac.new(
+        admin_key.encode(), f"console-session:{issued}".encode(), hashlib.sha256
+    ).hexdigest()
+
+
+def _issue_session(admin_key: str) -> str:
+    issued = str(int(time.time()))
+    return f"{issued}.{_session_signature(admin_key, issued)}"
+
+
+def _valid_session(token: str | None, admin_key: str) -> bool:
+    """Signed with the admin key, so changing that key ends every console session."""
+    issued, separator, signature = (token or "").partition(".")
+    if not separator or not issued.isdecimal() or len(issued) > 12:
+        return False
+    if not 0 <= time.time() - int(issued) < SESSION_SECONDS:
+        return False
+    return secrets.compare_digest(
+        signature.encode(), _session_signature(admin_key, issued).encode()
+    )
+
+
 async def require_admin(
     request: Request, authorization: Annotated[str | None, Header()] = None
 ) -> Backend:
     scheme, _, token = (authorization or "").partition(" ")
     expected = getattr(request.app.state, "admin_api_key", "")
-    if (
-        scheme.lower() != "bearer"
-        or not token
-        or not expected
-        or not secrets.compare_digest(token.encode(), expected.encode())
-    ):
+    bearer = (
+        scheme.lower() == "bearer"
+        and token
+        and expected
+        and secrets.compare_digest(token.encode(), expected.encode())
+    )
+    # Browsers cannot add this header cross-site without CORS, on top of SameSite=Strict.
+    session = (
+        expected
+        and _valid_session(request.cookies.get(SESSION_COOKIE), expected)
+        and (request.method in SAFE_METHODS or "x-gateway-console" in request.headers)
+    )
+    if not bearer and not session:
         raise GatewayError(
             401, "invalid_admin_key", "Missing or invalid admin key", "authentication_error"
         )
@@ -150,6 +189,48 @@ class LogDeletion(BaseModel):
     project_id: ProjectIdentifier | None = None
 
 
+class SessionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    key: SecretStr = Field(max_length=4096)
+
+
+@router.post("/admin/api/session", status_code=204)
+async def create_session(payload: SessionCreate, request: Request):
+    """Exchange the admin key for a cookie that scripts cannot read, so refreshing keeps you in."""
+    _store(request)
+    expected = getattr(request.app.state, "admin_api_key", "")
+    if not expected or not secrets.compare_digest(
+        payload.key.get_secret_value().encode(), expected.encode()
+    ):
+        await asyncio.sleep(0.25)
+        raise GatewayError(
+            401, "invalid_admin_key", "Missing or invalid admin key", "authentication_error"
+        )
+    response = Response(status_code=204)
+    response.set_cookie(
+        SESSION_COOKIE,
+        _issue_session(expected),
+        max_age=SESSION_SECONDS,
+        path="/admin",
+        httponly=True,
+        samesite="strict",
+        secure=request.url.scheme == "https",
+    )
+    return response
+
+
+@router.get("/admin/api/session")
+async def session_status(store: AdminStore):
+    return {"authenticated": True}
+
+
+@router.delete("/admin/api/session", status_code=204)
+async def end_session():
+    response = Response(status_code=204)
+    response.delete_cookie(SESSION_COOKIE, path="/admin", samesite="strict", httponly=True)
+    return response
+
+
 @router.get("/admin/api/controls")
 async def controls(request: Request, store: AdminStore, response: Response):
     response.headers["ETag"] = revision_etag(store)
@@ -235,18 +316,29 @@ async def console_home(request: Request):
     return RedirectResponse("/admin", status_code=302)
 
 
+CONSOLE_NOT_BUILT = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>M87 Gateway Console</title></head><body><h1>M87 Gateway Console</h1>
+<p>The console has not been built in this checkout. The API works normally.</p>
+<p>Run <code>npm ci --prefix console && npm run build --prefix console</code>, then reload.
+The Docker image and released packages already include it.</p></body></html>"""
+
+
 @router.get("/admin", include_in_schema=False)
 async def dashboard(request: Request):
     _store(request)
-    return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-store"})
+    index = STATIC_DIR / "index.html"
+    if not index.is_file():
+        return HTMLResponse(CONSOLE_NOT_BUILT)
+    return FileResponse(index, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/admin/assets/{filename}", include_in_schema=False)
 async def dashboard_asset(request: Request, filename: str):
     _store(request)
-    if filename not in {"app.js", "styles.css"}:
+    asset = STATIC_DIR / "assets" / filename
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", filename) or not asset.is_file():
         raise GatewayError(404, "not_found", "Requested operation is unavailable")
-    return FileResponse(STATIC_DIR / filename, headers={"Cache-Control": "no-store"})
+    return FileResponse(asset)
 
 
 @router.get("/admin/api/overview")

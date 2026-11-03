@@ -94,14 +94,14 @@ flowchart LR
 ## Configure the console
 
 1. Open the printed console URL (normally `http://localhost:8087/admin`) and enter the printed admin key.
-2. In **Setup**, select Ollama, OpenAI, or OpenAI-compatible server. Enter the full
+2. In **Providers**, select Ollama, OpenAI, or OpenAI-compatible server. Enter the full
    base URL: Ollama typically uses `http://127.0.0.1:11434`; compatible servers
    typically use `http://127.0.0.1:8000/v1`. URLs are from the gateway's network
    perspective. Use an accessible Windows host address if WSL loopback is unavailable.
 3. Enable and save the connection. Enter provider credentials only here. Local
    endpoints may need no key. Provider keys are encrypted in SQLite; secrets are
    never returned by connection or key-list APIs.
-4. Discover models on the saved connection. Discovery calls the model-list API,
+4. Use **Test connection**, which lists models. The console then offers them when you choose a default model and allowed models. Discovery calls the model-list API,
    without a completion. Select a model or enter `provider:model` manually.
    Discovery does not prove permission to run a particular model or its readiness.
 5. Save defaults. Enable global content capture only if prompts/responses should
@@ -111,7 +111,7 @@ flowchart LR
    When changing the default model later, edit the application's Models list and
    click **Save models**. Permissions apply to future requests; the key is preserved.
 7. Send an application request to `/v1/chat/completions` using its gateway key.
-   The Setup page shows the URL and request shape. Inspect Overview and Logs for
+   The application's page shows the URL and setup snippets. Inspect Overview and Logs for
    tokens, outcomes, and opted-in input/output. Unknown provider token counts stay null.
 
 ```mermaid
@@ -170,7 +170,7 @@ OS services and cloud deployment remain gates. Follow the
 ## Recovery
 
 Use `./stop.sh` for a script-managed instance, or Ctrl+C for a foreground instance.
-Correct a connection in Setup and retry discovery or inference.
+Correct a connection in **Providers** and retry discovery or inference.
 For a lost application key, revoke and recreate it. For a lost operator key, stop
 the gateway and read the private `admin.key`, or supply a new strong
 `GATEWAY_ADMIN_API_KEY` before restarting. Removing `master.key` destroys access to
@@ -179,7 +179,7 @@ test reset, use a new data directory and preserve the existing one for recovery.
 
 ## Test a connection before saving
 
-In Setup, enter an endpoint and optional provider key, then select **Test connection**.
+in **Providers**, enter an endpoint and optional provider key, then select **Test connection**.
 The gateway probes the form's current values using model discovery, with a maximum
 10-second timeout. It reports reachability, available model count and elapsed time,
 or a safe timeout/rejection/unreachable result. It does not save settings, replace

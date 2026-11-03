@@ -62,8 +62,9 @@ is the primary package, so the same setup runs on a laptop or a cloud host.
    real RAG client; named connections for several providers of one type; live OpenAI check.
 3. **Per-application reporting** — [x] application filter and page; [x] key use and last-used;
    [x] token, latency and failure metrics by application.
-4. **Console** — one Features page driven by a single backend list, and a rebuilt modern UI.
-   Blocklists, routing rules, metrics and JSON logs become editable there.
+4. **Console** — [x] rebuilt in React and TypeScript with live data and clear loading, error and
+   outage states; [x] a Features page driven by one backend list, where blocklists, routing rules,
+   metrics and container logs become editable; [x] sessions that survive a refresh.
 5. **Cloud** — TLS Compose profile, authenticated `/metrics`, admin key throttling, and a
    verified deployment on a real cloud host.
 

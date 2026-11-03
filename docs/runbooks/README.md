@@ -10,7 +10,7 @@ prompts and private credentials; redact logs before attaching them to issues.
 | [Portable workstation preview](workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
 | [Guided setup](guided-setup.md) | Start the included console, configure inference, or use the source/native preview |
 | [Gateway controls acceptance](gateway-controls-testing.md) | Configure controls and run isolated sample failure/recovery scenarios |
-| [Projects and usage](projects-and-usage.md) | Create projects, inspect usage, move applications, and use the API tester |
+| [Projects and usage](projects-and-usage.md) | Create projects, inspect usage, move applications, and use the Playground |
 | [Windows/WSL flow lab](windows-wsl-flow-lab.md) | Exercise browser, relay, gateway, and Windows Ollama without Docker |
 | [Container deployment](container-deployment.md) | Starting a single gateway container and checking provider connectivity |
 | [Configuration changes](configuration-changes.md) | Changing routes or rotating an app key |

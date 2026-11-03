@@ -77,7 +77,7 @@ and production service management remain planned. See
 
 Projects now group application keys and preserve request-time attribution in
 audit events. The dashboard can filter project usage/logs and show hourly trends
-and application/model breakdowns. An included API tester calls the normal data
+and application/model breakdowns. An included Playground calls the normal data
 plane. These are single-operator grouping tools; project membership does not
 provide separate operator roles or tenant isolation. See
 [project operations](runbooks/projects-and-usage.md).
@@ -240,7 +240,7 @@ registration, contract tests and remaining remote-secret/backup requirements.
 The app-facing model catalog is authenticated and filtered by explicit allowlists.
 Operator discovery stores a bounded endpoint-bound snapshot; catalog requests never
 probe providers or reveal endpoints/credentials. Adapter capability declarations
-validate generation fields before inference and are visible in Setup. They describe
+validate generation fields before inference and are visible in **Providers**. They describe
 implemented mappings; individual models may have narrower support.
 
 Optional request queueing uses the same global and per-app active caps. Waiting is

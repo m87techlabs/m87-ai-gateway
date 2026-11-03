@@ -60,6 +60,9 @@ not model are forwarded unchanged unless Strict mode is on; bare upstream names 
 qwen3:14b resolve through the default provider; POST /v1/embeddings shares chat's allowlist,
 limits and logs. Built-in adapters use OpenAI-compatible APIs, including Ollama's /v1. Schema 10
 adds endpoint and upstream_status. Never log provider response bodies. See docs/connect-your-app.md.
+The console lives in console/ (React, TypeScript, Vite, TanStack Query; no CDN assets, because of
+its CSP) and builds into the gitignored src/m87_gateway/control/static. Use real browser checks for
+it, not only jsdom. New gateway features belong in the list in control/features.py.
 An application is the unit of reporting: its key sets app_id and key_id server-side, and filters
 and metrics must keep working per application. Schema 11 adds events.key_id and
 app_keys.last_used_at, written with the event rather than on the request path.

@@ -53,14 +53,14 @@ HTTP behavior; synthetic inference does not establish live provider compatibilit
 
 ## Manual console and Ollama checks
 
-1. Start the gateway and sample with their existing scripts. Open **Controls**.
+1. Start the gateway and sample with their existing scripts. Open **Features**.
    Check readiness; use **Setup → Discover models** and a real completion to verify
    connectivity/inference. Readiness itself checks configuration and SQLite only.
 2. In **Applications**, use a dedicated test application's existing key. Set RPM to
    1. Start a fresh sample conversation and send a short synthetic prompt. The next
    request within the rolling minute should show 429 and a retry delay. Clear the
    RPM field and save to restore unlimited starts.
-3. Enable caching in **Controls**. Send a short synthetic prompt, click **New
+3. Enable caching in **Features**. Send a short synthetic prompt, click **New
    conversation**, and send the exact same prompt again. Require MISS then HIT,
    distinct request IDs, and zero provider attempts on the hit's log. The sample
    retains original usage on a cached response; dashboard provider totals exclude
@@ -69,11 +69,11 @@ HTTP behavior; synthetic inference does not establish live provider compatibilit
    from two browser tabs while inference is busy. Require a concurrency 429. When
    admitted work finishes, another request should succeed. If inference completes
    too quickly to overlap, use the deterministic automated scenario instead.
-5. Inspect **Setup** provider timeout and **Controls** retry values. Use the isolated
+5. Inspect **Providers** provider timeout and **Features** retry values. Use the isolated
    scenarios for forced outages/timeouts; avoid interrupting an inference service
    used by other applications. Check gateway log status, error, cache and attempts.
-6. Enable gateway-wide capture in **Setup** and shorten the capture bound in
-   **Controls**. Send a sufficiently long synthetic prompt and inspect the new
+6. Enable gateway-wide capture in **Features** and shorten the capture bound in
+   **Features**. Send a sufficiently long synthetic prompt and inspect the new
    log's truncation notices. Restore the original limit afterward.
 7. Confirm Controls edits survive a gateway restart. The response cache and
    rate windows reset; stored controls, keys and retained logs should remain.
@@ -91,7 +91,7 @@ Shorter SQLite retention removes expired history on save, restart and event writ
 usage reports have separate retention and survive log deletion. There is no idle background pruning timer.
 Log deletion is logical, not secure erasure or a backup/recovery mechanism.
 
-If readiness fails, read the failed check in Controls and correct Setup or storage
+If readiness fails, read the failed check in **Features** and correct Setup or storage
 permissions. If a real chat fails while readiness passes, inspect its request ID
 and test upstream discovery/inference. Test runs must clean up only their own
 services. Live Ollama fault exercises, visual/accessibility browser checks, Docker,

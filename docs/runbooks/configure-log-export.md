@@ -56,7 +56,7 @@ inspection commands, outage exercises and optional startup environment settings.
 6. Select **Enable metadata export** and choose **Save export settings**. Settings,
    encrypted token, history revision and audit commit together. The worker changes
    immediately after a successful commit; the form clears the token field.
-7. Send a synthetic request from the sample app or API tester. In **Logs**, match its
+7. Send a synthetic request from the sample app or Playground. In **Logs**, match its
    request ID and inspect export pending/delivered/failure/drop/expiry counts. Check
    the same request ID and tokens in the receiver using its inspection procedure.
 
@@ -110,7 +110,7 @@ flowchart TD
 | Credential confirmation required | Supply a fresh stored token or explicitly confirm removal when changing destination/source. |
 | Missing stored/environment token | Enter a new stored token or supply the named variable to the process. Saving an enabled connection requires its credential to be available. |
 | Configuration changed | Refresh the page before retrying. The console sends an ETag precondition; stale saves cannot activate. Re-enter a fresh token after a failed save. |
-| Storage unavailable | Inspect Storage health, permissions, free space and competing writers. Failed transactions keep the previous settings, token and worker. |
+| Storage unavailable | Inspect Storage, permissions, free space and competing writers. Failed transactions keep the previous settings, token and worker. |
 | Pending or held grows | Restore the receiver or original destination before expiry; inspect capacity/drop counters. See [delivery boundaries](log-export.md#delivery-and-storage-boundaries). |
 
 **Configuration history** includes export settings, excluding credential values.
@@ -124,7 +124,7 @@ shared operator role; this audit is not tamper-proof.
 Encrypted backups include the saved export token and pending queue. Restore only
 with the matching database/key pair into a fresh destination. Restored pending
 records may replay to the matching endpoint, so preserve receiver deduplication.
-Storage health checks export credential decryption. Backup validation also verifies
+Storage checks export credential decryption. Backup validation also verifies
 that an enabled stored credential matches its configured destination. Local deletion does not erase queued metadata or recall receiver records.
 
 ## Automated verification and shutdown

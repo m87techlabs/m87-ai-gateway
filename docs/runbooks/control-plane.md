@@ -43,13 +43,13 @@ sequenceDiagram
 ## Create an application key
 
 Open **Applications**, enter a generic app ID and explicit model allowlist, and
-choose request limits as needed. Enable gateway-wide payload capture in **Setup**. Copy the generated key immediately;
+choose request limits as needed. Enable gateway-wide payload capture in **Features**. Copy the generated key immediately;
 the console cannot show it again. Place it only in the application's server-side
 secret storage. Revoke the row to invalidate it.
 
 ## Store or rotate an OpenAI key
 
-Open **Provider keys**, select OpenAI, retain the `default` alias, and enter the
+Open **Providers**, select OpenAI, retain the `default` alias, and enter the
 new key. Saving the same provider and alias atomically replaces the encrypted
 value. Run a synthetic OpenAI request before retiring the old credential at the
 provider. The UI and list API never return the secret.
@@ -61,7 +61,7 @@ captured prompts and completions. Store them as sensitive data and delete them
 under the same retention policy as the source events.
 
 The gateway prunes expired SQLite events at startup, on Controls saves, and on event
-writes. Change retention in **Controls**; its saved value overrides the startup
+writes. Change retention in **Features**; its saved value overrides the startup
 `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` value. Back up `control.db` and
 `master.key` together while access is restricted. Keep the master key separate
 from ordinary database-only backups when possible.

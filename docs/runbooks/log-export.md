@@ -49,7 +49,7 @@ export GATEWAY_LOG_EXPORT_API_KEY_ENV=EXAMPLE_EXPORT_TOKEN
 If the gateway is already running, use `./stop.sh` before this `./start.sh`; a repeated
 start does not reconfigure that process. The start script leaves the gateway running
 in the background, and the receiver runs in the foreground. Start the existing chat
-sample from another terminal or use the gateway's console API tester.
+sample from another terminal or use the gateway's console Playground.
 
 The receiver listens at `http://127.0.0.1:9087/events`. It stores accepted deliveries
 in `var/lib/log-receiver/deliveries.db`, keyed by delivery ID to discard duplicates.
@@ -62,7 +62,7 @@ environment configuration and does not read YAML. Secrets stay in the process
 environment, outside the database, manifests and command arguments. Supply them again
 in a fresh shell or through the deployment's secret mechanism. Do not commit them.
 
-Send a synthetic message using the chat sample or console API tester. In **Logs**,
+Send a synthetic message using the chat sample or console Playground. In **Logs**,
 find the request ID and check the remote export line: pending, delivered, failed
 attempts, dropped, expired and destination-held counts are persistent. Queue storage
 health is separate from upstream inference health. Counts cover the whole gateway,
