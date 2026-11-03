@@ -50,8 +50,9 @@ Missing or interrupted-stream usage is never estimated.
 
 The gateway requests final upstream usage from compatible providers for accounting
 even if the client does not request the usage chunk. A server that rejects that
-option fails safely; verify model/server support before deployment. Ollama NDJSON
-is normalized to the same SSE contract with a stable gateway-generated stream ID.
+option fails safely; verify model/server support before deployment. Ollama uses its
+OpenAI-compatible API, so it follows the same contract. Extra delta fields such as
+`tool_calls` and `reasoning` are forwarded; capture records the first choice's text only.
 
 Streams bypass cache lookups/writes and automatic provider retries. Authentication,
 allowlists, input policy, rate limits and bounded queueing still apply. Admission

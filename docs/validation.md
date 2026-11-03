@@ -11,6 +11,36 @@ so the operator can enable Docker integration for WSL. Run the bounded check set
 stop the project's containers afterward, and record the results here. The operator
 controls when to stop Docker Desktop itself.
 
+## Drop-in API on a real GPU — 2026-11-03
+
+Verified **396 Python tests**, **41 console tests**, lint and links. The container was built
+from this checkout and run with Docker Desktop's Compose on Windows/WSL, with Ollama **0.40.13**
+running natively on Windows on an RTX 5080. It reached Ollama through `host.docker.internal`.
+
+Horizon's real client code (`src/llm.ts`), a production RAG application, ran unchanged against
+it apart from sending an application key. Its model names, `reasoning_effort` and health check
+needed no mapping.
+
+| Check | Through gateway | Direct to Ollama |
+| --- | --- | --- |
+| First streamed token, ~20k character prompts, medians of 6, order alternating | 988 ms | 993 ms |
+| Short completion, warm, medians of 7 | 40 ms | 33 ms |
+| Batch of 32 embeddings, warm, medians of 8, order alternating | 180 ms | 151 ms |
+| Chat model cold load until response headers | 1.91 s | 1.90 s |
+
+Embeddings were byte-identical to direct Ollama (768 dimensions). Stream and embedding usage
+were recorded, with nothing captured while capture was off. GPU utilisation fell from 97% to 1%
+within about a second of a client disconnect, so generation stops on this server. Missing and wrong keys
+returned 401, a model on disk but outside the allowlist returned 403, and `/api/tags` returned 404.
+Application keys and settings survived `docker compose stop` and `up`. Idle memory was about 44 MiB;
+the image is 306 MB.
+
+The container smoke script passed its run and Compose stages locally. Its helper stage needs
+an unused Compose project, so it runs in CI. Real Cloudflare Worker, Access and tunnel traffic,
+OpenAI, other compatible servers, arm64 hosts and cloud hosts remain unverified. Cold-load times
+reflect a model already in the OS file cache. Tool calls were confirmed against Ollama directly
+and through synthetic gateway tests, not through the gateway with a real model.
+
 ## Native local Grafana/Prometheus setup — 2026-10-16
 
 Verified **374 Python tests**, lint/format (**113 Python files**), shell syntax for

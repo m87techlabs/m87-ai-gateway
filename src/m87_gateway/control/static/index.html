@@ -121,6 +121,7 @@
           <label>Maximum characters per message<input name="max_message_chars" type="number" min="1" max="1048576" required></label>
           <label>Provider attempts (including first call)<input name="max_attempts" type="number" min="1" max="5" required><small>Retries can duplicate provider work and charges.</small></label>
           <label>Initial retry backoff in milliseconds<input name="backoff_ms" type="number" min="0" max="10000" required></label>
+          <label class="check"><input name="strict_requests" type="checkbox">Strict mode: reject tools, images and any field the gateway does not model<small>Off by default, so existing OpenAI clients work by changing only their base URL.</small></label>
           <label class="check"><input name="cache_enabled" type="checkbox">Cache identical responses per application and model</label>
           <label>Cache lifetime in seconds<input name="ttl_seconds" type="number" min="1" max="86400" required></label>
           <label>Maximum cached responses<input name="max_entries" type="number" min="1" max="100000" required></label>

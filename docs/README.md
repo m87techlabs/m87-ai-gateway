@@ -11,6 +11,7 @@ gates in the lifecycle guide.
 | --- | --- |
 | [Everyday operations](runbooks/daily-operations.md) | Start/stop/status, sample setup, logging showcase and troubleshooting |
 | [Quickstart](quickstart.md) | Run the current gateway and send a request |
+| [Connect your app](connect-your-app.md) | Base URLs, model names, forwarded fields, embeddings and errors |
 | [Portable workstation preview](runbooks/workstation-distribution.md) | Native artifacts, lifecycle, encrypted backup/restore and upgrade checks |
 | [Guided setup](runbooks/guided-setup.md) | Launch, connect a provider in the console, and create an application key |
 | [Provider adapters](adapters.md) | Extend the reusable core with trusted source adapters |

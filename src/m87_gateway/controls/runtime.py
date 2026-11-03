@@ -105,6 +105,7 @@ class InFlightLimiter:
                     self._apps[app_id] = self._apps.get(app_id, 0) + 1
                     acquired = True
                 elif queue_max_depth == 0:
+                    outcome = "rejected"
                     raise GatewayError(
                         429,
                         "concurrency_limit_exceeded",

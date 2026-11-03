@@ -11,7 +11,7 @@ from m87_gateway.api.errors import GatewayError, error_response
 
 
 class TrafficMiddleware:
-    """Bound chat bodies before JSON parsing and record one outcome for every chat attempt."""
+    """Bound inference bodies before JSON parsing and record one outcome for every attempt."""
 
     def __init__(self, app):
         self.app = app
@@ -46,13 +46,18 @@ class TrafficMiddleware:
             "streaming": False,
             "request_outcome": None,
             "response_content_partial": False,
+            "endpoint": "embeddings" if scope["path"] == "/v1/embeddings" else "chat",
+            "upstream_status": None,
         }
         audit = state["audit"]
         started = perf_counter()
         status = 500
         response_started = False
         wire_status = None
-        is_chat = scope["path"] == "/v1/chat/completions" and scope["method"] == "POST"
+        is_chat = (
+            scope["path"] in {"/v1/chat/completions", "/v1/embeddings"}
+            and scope["method"] == "POST"
+        )
         runtime = scope["app"].state
         settings = runtime.settings
         audit["capture_enabled"] = settings.observability.traffic_log.capture_content

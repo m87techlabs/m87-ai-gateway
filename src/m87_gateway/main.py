@@ -89,6 +89,10 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
         description="A lightweight, self-hostable AI gateway.",
         version=__version__,
         lifespan=lifespan,
+        # The API reference would list every admin route to anonymous callers.
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
     )
     application.add_middleware(TrafficMiddleware)
     application.include_router(router)

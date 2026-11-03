@@ -17,6 +17,8 @@ class Capabilities:
     generation_parameters: frozenset[str] = frozenset({"temperature", "max_tokens"})
     response_formats: frozenset[str] = frozenset({"text"})
     strict_json_schema: bool = False
+    # Forwards fields the gateway does not model (tools, images, vendor options) unchanged.
+    passthrough: bool = False
 
     def as_dict(self) -> dict:
         return {
@@ -30,6 +32,7 @@ class Capabilities:
             "generation_parameters": sorted(self.generation_parameters),
             "response_formats": sorted(self.response_formats),
             "strict_json_schema": self.strict_json_schema,
+            "passthrough": self.passthrough,
         }
 
 
@@ -80,6 +83,11 @@ def _compatible(config, key):
 
 _COMPATIBLE_CAPABILITIES = Capabilities(
     streaming=True,
+    tools=True,
+    embeddings=True,
+    images=True,
+    multiple_choices=True,
+    passthrough=True,
     generation_parameters=frozenset(
         {
             "temperature",
@@ -112,11 +120,7 @@ register_adapter(
         _ollama,
         "http://localhost:11434",
         model_discovery=True,
-        capabilities=Capabilities(
-            streaming=True,
-            generation_parameters=frozenset({"temperature", "max_tokens", "top_p", "stop", "seed"}),
-            response_formats=frozenset({"text", "json_object", "json_schema"}),
-        ),
+        capabilities=_COMPATIBLE_CAPABILITIES,
     )
 )
 register_adapter(

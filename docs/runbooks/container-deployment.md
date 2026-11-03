@@ -8,14 +8,27 @@ account. The image does not install models, Docker, Grafana or Vault. Optional
 managed ecosystem profiles remain planned.
 
 Use a running Docker Engine with Compose v2 for the Compose option. Docker Desktop
-on Windows/macOS must use Linux containers. Current preview architecture is Linux
-amd64; ARM and cloud deployment checks are pending. Local WSL Docker integration
-is on demand. The repository and package currently remain private; authorized
-users need repository access and a GitHub token with `read:packages` to pull GHCR
-images. Log in interactively with `docker login ghcr.io` and use the token at the
-password prompt. Avoid putting tokens in command arguments or shared logs.
-Public packages support anonymous pulls when deliberately made public after review.
+on Windows/macOS must use Linux containers. Images are built for Linux amd64 and
+arm64; cloud deployment checks are pending. The source build below needs no registry access.
+Pulling the prebuilt GHCR image needs a GitHub token with `read:packages` until the package
+is made public. Log in with `docker login ghcr.io` and use the token at the password prompt.
+Avoid putting tokens in command arguments or shared logs.
 See [GitHub registry authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
+## Compose settings
+
+Put these in a `.env` file beside `docker-compose.yml`; all are optional.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GATEWAY_BIND` | `127.0.0.1` | Host address for the published port. Read [security](../security.md) before changing it |
+| `GATEWAY_PORT` | `8087` | Host port |
+| `GATEWAY_ADMIN_API_KEY` | generated | Operator key, at least 24 characters. Otherwise read it from `/data/gateway/admin.key` |
+| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Suggested endpoint for a model server on this host |
+| `GATEWAY_IMAGE` | `ghcr.io/m87techlabs/m87-ai-gateway:preview` | Image to run |
+
+Other Compose projects can join the `m87-gateway` network and call
+`http://m87-ai-gateway:8087/v1`. See [connect your app](../connect-your-app.md).
 
 ## Root start, stop and status scripts
 
@@ -28,7 +41,7 @@ From a repository checkout on Linux/WSL (Bash):
 ```
 
 These helpers work from any directory, check a usable Docker CLI, Compose v2,
-Docker engine access, Linux amd64 platform and Compose configuration. Startup also
+Docker engine access and Compose configuration. Startup also
 checks health-wait support before building/pulling or starting a container. Host
 Python, curl and a virtual environment are not prerequisites. Docker and the
 Compose plugin must already be installed; start the engine yourself. If WSL

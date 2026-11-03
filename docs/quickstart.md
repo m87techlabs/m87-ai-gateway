@@ -2,19 +2,15 @@
 
 ## Choose a setup option
 
-- Download a portable Windows/Linux preview from
-  [preview releases](https://github.com/m87techlabs/m87-ai-gateway/releases), then
-  follow [workstation distribution](runbooks/workstation-distribution.md).
-- With Docker already running, follow [container deployment](runbooks/container-deployment.md).
-  Pull the image or use the provided Compose file; no source build or `.env` is required.
+- With Docker running, follow the [README](../README.md#start-it) or
+  [container deployment](runbooks/container-deployment.md). This is the recommended option.
 - Developers can use [local source setup](runbooks/local-development.md).
 
 The Docker image exposes the included console at **http://localhost:8087**.
 Retrieve its private operator key using the container runbook, connect your
 inference service in Setup, select a model, and create an application key.
 Provider keys are managed in the gateway. Existing inference/cloud access is a
-prerequisite; the gateway does not bundle an LLM. Private previews require authorized
-repository/package access until publication review is complete.
+prerequisite; the gateway does not bundle an LLM.
 
 ## Check and send a request
 
@@ -40,7 +36,7 @@ You can also send the request through the console's API tester.
 Enable gateway-wide input/output capture in Setup if needed, then inspect Logs,
 request IDs, tokens and project usage. Configure limits, cache, retries and
 retention in Controls. Keep operator keys separate from application keys.
-For a calling application, use [the chat sample](../examples/chat_app/README.md).
+To point an existing application at it, see [connect your app](connect-your-app.md).
 
 - [Provider troubleshooting](runbooks/provider-troubleshooting.md)
 - [Traffic logging](runbooks/traffic-logging.md)

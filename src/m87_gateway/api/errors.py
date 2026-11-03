@@ -12,16 +12,20 @@ class GatewayError(Exception):
         message: str,
         kind: str = "gateway_error",
         headers: dict[str, str] | None = None,
+        upstream_status: int | None = None,
     ):
         self.status = status
         self.code = code
         self.message = message
         self.kind = kind
         self.headers = headers or {}
+        self.upstream_status = upstream_status
 
 
 def error_response(request: Request, error: GatewayError) -> JSONResponse:
     request.state.audit["error_type"] = error.code
+    if error.upstream_status is not None:
+        request.state.audit["upstream_status"] = error.upstream_status
     return JSONResponse(
         status_code=error.status,
         content={

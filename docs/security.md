@@ -45,6 +45,13 @@ Per-process rate/concurrency limits and bounded queues are implemented. Budgets,
 JWT, response policies, distributed coordination and remote log export remain planned. Preserve existing
 application/origin controls when testing this gateway alongside another service.
 The metrics endpoint has no app-key auth and belongs on a private operator network.
+It shares a port with the inference API and console. When publishing the gateway, route only
+`/v1/*` paths, or put the rest behind separate access control. The API reference (`/docs`,
+`/openapi.json`) is not served. `config.example.yaml` holds a public demo key, so it is
+loaded only when selected explicitly.
+
+Fields the gateway does not model are forwarded by default, so guardrails and capture cover
+message text only, not tool arguments or images. Enable Strict mode to reject such requests.
 
 ## Operations
 

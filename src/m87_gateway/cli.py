@@ -29,7 +29,12 @@ def local_settings(data_dir: Path) -> GatewaySettings:
         observability={"log_export": log_export_environment(os.environ)},
         providers={
             "openai": {"enabled": False, "base_url": "https://api.openai.com/v1"},
-            "ollama": {"enabled": False, "base_url": "http://localhost:11434"},
+            "ollama": {
+                "enabled": False,
+                "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+                # Loading a large local model can take minutes before the first token.
+                "timeout_seconds": 300,
+            },
             "openai_compatible": {"enabled": False},
         },
         control_plane={

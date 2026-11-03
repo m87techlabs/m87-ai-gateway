@@ -75,10 +75,9 @@ a migrated database. Distinct-version rollback remains a release gate.
 
 ## Automated development previews
 
-Explicit CI dispatches on main with `package_container` enabled publish a tested Linux amd64 image with immutable commit
-and moving preview tags, and retain native ZIPs/checksums and Compose in a commit
-prerelease. These are development previews, distinct from reviewed stable/public
-releases. See [container publication](container-deployment.md). Publication follows
-all source/docs/native/container jobs; failed runs do not advance the preview.
-Repository/package visibility is preserved. Preview downloads last until deletion;
-CI artifact downloads expire independently.
+Each push to main that passes the source, docs and container jobs publishes a Linux
+amd64 and arm64 image with immutable commit and moving preview tags. These are development
+previews, distinct from reviewed stable releases. See
+[container publication](container-deployment.md). Failed runs do not advance the preview.
+Package visibility is a separate setting in GitHub. Portable ZIPs are built and tested in CI
+but no longer published.

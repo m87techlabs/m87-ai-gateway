@@ -15,10 +15,10 @@ fail() { printf '%s\n' "$*" >&2; exit 1; }
 usage() {
     echo "Usage: ./docker-start.sh [--port PORT] [--build | --update]"
     echo "       ./docker-stop.sh | ./docker-status.sh"
-    echo "Requires Bash, Docker Engine (Linux amd64), and Docker Compose v2 with --wait-timeout."
+    echo "Requires Bash, Docker Engine, and Docker Compose v2 with --wait-timeout."
     echo "Host Python is not required. Default port: 8087; existing deployment ports are reused."
     echo "--update pulls the latest selected image and recreates the service, keeping data."
-    echo "--build builds from the checkout instead of pulling the private preview image."
+    echo "--build builds from the checkout instead of pulling the preview image."
 }
 case "$action" in start|stop|status) ;; *) fail "Unknown Docker lifecycle action." ;; esac
 while (($#)); do
@@ -41,7 +41,7 @@ command -v docker >/dev/null || fail "Docker CLI is unavailable. Install Docker,
 docker --version >/dev/null 2>&1 || fail "Docker CLI is not usable. Start Docker Desktop and enable WSL integration for this distribution, or install Docker Engine."
 docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is unavailable. Install the Compose plugin or update Docker Desktop."
 engine=$(docker info --format '{{.OSType}}/{{.Architecture}}' 2>/dev/null) || fail "Docker Engine is unavailable or inaccessible. Start Docker Desktop/Engine, enable WSL integration if needed, and check Docker access."
-case "$engine" in linux/x86_64|linux/amd64) ;; *) fail "This preview requires a Linux amd64 Docker engine. Reported engine: $engine. Select Linux containers in Docker Desktop." ;; esac
+case "$engine" in linux/x86_64|linux/amd64|linux/aarch64|linux/arm64) ;; *) fail "This image requires a Linux amd64 or arm64 Docker engine." ;; esac
 [[ -f $repo_root/docker-compose.yml ]] || fail "Required docker-compose.yml is missing from the project root."
 compose=(docker compose --project-directory "$repo_root" -p m87-ai-gateway -f "$repo_root/docker-compose.yml")
 if [[ $build == true ]]; then

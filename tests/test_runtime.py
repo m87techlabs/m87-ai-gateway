@@ -37,11 +37,10 @@ def runtime(tmp_path, monkeypatch):
             def handler(request):
                 return httpx.Response(
                     200,
-                    json={
-                        "message": {"role": "assistant", "content": "synthetic response"},
-                        "prompt_eval_count": 3,
-                        "eval_count": 2,
-                    },
+                    json=completion(
+                        "synthetic response",
+                        {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5},
+                    ),
                 )
 
         original = httpx.AsyncClient
@@ -58,6 +57,24 @@ def runtime(tmp_path, monkeypatch):
     return build
 
 
+def completion(content, usage=None):
+    """A synthetic OpenAI-compatible response, the shape every built-in adapter speaks."""
+    return {
+        "id": "chatcmpl-synthetic",
+        "object": "chat.completion",
+        "created": 1,
+        "model": "test",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": usage,
+    }
+
+
 def chat(client, **kwargs):
     payload = {"model": "auto", "messages": [{"role": "user", "content": "synthetic prompt"}]}
     payload.update(kwargs)
@@ -66,21 +83,19 @@ def chat(client, **kwargs):
 
 def test_ollama_preserves_messages_options_and_real_usage(runtime):
     def handler(request):
-        assert str(request.url) == "http://localhost:11434/api/chat"
+        assert str(request.url) == "http://localhost:11434/v1/chat/completions"
         body = json.loads(request.content)
         assert body["messages"] == [
             {"role": "system", "content": "system instructions"},
             {"role": "user", "content": "question"},
         ]
-        assert body["options"] == {"temperature": 0.2, "num_predict": 12}
+        assert body["temperature"] == 0.2 and body["max_tokens"] == 12
         assert body["stream"] is False
         return httpx.Response(
             200,
-            json={
-                "message": {"content": "answer"},
-                "prompt_eval_count": 7,
-                "eval_count": 3,
-            },
+            json=completion(
+                "answer", {"prompt_tokens": 7, "completion_tokens": 3, "total_tokens": 10}
+            ),
         )
 
     with TestClient(runtime(handler=handler)) as client:
@@ -242,10 +257,9 @@ def test_message_size_and_body_size_limits(runtime):
     "payload",
     [
         {"stream_options": {"include_usage": True}},
-        {"tools": []},
-        {"model": "not-a-model"},
+        {"model": "two words"},
+        {"model": "ollama:"},
         {"messages": []},
-        {"messages": [{"role": "tool", "content": "unsupported"}]},
     ],
 )
 def test_unsupported_and_invalid_requests_are_safe(runtime, payload):
@@ -309,19 +323,10 @@ def test_metrics_can_be_disabled(runtime):
         assert client.get("/metrics").status_code == 404
 
 
-def test_missing_usage_stays_null_and_response_ids_are_unique(runtime):
-    app = runtime(
-        handler=lambda request: httpx.Response(
-            200,
-            json={
-                "message": {"content": "answer"},
-            },
-        )
-    )
+def test_missing_usage_stays_null(runtime):
+    app = runtime(handler=lambda request: httpx.Response(200, json=completion("answer")))
     with TestClient(app) as client:
-        first, second = chat(client).json(), chat(client).json()
-        assert first["usage"] is None
-        assert first["id"] != second["id"]
+        assert chat(client).json()["usage"] is None
 
 
 def test_caller_cannot_choose_the_request_id(runtime):

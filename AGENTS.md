@@ -18,9 +18,8 @@ Ship one application with an included configuration UI and built-in operational
 visibility. A user connects a supported inference endpoint or configures provider
 credentials in the gateway, creates an application key, and points the calling
 app at the gateway. Provider secrets remain gateway-side; app keys are separate.
-Default local operation must not require Python, Docker, or external databases
-once standalone distribution is implemented. Existing inference services and
-cloud accounts remain user-supplied. Track this planned experience in design and
+Docker Compose is the primary package, on a workstation or a cloud host. Existing
+inference services and cloud accounts remain user-supplied. Track this planned experience in design and
 roadmap; do not claim packaging or provider support before verification.
 
 End-product vision: a full AI gateway ecosystem with an included dashboard for
@@ -56,8 +55,14 @@ client-disconnect HTTP cancellation now have adapter and real TCP tests. Schema 
 queue/user-hash traffic fields while preserving keys/usage/audit. User attribution
 is SHA-256 correlation only; never persist or forward the raw user field.
 
-Streaming text is implemented for built-in adapters with cache/retry bypass,
-first-chunk validation before headers, bounded SSE/NDJSON parsing, final usage or
+Drop-in contract: an OpenAI client changes only its base URL and key. Fields the gateway does
+not model are forwarded unchanged unless Strict mode is on; bare upstream names such as
+qwen3:14b resolve through the default provider; POST /v1/embeddings shares chat's allowlist,
+limits and logs. Built-in adapters use OpenAI-compatible APIs, including Ollama's /v1. Schema 10
+adds endpoint and upstream_status. Never log provider response bodies. See docs/connect-your-app.md.
+
+Streaming is implemented for built-in adapters with cache/retry bypass,
+first-chunk validation before headers, bounded SSE parsing, final usage or
 unknown counts, terminal safe errors and bounded redacted capture. Sample chat
 has a streaming toggle and Stop button; cancellation propagates through both
 HTTP hops. Closing upstream HTTP does not guarantee backend compute/billing stops;
@@ -77,11 +82,9 @@ Root `docker-start.sh`, `docker-stop.sh` and `docker-status.sh` manage only the
 fixed gateway Compose project, check Docker/Compose/engine requirements, and
 preserve data on stop. Host Python is unnecessary. Default resume preserves the
 existing image/port; --build, --update and --port are explicit startup overrides.
-Current priority is the logging showcase and native source development. Keep Docker
-files/helpers available but defer further container work. Container build/publication
-is an explicit CI workflow_dispatch package_container option; routine main pushes
-run source/docs/native checks without rebuilding Docker. Packaging verification
-remains required for the final functional release scope. Native and Docker
+Current priority is the plug-and-play direction in docs/roadmap.md: judge work by time
+to first request and by how little a calling app must change. Each passing main push builds,
+tests and publishes the container image for amd64 and arm64. Native and Docker
 data stores remain separate. Draft connection tests use model discovery without
 saving or completing inference; never send stored credentials to a changed endpoint.
 Container distribution uses a non-root single-app image with the included setup
@@ -121,8 +124,7 @@ Shared tests in tests/backend_contracts.py must be reused by new adapters.
 Remote stores and further exporter integrations remain optional and planned. Preserve current keys/data with explicit migrations; do not claim these
 remaining planned features are implemented or silently move user data.
 
-Logging is the current product priority; docs/logging-plan.md records remaining
-work and staged delivery. Schema 7 separates exchange_content from traffic metadata
+docs/logging-plan.md records remaining logging work and staged delivery. Schema 7 separates exchange_content from traffic metadata
 and usage, with independent content retention and audited project content/log deletion.
 Request-ID/application/outcome search, cursor paging, readable messages/raw JSON,
 explicit missing/partial states, metadata-only default exports and recording-health
@@ -681,16 +683,15 @@ The release is ready when:
 - README has a working curl command.
 - CHANGELOG has a `v0.1.0` entry or `Unreleased` section ready.
 
-## Important non-goals for v0.1.0
+## Original non-goals for v0.1.0
 
-Do not implement these yet unless explicitly requested:
+This historical list no longer limits scope. The console and optional capture were built later.
+Still out of scope unless explicitly requested:
 
-- Admin dashboard
 - Multi-tenant UI
 - Billing system
 - Complex policy engine
 - LLM-based model router
-- Full prompt/response storage
 - Kubernetes operator
 - Helm chart beyond placeholder docs
 - Terraform production module beyond placeholder docs

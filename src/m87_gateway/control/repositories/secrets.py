@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from time import monotonic
 from typing import Any
 
 from cryptography.fernet import InvalidToken
@@ -10,7 +11,15 @@ from cryptography.fernet import InvalidToken
 from .base import SQLiteRepository
 
 
+# This runs on the request path, so last_used_at is coarse rather than one write per request.
+LAST_USED_INTERVAL_SECONDS = 60
+
+
 class SQLiteSecretStore(SQLiteRepository):
+    def __init__(self, backend):
+        super().__init__(backend)
+        self._last_used: dict[tuple[str, str], float] = {}
+
     @staticmethod
     def migrate(connection):
         connection.execute("""CREATE TABLE IF NOT EXISTS log_export_credentials (
@@ -60,10 +69,14 @@ class SQLiteSecretStore(SQLiteRepository):
             ).fetchone()
             if row is None:
                 return None
-            connection.execute(
-                "UPDATE provider_keys SET last_used_at = ? WHERE provider = ? AND alias = ?",
-                (datetime.now(timezone.utc).isoformat(), provider, alias),
-            )
+            now = monotonic()
+            previous = self._last_used.get((provider, alias))
+            if previous is None or now - previous >= LAST_USED_INTERVAL_SECONDS:
+                self._last_used[(provider, alias)] = now
+                connection.execute(
+                    "UPDATE provider_keys SET last_used_at = ? WHERE provider = ? AND alias = ?",
+                    (datetime.now(timezone.utc).isoformat(), provider, alias),
+                )
         try:
             return self._fernet.decrypt(row["encrypted_value"]).decode()
         except InvalidToken as exc:

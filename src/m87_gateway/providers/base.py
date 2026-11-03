@@ -1,11 +1,38 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
+from functools import lru_cache
 
 import httpx
 
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.api.schemas import ChatCompletionRequest
 from m87_gateway.config.settings import ProviderConfig
+
+
+@lru_cache(maxsize=1)
+def _tls_context():
+    # Building a TLS context takes milliseconds on the event loop; one is enough per process.
+    return httpx.create_ssl_context()
+
+
+def _client(timeout: float) -> httpx.AsyncClient:
+    return httpx.AsyncClient(timeout=timeout, verify=_tls_context())
+
+
+def upstream_error(upstream_status: int) -> GatewayError:
+    """Keep the upstream body private, but say which status the provider answered with."""
+    if upstream_status == 429:
+        code, status = "provider_rate_limited", 503
+    elif upstream_status in {408, 409} or upstream_status >= 500:
+        code, status = "provider_error", 502
+    else:
+        code, status = "provider_rejected", 502
+    return GatewayError(
+        status,
+        code,
+        f"Model provider could not complete the request (HTTP {upstream_status})",
+        upstream_status=upstream_status,
+    )
 
 
 class Provider(ABC):
@@ -32,7 +59,7 @@ class Provider(ABC):
 
     async def _request(self, method, path, headers=None, body=None) -> dict:
         try:
-            async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+            async with _client(self.config.timeout_seconds) as client:
                 response = await client.request(
                     method,
                     f"{self.config.base_url}{path}",
@@ -47,16 +74,7 @@ class Provider(ABC):
         except httpx.TimeoutException as exc:
             raise GatewayError(504, "provider_timeout", "Model provider timed out") from exc
         except httpx.HTTPStatusError as exc:
-            upstream_status = exc.response.status_code
-            if upstream_status == 429:
-                code, status = "provider_rate_limited", 503
-            elif upstream_status in {408, 409} or upstream_status >= 500:
-                code, status = "provider_error", 502
-            else:
-                code, status = "provider_rejected", 502
-            raise GatewayError(
-                status, code, "Model provider could not complete the request"
-            ) from exc
+            raise upstream_error(exc.response.status_code) from exc
         except httpx.RequestError as exc:
             raise GatewayError(
                 502, "provider_error", "Model provider could not complete the request"
@@ -69,7 +87,7 @@ class Provider(ABC):
     @asynccontextmanager
     async def stream(self, path, body, headers=None):
         try:
-            async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+            async with _client(self.config.timeout_seconds) as client:
                 async with client.stream(
                     "POST", f"{self.config.base_url}{path}", json=body, headers=headers
                 ) as response:
@@ -78,21 +96,7 @@ class Provider(ABC):
         except httpx.TimeoutException as exc:
             raise GatewayError(504, "provider_timeout", "Model provider timed out") from exc
         except httpx.HTTPStatusError as exc:
-            upstream = exc.response.status_code
-            code = (
-                "provider_rate_limited"
-                if upstream == 429
-                else (
-                    "provider_error"
-                    if upstream in {408, 409} or upstream >= 500
-                    else "provider_rejected"
-                )
-            )
-            raise GatewayError(
-                503 if upstream == 429 else 502,
-                code,
-                "Model provider could not complete the request",
-            ) from exc
+            raise upstream_error(exc.response.status_code) from exc
         except httpx.RequestError as exc:
             raise GatewayError(
                 502, "provider_error", "Model provider could not complete the request"
@@ -103,6 +107,14 @@ class Provider(ABC):
             422, "unsupported_streaming", "Selected adapter does not support streaming"
         )
         yield  # Adapter extensions implement an asynchronous iterator of normalized chunks.
+
+    async def embeddings(self, payload, model: str) -> dict:
+        raise GatewayError(
+            422,
+            "unsupported_embeddings",
+            "Selected adapter does not support embeddings",
+            "invalid_request_error",
+        )
 
     @abstractmethod
     async def chat_completions(self, payload: ChatCompletionRequest, model: str) -> dict:

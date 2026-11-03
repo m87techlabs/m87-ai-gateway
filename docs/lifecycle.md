@@ -70,10 +70,10 @@ planned cloud integration passed these gates.
 
 ## Repository hosting settings
 
-The repository currently remains private. Squash merging, automatic deletion of
+The repository is public. Squash merging, automatic deletion of
 merged branches, dependency alerts, and automated dependency security fixes are
 enabled. Workflow permissions are restricted to read-only repository contents.
-The current hosting plan does not permit private-repository branch protection;
+Branch protection is a separate setting to review now that the repository is public;
 local checks and hosted CI remain required under the direct-to-main workflow.
 Before public release, reassess the review workflow and enable appropriate
 protection against force pushes/deletion and required `test` and `docs` checks
@@ -110,4 +110,4 @@ Use the [release runbook](runbooks/release.md) for publication and the
 Local SQLite persistence and additive migrations are implemented for configuration,
 keys, projects, and events. Encrypted offline backup/restore and native lifecycle commands are implemented.
 Clean-host, cross-release rollback and signed-artifact checks remain release gates.
-The `0.1.1.dev0` portable preview does not change repository visibility or create a tag.
+Portable ZIPs are no longer published; the build scripts remain for CI validation.

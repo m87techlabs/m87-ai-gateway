@@ -18,27 +18,28 @@ def invalid_stream():
 
 
 class Delta(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: Literal["assistant"] | None = None
+    """Forwarded as received, so tool calls and reasoning deltas reach the client."""
+
+    model_config = ConfigDict(extra="allow")
+    role: str | None = None
     content: str | None = None
     refusal: str | None = None
-    tool_calls: None = None
-    function_call: None = None
-    audio: None = None
 
 
 class ChunkChoice(BaseModel):
-    index: Literal[0]
+    model_config = ConfigDict(extra="allow")
+    index: int = Field(ge=0, strict=True)
     delta: Delta
     finish_reason: str | None = None
 
 
 class Chunk(BaseModel):
+    model_config = ConfigDict(extra="allow")
     id: str = Field(min_length=1, max_length=256)
     object: Literal["chat.completion.chunk"]
     created: int = Field(ge=0, strict=True)
     model: str
-    choices: list[ChunkChoice] = Field(max_length=1)
+    choices: list[ChunkChoice] = Field(max_length=128)
     usage: ChatCompletionUsage | None = None
 
 

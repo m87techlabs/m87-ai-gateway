@@ -211,7 +211,7 @@ def test_draft_connection_probe_reports_outcome_without_saving(tmp_path, monkeyp
     def upstream(request):
         requests.append(request)
         assert request.method == "GET"
-        assert request.url.path == "/api/tags"
+        assert request.url.path == "/v1/models"
         assert request.headers["authorization"] == "Bearer synthetic-draft-secret"
         if outcome == "network":
             raise httpx.ConnectError("private upstream information", request=request)
@@ -221,9 +221,7 @@ def test_draft_connection_probe_reports_outcome_without_saving(tmp_path, monkeyp
             return httpx.Response(401, text="private upstream information")
         if outcome == "invalid":
             return httpx.Response(200, json={"private": "private upstream information"})
-        return httpx.Response(
-            200, json={"models": [{"name": "small"}] if outcome == "models" else []}
-        )
+        return httpx.Response(200, json={"data": [{"id": "small"}] if outcome == "models" else []})
 
     def client(**kwargs):
         if "transport" not in kwargs:
@@ -278,7 +276,7 @@ def test_probe_reuses_keys_only_at_saved_endpoint_and_never_replaces_them(tmp_pa
 
     def upstream(request):
         requests.append(request)
-        return httpx.Response(200, json={"models": []})
+        return httpx.Response(200, json={"data": []})
 
     monkeypatch.setattr(
         httpx,

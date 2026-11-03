@@ -29,7 +29,7 @@ def test_real_disconnect_cancels_backend_and_records_one_outcome(
     entered, closed = threading.Event(), threading.Event()
     backend = FastAPI()
 
-    @backend.post("/api/chat")
+    @backend.post("/v1/chat/completions")
     async def inference(request: Request):
         body = await request.json()
         entered.set()
@@ -37,15 +37,19 @@ def test_real_disconnect_cancels_backend_and_records_one_outcome(
 
             async def generate():
                 try:
-                    yield (
-                        json.dumps({"message": {"content": "synthetic fragment"}, "done": False})
-                        + "\n"
-                    )
+                    chunk = {
+                        "id": "synthetic",
+                        "object": "chat.completion.chunk",
+                        "created": 1,
+                        "model": "test",
+                        "choices": [{"index": 0, "delta": {"content": "synthetic fragment"}}],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
                     await asyncio.sleep(20)
                 finally:
                     closed.set()
 
-            return StreamingResponse(generate(), media_type="application/x-ndjson")
+            return StreamingResponse(generate(), media_type="text/event-stream")
         for _ in range(1000):
             if await request.is_disconnected():
                 closed.set()

@@ -14,7 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.config import validate_model
-from m87_gateway.config.settings import CacheConfig, LimitsConfig, ProviderConfig, RetryConfig
+from m87_gateway.config.settings import (
+    CacheConfig,
+    CompatibilityConfig,
+    LimitsConfig,
+    ProviderConfig,
+    RetryConfig,
+)
 from m87_gateway.adapters import adapters
 from m87_gateway.providers.factory import get_provider
 from m87_gateway.control.setup import activate, apply_overrides
@@ -121,6 +127,7 @@ class ControlsWrite(BaseModel):
     cache: CacheConfig
     retry: RetryConfig
     limits: LimitsConfig
+    compatibility: CompatibilityConfig = Field(default_factory=CompatibilityConfig)
     max_message_chars: int = Field(ge=1, le=1048576)
     max_request_bytes: int = Field(ge=1, le=10485760)
     retention_days: int = Field(ge=1, le=3650)
@@ -150,6 +157,7 @@ async def controls(request: Request, store: AdminStore, response: Response):
         cache=settings.cache,
         retry=settings.retry,
         limits=settings.limits,
+        compatibility=settings.compatibility,
         max_message_chars=settings.guardrails.max_message_chars,
         max_request_bytes=settings.guardrails.max_request_bytes,
         retention_days=settings.control_plane.retention_days,
@@ -194,7 +202,7 @@ async def gateway_diagnostics(request: Request, store: AdminStore):
 
 
 @router.delete("/admin/api/logs")
-async def remove_logs(payload: LogDeletion, store: AdminStore):
+def remove_logs(payload: LogDeletion, store: AdminStore):
     return {"deleted": store.delete_events(payload.project_id)}
 
 
@@ -241,7 +249,7 @@ async def dashboard_asset(request: Request, filename: str):
 
 
 @router.get("/admin/api/overview")
-async def overview(
+def overview(
     store: AdminStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
@@ -250,7 +258,7 @@ async def overview(
 
 
 @router.get("/admin/api/usage")
-async def usage(
+def usage(
     store: AdminStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
@@ -272,7 +280,7 @@ async def create_project(payload: ProjectCreate, store: AdminStore):
 
 
 @router.get("/admin/api/logs")
-async def logs(
+def logs(
     store: AdminStore,
     limit: int = Query(default=100, ge=1, le=1000),
     app_id: str | None = Query(default=None, max_length=100),
@@ -295,7 +303,7 @@ async def logs(
 
 
 @router.get("/admin/api/logs/export")
-async def export_logs(
+def export_logs(
     store: AdminStore,
     limit: int = Query(default=1000, ge=1, le=10000),
     project_id: ProjectFilter = None,
@@ -333,7 +341,7 @@ async def logging_health(request: Request, store: AdminStore):
 
 
 @router.delete("/admin/api/logs/content")
-async def remove_log_content(payload: LogDeletion, store: AdminStore):
+def remove_log_content(payload: LogDeletion, store: AdminStore):
     return {"deleted": store.delete_content(payload.project_id)}
 
 
@@ -526,7 +534,6 @@ async def setup(request: Request, store: AdminStore, response: Response):
                 "provider": name,
                 "label": adapter.label,
                 "requires_key": adapter.requires_key,
-                "capabilities": ["text_chat", "non_streaming"],
                 "capability_matrix": adapter.capabilities.as_dict(),
                 "model_discovery": adapter.model_discovery,
                 "configured": name in saved.get("providers", {}),

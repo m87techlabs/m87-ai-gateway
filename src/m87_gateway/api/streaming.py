@@ -7,7 +7,9 @@ from contextlib import aclosing
 from starlette.responses import Response
 
 from m87_gateway.api.errors import GatewayError, error_response
+from m87_gateway.api.schemas import USAGE_KEYS
 from m87_gateway.providers.streaming import validate_chunk, invalid_stream
+from m87_gateway.routing.router import reported_model
 
 
 def event(value):
@@ -51,6 +53,7 @@ class ChatStreamResponse(Response):
         audit = request.state.audit
         audit.update(streaming=True, cache_status="bypass", request_outcome="failed")
         provider, selected, _ = self.prepared
+        reported = reported_model(payload.model, selected, settings)
         limiter = request.app.state.inflight_limiter
         include_usage = payload.stream_options is not None and payload.stream_options.include_usage
         capture = settings.observability.traffic_log.capture_content
@@ -83,25 +86,26 @@ class ChatStreamResponse(Response):
                 ) as upstream:
                     async for value in upstream:
                         chunk = validate_chunk(value)
-                        current = (chunk["id"], chunk["created"])
-                        if identity is not None and current != (
-                            identity["id"],
-                            identity["created"],
-                        ):
+                        if identity is not None and chunk["id"] != identity["id"]:
                             raise invalid_stream()
                         identity = {key: chunk[key] for key in ("id", "object", "created", "model")}
-                        chunk["model"] = selected
+                        chunk["model"] = reported
                         if chunk["choices"]:
-                            if finished:
-                                raise invalid_stream()
-                            choice = chunk["choices"][0]
-                            finish_reason = choice.get("finish_reason")
-                            finished = finish_reason is not None
-                            content = (
-                                choice["delta"].get("content")
-                                or choice["delta"].get("refusal")
-                                or ""
+                            for choice in chunk["choices"]:
+                                if choice.get("finish_reason") is None:
+                                    continue
+                                finished = True
+                                if choice["index"] == 0:
+                                    finish_reason = choice["finish_reason"]
+                            # Capture covers the first choice's text; tool deltas pass through.
+                            choice = next(
+                                (item for item in chunk["choices"] if item["index"] == 0), None
                             )
+                            content = (
+                                (choice["delta"].get("content") or choice["delta"].get("refusal"))
+                                if choice
+                                else None
+                            ) or ""
                             if capture:
                                 remaining = prefix_limit - len(text)
                                 text += content[:remaining]
@@ -113,17 +117,14 @@ class ChatStreamResponse(Response):
                                 chunk["usage"] = None
                             started = True
                             yield event(chunk)
-                        else:
-                            if not finished:
-                                raise invalid_stream()
-                            if chunk.get("usage") is not None:
-                                usage = chunk["usage"]
+                        elif chunk.get("usage") is not None:
+                            usage = chunk["usage"]
                     if not finished or identity is None:
                         raise invalid_stream()
                     if usage is not None:
-                        audit.update(usage)
+                        audit.update({key: usage[key] for key in USAGE_KEYS})
                     if include_usage:
-                        yield event({**identity, "model": selected, "choices": [], "usage": usage})
+                        yield event({**identity, "model": reported, "choices": [], "usage": usage})
                     yield b"data: [DONE]\n\n"
                     completed = True
                     audit["request_outcome"] = "completed"
@@ -141,6 +142,8 @@ class ChatStreamResponse(Response):
                 error_type=error.code,
                 outcome_status_code=error.status,
             )
+            if error.upstream_status is not None:
+                audit["upstream_status"] = error.upstream_status
             if not started:
                 raise error from exc
             # The HTTP status is already committed. Terminate with a safe error event.
@@ -156,7 +159,7 @@ class ChatStreamResponse(Response):
             )
         finally:
             if usage is not None:
-                audit.update(usage)
+                audit.update({key: usage[key] for key in USAGE_KEYS})
             if capture:
                 request.state.response_content = [
                     {

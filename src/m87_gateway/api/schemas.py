@@ -3,13 +3,49 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
-from m87_gateway.config.settings import validate_model
+from m87_gateway.adapters import adapters
+
+PLAIN_ROLES = {"system", "developer", "user", "assistant"}
+USAGE_KEYS = ("prompt_tokens", "completion_tokens", "total_tokens")
+
+
+def validate_request_model(value: str) -> str:
+    """Accept auto, provider:model or a bare upstream name such as qwen3:14b."""
+    provider, separator, model = value.partition(":")
+    if (
+        not value
+        or len(value) > 200
+        or any(character.isspace() for character in value)
+        or (separator and provider in adapters() and not model)
+    ):
+        raise ValueError("Use auto, a provider:model identifier or an upstream model name")
+    return value
 
 
 class ChatMessage(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: Literal["system", "developer", "user", "assistant"]
-    content: str = Field(min_length=1)
+    """Forwarded as received, so tools, images and vendor fields reach the provider."""
+
+    model_config = ConfigDict(extra="allow")
+    role: str = Field(min_length=1, max_length=64)
+    content: str | list[dict[str, JsonValue]] | None = None
+
+    def text(self) -> str:
+        """The readable text of this message, for policy checks and size limits."""
+        if isinstance(self.content, str):
+            return self.content
+        return "\n".join(
+            part["text"]
+            for part in self.content or []
+            if part.get("type") == "text" and isinstance(part.get("text"), str)
+        )
+
+    def is_plain(self) -> bool:
+        return (
+            self.role in PLAIN_ROLES
+            and isinstance(self.content, str)
+            and bool(self.content)
+            and not self.model_extra
+        )
 
 
 class TextFormat(BaseModel):
@@ -51,14 +87,14 @@ ResponseFormat = Annotated[
 
 
 class StreamOptions(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
     include_usage: bool = Field(default=False, strict=True)
 
 
 class ChatCompletionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
     model: str = "auto"
-    messages: list[ChatMessage] = Field(min_length=1, max_length=128)
+    messages: list[ChatMessage] = Field(min_length=1, max_length=2048)
     temperature: float | None = Field(default=None, ge=0, le=2)
     max_tokens: int | None = Field(default=None, ge=1)
     top_p: float | None = Field(default=None, ge=0, le=1, strict=True)
@@ -81,27 +117,59 @@ class ChatCompletionRequest(BaseModel):
     @field_validator("model")
     @classmethod
     def valid_model(cls, value: str) -> str:
-        return validate_model(value)
+        return validate_request_model(value)
+
+    def is_plain(self) -> bool:
+        """True when every field is one the gateway models itself; strict mode requires it."""
+        return (
+            not self.model_extra
+            and all(message.is_plain() for message in self.messages)
+            and not (self.stream_options and self.stream_options.model_extra)
+        )
+
+
+class EmbeddingRequest(BaseModel):
+    """Forwarded as received; extra fields such as dimensions reach the provider."""
+
+    model_config = ConfigDict(extra="allow")
+    model: str = "auto"
+    input: str | list[str] | list[int] | list[list[int]] = Field(min_length=1, max_length=2048)
+    user: str | None = Field(default=None, min_length=1, max_length=200, strict=True)
+
+    @field_validator("model")
+    @classmethod
+    def valid_model(cls, value: str) -> str:
+        return validate_request_model(value)
+
+    def texts(self) -> list[str]:
+        """Text inputs only; pre-tokenized inputs carry no readable content."""
+        if isinstance(self.input, str):
+            return [self.input]
+        return [item for item in self.input if isinstance(item, str)]
 
 
 class ChatCompletionResponseMessage(BaseModel):
+    model_config = ConfigDict(extra="allow")
     role: Literal["assistant"]
-    content: str
+    content: str | None = None
 
 
 class ChatCompletionChoice(BaseModel):
+    model_config = ConfigDict(extra="allow")
     index: int
     message: ChatCompletionResponseMessage
     finish_reason: str | None = None
 
 
 class ChatCompletionUsage(BaseModel):
+    model_config = ConfigDict(extra="allow")
     prompt_tokens: int = Field(ge=0, strict=True)
     completion_tokens: int = Field(ge=0, strict=True)
     total_tokens: int = Field(ge=0, strict=True)
 
 
 class ChatCompletionResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
     id: str
     object: Literal["chat.completion"] = "chat.completion"
     created: int

@@ -8,6 +8,39 @@ This project follows Semantic Versioning and the Keep a Changelog format.
 
 ### Added
 
+- `POST /v1/embeddings` with allowlists, limits, guardrails and separate usage reporting.
+- Upstream model names such as `qwen3:14b`, resolved through the default provider and
+  reported back as requested. `GET /v1/models` lists them alongside `provider:model`.
+- Forwarding of fields the gateway does not model, including tools, content parts, `n`,
+  `reasoning_effort` and vendor options, plus an optional Strict mode that rejects them.
+- `endpoint` and `upstream_status` on log events and metadata exports (schema 10).
+- Compose settings for bind address and operator key, and a shared `m87-gateway` network.
+- Linux arm64 images, and image publication on each passing push to `main`.
+- [Connect your app](docs/connect-your-app.md).
+
+### Changed
+
+- The Ollama adapter now uses Ollama's OpenAI-compatible `/v1` API, so tools and reasoning
+  controls work. It needs an Ollama version that provides `/v1`.
+- Stream validation accepts extra delta fields, several choices and per-chunk timestamps.
+- Provider failures now state the provider's HTTP status in the message.
+- Heavy log, usage and export reads no longer run on the event loop, a provider key lookup
+  writes `last_used_at` at most once a minute, and provider clients share one TLS context.
+- Portable ZIPs are no longer published.
+
+### Security
+
+- `config.example.yaml` and its demo key are no longer loaded implicitly.
+- The API reference is no longer served (`/docs`, `/redoc`, `/openapi.json`).
+- Captured messages keep text only; image and other parts are marked as omitted.
+
+### Fixed
+
+- A concurrency rejection is now logged as `queue_outcome: rejected`, not `immediate`.
+- `/v1/models` no longer performs a catalog lookup that had no effect.
+
+### Added
+
 - Optional Linux/WSL x86-64 Grafana/Prometheus setup with root start/stop/status helpers,
   checksum-pinned downloads, private initial credentials, loopback listeners and
   identity-checked lifecycle. Existing services, passwords and data are preserved.

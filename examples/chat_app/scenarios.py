@@ -205,7 +205,11 @@ def exercise():
                     models = caller.get(
                         "/v1/models", headers={"Authorization": f"Bearer {app_key}"}
                     )
-                    assert [item["id"] for item in models.json()["data"]] == ["auto", model]
+                    assert [item["id"] for item in models.json()["data"]] == [
+                        "auto",
+                        model,
+                        model.split(":", 1)[1],
+                    ]
                     parameters = caller.post(
                         "/v1/chat/completions",
                         headers={"Authorization": f"Bearer {app_key}"},

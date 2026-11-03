@@ -63,6 +63,11 @@ class SQLiteUsageRepository(SQLiteRepository):
                 GROUP BY app_id ORDER BY total_tokens DESC, app_id LIMIT 100""",
                 values,
             ).fetchall()
+            by_endpoint = connection.execute(
+                f"""SELECT COALESCE(endpoint, 'chat') AS endpoint, {aggregate} FROM usage_records
+                WHERE {where} GROUP BY COALESCE(endpoint, 'chat') ORDER BY endpoint""",
+                values,
+            ).fetchall()
             by_model = connection.execute(
                 f"""SELECT routed_model AS model, {aggregate} FROM usage_records
                 WHERE {where} GROUP BY routed_model ORDER BY total_tokens DESC, routed_model
@@ -95,6 +100,7 @@ class SQLiteUsageRepository(SQLiteRepository):
             "project_id": project_id,
             "series": timeline,
             "by_app": [dict(row) for row in by_app],
+            "by_endpoint": [dict(row) for row in by_endpoint],
             "by_model": [dict(row) for row in by_model],
         }
 
@@ -108,8 +114,12 @@ class SQLiteUsageRepository(SQLiteRepository):
             provider_attempted INTEGER NOT NULL DEFAULT 0,
             provider_attempts INTEGER NOT NULL DEFAULT 0,
             provider_retries INTEGER NOT NULL DEFAULT 0,
-            cache_status TEXT NOT NULL DEFAULT 'disabled'
+            cache_status TEXT NOT NULL DEFAULT 'disabled',
+            endpoint TEXT
         )""")
+        existing = {row[1] for row in connection.execute("PRAGMA table_info(usage_records)")}
+        if "endpoint" not in existing:
+            connection.execute("ALTER TABLE usage_records ADD COLUMN endpoint TEXT")
         connection.execute(
             "CREATE INDEX IF NOT EXISTS usage_created ON usage_records(created_at DESC)"
         )
@@ -159,4 +169,5 @@ USAGE_FIELDS = (
     "provider_attempts",
     "provider_retries",
     "cache_status",
+    "endpoint",
 )

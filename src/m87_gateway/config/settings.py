@@ -290,6 +290,11 @@ class LimitsConfig(ConfigModel):
     max_concurrent_requests: int = Field(default=64, ge=1, le=10000)
 
 
+class CompatibilityConfig(ConfigModel):
+    # Off by default so existing OpenAI clients work by changing only their base URL.
+    strict_requests: bool = False
+
+
 class GatewaySettings(ConfigModel):
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -303,6 +308,7 @@ class GatewaySettings(ConfigModel):
     cache: CacheConfig = Field(default_factory=CacheConfig)
     retry: RetryConfig = Field(default_factory=RetryConfig)
     limits: LimitsConfig = Field(default_factory=LimitsConfig)
+    compatibility: CompatibilityConfig = Field(default_factory=CompatibilityConfig)
 
     @field_validator("apps", mode="before")
     @classmethod
@@ -391,10 +397,9 @@ def _find_default_config_path() -> Path | None:
     env_path = os.getenv("M87_GATEWAY_CONFIG") or os.getenv("GATEWAY_CONFIG")
     if env_path:
         return Path(env_path)
-    for candidate in (Path.cwd() / "config.yaml", Path.cwd() / "config.example.yaml"):
-        if candidate.exists():
-            return candidate
-    return None
+    # Never fall back to config.example.yaml: its demo key must not be live by accident.
+    candidate = Path.cwd() / "config.yaml"
+    return candidate if candidate.exists() else None
 
 
 def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]) -> None:

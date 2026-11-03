@@ -18,7 +18,7 @@ def apply_overrides(settings: GatewaySettings, saved: dict) -> GatewaySettings:
     if "log_export" in saved:
         data["observability"]["log_export"] = saved["log_export"]
     controls = saved.get("controls", {})
-    for section in ("cache", "retry", "limits", "guardrails"):
+    for section in ("cache", "retry", "limits", "guardrails", "compatibility"):
         if section in controls:
             data[section].update(controls[section])
     if "retention_days" in controls:
@@ -57,6 +57,7 @@ def managed_snapshot(settings: GatewaySettings) -> dict:
             "cache": settings.cache.model_dump(),
             "retry": settings.retry.model_dump(),
             "limits": settings.limits.model_dump(),
+            "compatibility": settings.compatibility.model_dump(),
             "guardrails": {
                 "max_request_bytes": settings.guardrails.max_request_bytes,
                 "max_message_chars": settings.guardrails.max_message_chars,

@@ -1,228 +1,104 @@
 # M87 AI Gateway
 
-A lightweight, self-hostable AI gateway for developers and small organizations.
-
-> Early development. The goal is a public gateway framework with a tested core,
-> documented extension points, and straightforward operations. Cloud provider
-> coverage and a stable extension contract are planned.
-
-## What it does
-
-Applications call one gateway instead of managing every model provider directly.
-The gateway centralizes application authentication, model access, routing, policy
-checks, and operational visibility.
+A self-hosted AI gateway for developers. Put it between your app and any LLM, local
+or hosted, by changing only your base URL and API key.
 
 ```mermaid
 flowchart LR
-    App[Application backend] --> Gateway[M87 AI Gateway]
-    Gateway --> Auth[Identity and model access]
-    Auth --> Policy[Routing and policy checks]
-    Policy --> Adapter[Provider adapter]
-    Adapter --> OpenAI[OpenAI]
-    Adapter --> Ollama[Ollama]
-    Adapter -. Planned .-> Cloud[AWS Bedrock, Azure OpenAI, Vertex AI]
-    Gateway -.-> Logs[Audit logs, metrics, and local console]
+    App[Your app] -->|OpenAI API| Gateway[M87 AI Gateway]
+    Gateway --> Ollama[Ollama or a local GPU]
+    Gateway --> OpenAI[OpenAI]
+    Gateway --> Compatible[Any OpenAI-compatible server]
+    Gateway -.-> Console[Keys, logs, usage and limits]
 ```
 
-## Current status
+> Early development. It is ready to try and to run for your own projects; the API and
+> configuration can still change before 1.0. See [what has been verified](docs/validation.md).
 
-Implemented foundations include validated YAML/environment configuration, bearer
-app keys, requested/resolved-model allowlists, deterministic routing, OpenAI and
-Ollama and generic OpenAI-compatible adapters, configured request guardrails, safe provider errors, correlated
-complete/streaming text responses with disconnect cancellation,
-JSON outcome events, optional private traffic capture, Prometheus metrics, a
-health endpoint, per-app rate limits, opt-in response caching, bounded retries,
-an authenticated model catalog, validated generation parameters, optional bounded
-request queueing, adapter capabilities, and an optional local control plane. The control plane provides
-token analytics, inspectable opted-in LLM input/output, runtime application keys,
-encrypted provider credentials, log export, and a local operator console with
-persistent connection setup and model discovery. Source users can register
-[additional adapters](docs/adapters.md).
+## Start it
 
-The console also provides [projects, filtered usage/logs, hourly charts, and an API
-tester](docs/runbooks/projects-and-usage.md). The end-product vision includes a
-[managed ecosystem](docs/ecosystem.md) for optional Grafana, Prometheus, logging,
-Vault, and other service containers. Service provisioning and Docker startup
-remain planned; the current dashboard works without them.
-
-The native Ollama path is verified with a real local model. The MVP still needs
-live container-to-Ollama and OpenAI verification. Hosted Docker run/Compose flow
-is verified with synthetic inference. Streaming, embeddings,
-budget enforcement, response policies, remote log exporters, and major
-cloud adapters are not implemented.
-See the [roadmap](docs/roadmap.md) for acceptance criteria.
-
-For the included setup experience, install the source package and run
-`m87-gateway` (or `python -m m87_gateway`). Open the printed console URL, connect
-your inference service, choose a model, and create an application key. Follow
-[guided setup](docs/runbooks/guided-setup.md) for commands and the experimental
-portable Windows/Linux preview build, native lifecycle commands, and encrypted
-backup/restore. See [workstation distribution](docs/runbooks/workstation-distribution.md)
-for artifacts and verification limits. Windows
-Ollama can be reached from a WSL gateway.
-
-After installing in `.venv`, everyday operation from this checkout is:
+You need Docker with Compose.
 
 ```bash
-./start.sh                 # Background gateway; prints console URL and admin key
-./status.sh                # Show the managed instance
-./stop.sh                  # Graceful shutdown; preserves saved data
+git clone https://github.com/m87techlabs/m87-ai-gateway.git
+cd m87-ai-gateway
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-No environment activation or Docker is needed. The local gateway tries **8087**,
-then **8187, 8287, 8387**, adding 100 until it finds an available port. The selected
-console URL is printed. `--port` selects an exact port. These scripts support Linux/WSL and can also use an
-existing `dist/m87-gateway` build. See [guided setup](docs/runbooks/guided-setup.md)
-for private runtime logs and configuration options.
-
-For a Docker-free workstation test, run the
-[Windows/WSL flow application](examples/local_test_app/README.md). It starts a
-browser relay and gateway in WSL and calls Ollama running on Windows.
-The launcher also enables the [local control plane](docs/control-plane.md), so the
-same request can be inspected at `http://localhost:8080/admin`.
-
-To use your existing gateway from a separate application, try the
-[chat sample](examples/chat_app/README.md): run `./examples/chat_app/start.sh`,
-enter a gateway application key at the hidden prompt, and open the printed URL.
-It selects an available port and runs in the background. Use
-`./examples/chat_app/status.sh` and `./examples/chat_app/stop.sh` to manage it.
-It supports conversations and shows reported tokens,
-latency, and request IDs for correlation with gateway logs.
-
-## Quickstart
-
-With a running Docker engine, start the prebuilt development preview:
+Get the operator key, then open **http://localhost:8087** and sign in:
 
 ```bash
-docker run -d --name m87-ai-gateway \
-  -p 127.0.0.1:8087:8087 \
-  --add-host=host.docker.internal:host-gateway \
-  --mount source=m87-gateway-data,target=/data \
-  ghcr.io/m87techlabs/m87-ai-gateway:preview
-docker exec m87-ai-gateway cat /data/gateway/admin.key
-```
-
-Open **http://localhost:8087** and enter the retrieved operator key. Connect your
-inference endpoint in Setup, select a model, and create an application key.
-Provider credentials stay in the gateway. Enable input/output capture in Setup
-and inspect Logs and usage after sending a request in the included API tester.
-
-From a checkout, use the root Docker helpers:
-
-```bash
-./docker-start.sh           # Check prerequisites, pull image, wait for health
-./docker-status.sh          # Show container health and console URL
-./docker-stop.sh            # Stop; preserve keys, configuration and logs
-./docker-start.sh --build   # Build locally; no private registry login required
-./docker-start.sh --update  # Pull a published update; retain the Docker data volume
-```
-
-Host Python is not required. Start Docker Engine/Desktop yourself first. If 8087
-is occupied, use `./docker-start.sh --port 8187`. Default resume preserves an
-existing deployment's image and port. The native `start.sh`/`stop.sh` remain separate.
-
-For Compose, download `docker-compose.yml` from a verified
-[preview release](https://github.com/m87techlabs/m87-ai-gateway/releases), then run:
-
-```bash
-docker compose up -d
 docker compose exec m87-ai-gateway cat /data/gateway/admin.key
 ```
 
-The source build remains available with
-`docker compose -f docker-compose.yml -f docker-compose.build.yml up --build -d`.
-Private repository/package access currently requires authentication; public access
-follows release review. Images currently target Linux amd64, including Docker
-Desktop using Linux containers. Follow the [container runbook](docs/runbooks/container-deployment.md)
-for registry login, host inference, ports, lifecycle, backups and upgrades.
-The [quickstart](docs/quickstart.md) includes a completion request.
+In the console, connect your model server or provider in **Setup**, choose a default
+model, and create an application key in **Applications**.
 
-Portable Windows/Linux ZIPs, checksums and Compose are also retained in verified
-preview releases. Build scripts and native start/stop helpers are bundled in this
-repository; the ZIPs are portable apps rather than OS installers.
+| To | Run |
+| --- | --- |
+| Stop, keeping data | `docker compose stop` |
+| Start again | `docker compose up -d` |
+| Follow logs | `docker compose logs -f` |
+| Remove the container, keeping data | `docker compose down` |
+
+It restarts with Docker unless you stopped it. To run without Docker, see
+[local development](docs/runbooks/local-development.md).
+
+## Point your app at it
+
+Change two values. Nothing else in your code has to change.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8087/v1", api_key="<application key>")
+reply = client.chat.completions.create(
+    model="qwen3:14b",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+```
+
+| Your app runs | Base URL |
+| --- | --- |
+| On the same machine | `http://localhost:8087/v1` |
+| In another Compose project on the `m87-gateway` network | `http://m87-ai-gateway:8087/v1` |
+
+Most OpenAI SDKs also read `OPENAI_BASE_URL` and `OPENAI_API_KEY`. See
+[connect your app](docs/connect-your-app.md) for model names, tools, embeddings and errors.
+
+## What you get
+
+| Feature | Status |
+| --- | --- |
+| Chat completions, streaming, tools, images and vendor options, forwarded unchanged | Implemented |
+| Embeddings (`POST /v1/embeddings`) | Implemented |
+| Model listing with your application's allowlist applied | Implemented |
+| Ollama, OpenAI and generic OpenAI-compatible adapters | Implemented; Ollama verified live, [see validation](docs/validation.md) |
+| Separate application keys, rotation and per-model allowlists | Implemented |
+| Rate limits, concurrency limits, queueing, retries and response cache | Implemented, per process |
+| Request logs, token usage, optional input/output capture | Implemented |
+| Web console, encrypted provider keys, configuration history and rollback | Implemented |
+| Prometheus metrics, Grafana dashboards, webhook and Loki export | Implemented; supply your own monitoring services |
+| Fallback routes, budgets, response policies | [Planned](docs/backlog.md) |
+| Anthropic, AWS Bedrock, Azure OpenAI and Vertex AI adapters | [Planned](docs/backlog.md) |
+| TLS profile and a verified cloud deployment | [Planned](docs/roadmap.md) |
+
+It runs as one instance on SQLite. Limits and cache are per process, so do not run
+several replicas against one store yet.
+
+**Before exposing it beyond your machine:** the default Compose file binds to
+`127.0.0.1`. `/metrics` and the console share one port, and `/metrics` needs no key, so
+put a TLS proxy with path rules in front of it. See [security](docs/security.md).
 
 ## Documentation
 
-- [Documentation index](docs/README.md)
-- [Roadmap](docs/roadmap.md) · [Design](docs/design.md) · [Architecture](docs/architecture.md)
-- [Glossary](docs/glossary.md) · [Lifecycle](docs/lifecycle.md) · [Stack](docs/stack.md)
-- [Configuration](docs/configuration.md) · [Security](docs/security.md) · [Observability](docs/observability.md)
-- [Local control plane](docs/control-plane.md) · [Control-plane runbook](docs/runbooks/control-plane.md)
-- [Windows/WSL flow lab](docs/runbooks/windows-wsl-flow-lab.md)
-- [Worker-to-local inference](docs/integrations/worker-local-inference.md)
-- [Operational runbooks](docs/runbooks/README.md) · [Validation status](docs/validation.md)
-- [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)
+- [Connect your app](docs/connect-your-app.md) · [Configuration](docs/configuration.md)
+- [Container deployment](docs/runbooks/container-deployment.md) · [Runbooks](docs/runbooks/README.md)
+- [Security](docs/security.md) · [Observability](docs/observability.md) · [Adapters](docs/adapters.md)
+- [Roadmap](docs/roadmap.md) · [Backlog](docs/backlog.md) · [Validation](docs/validation.md)
+- [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-## Repository structure
+## License
 
-```text
-src/m87_gateway/   Gateway core and provider adapters
-tests/            Automated checks
-docs/             Product and technical documentation
-docs/runbooks/    Operational procedures
-examples/         Integration and observability examples
-deploy/           Deployment documentation and future assets
-.github/          CI, dependency updates, and contribution templates
-```
-
-## Versioning and license
-
-Versions follow Semantic Versioning. The historical `v0.1.0` tag is the initial
-scaffold; the completed MVP will use a new version. Public preview and stable
-release criteria are defined in the [lifecycle](docs/lifecycle.md).
-
-Licensed under [Apache License 2.0](LICENSE).
-
-## Development loop
-
-Use `./start.sh` for routine source development, restart for Python changes and
-refresh for console assets. Keep Docker packaging for a functional
-release checkpoint using `./docker-start.sh --build`. Routine main pushes run
-source/docs/native checks; dispatch CI with `package_container` enabled to build,
-test and publish a container preview. Explicit
-`--update` consumes a published image; restarting an existing container uses its
-existing code. Native and Docker stores are separate; see
-[development workflow](docs/runbooks/local-development.md) and
-[container data migration](docs/runbooks/container-deployment.md).
-
-The compact backend uses six SQLite repositories with independent usage retention.
-Trusted extensions can register backend implementations and reuse the
-[adapter contracts](docs/backend-adapters.md). Only SQLite is bundled; see
-[backend architecture](docs/backend-architecture.md) and the
-[upgrade/testing runbook](docs/runbooks/backend-storage-testing.md).
-
-Streaming is available in the sample chat toggle, with a Stop button and final
-provider usage. See [streaming and cancellation](docs/runbooks/streaming-and-cancellation.md)
-for SSE errors, partial capture, live checks and upgrade notes.
-
-
-Console-managed settings now have encrypted revision history and validated restore.
-Configuration/provider-key changes are audited transactionally. Storage health
-reports private-file/database/credential checks and offers explicit integrity/write
-verification. See [configuration recovery](docs/runbooks/configuration-recovery.md).
-
-
-Logging is the current product priority. The sample links to its request in Logs,
-with input/output, separate tokens, search/paging and recording health. Content has
-independent retention; exports omit it by default. See [logging showcase](docs/runbooks/logging-showcase.md)
-and [remaining logging plan](docs/logging-plan.md).
-
-### Optional metadata delivery
-
-The gateway includes a bounded SQLite metadata queue and optional webhook/Loki exporters.
-Retries and pending deliveries survive restart; receivers deduplicate delivery IDs.
-Input/output stay local. Try the [receiver example and outage showcase](docs/runbooks/log-export.md).
-Configure destinations, encrypted credentials and draft connection tests in **Log export**.
-See [console export setup](docs/runbooks/configure-log-export.md). Use [Loki setup](docs/runbooks/loki-export.md) for an existing single-tenant receiver or
-bearer-authenticated proxy. OTLP and managed Grafana services remain planned.
-
-For routine startup, sample testing and log inspection, use the [everyday operations how-to](docs/runbooks/daily-operations.md). All operational procedures are indexed in [runbooks](docs/runbooks/README.md).
-
-### Optional Grafana dashboards and alerts
-
-The [monitoring bundle](deploy/observability/README.md) includes an overview dashboard,
-Loki request-metadata browsing, Prometheus scrape configuration and nine tested alert
-rules. Native ZIPs include these assets and docs. Supply your own monitoring services;
-none start automatically. Follow [setup and verification](docs/runbooks/grafana-monitoring.md).
-
-For a Linux/WSL workstation, run `./monitoring-start.sh --install` after starting the gateway. Use `./monitoring-status.sh` and `./monitoring-stop.sh` to manage only those services. See [local monitoring setup](docs/runbooks/local-monitoring.md) for login and alert details.
+Licensed under the [Apache License 2.0](LICENSE). Versions follow Semantic Versioning;
+release criteria are in the [lifecycle](docs/lifecycle.md).

@@ -56,33 +56,15 @@ def frames(text):
 def test_stream_contract_usage_and_cache_bypass(runtime, monkeypatch, name, include_usage):  # noqa: F811
     monkeypatch.setenv("OPENAI_API_KEY", "synthetic-provider-credential")
     usage = {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}
-    if name == "ollama":
-        data = (
-            b"\n".join(
-                json.dumps(value).encode()
-                for value in [
-                    {"message": {"content": "Hello "}, "done": False},
-                    {
-                        "message": {"content": "world"},
-                        "done": True,
-                        "prompt_eval_count": 3,
-                        "eval_count": 2,
-                    },
-                ]
-            )
-            + b"\n"
-        )
-    else:
-        data = sse(chunk("Hello ")) + sse(chunk("world", "stop"))
-        data += sse({**chunk(), "choices": [], "usage": usage}) + b"data: [DONE]\n\n"
+    data = sse(chunk("Hello ")) + sse(chunk("world", "stop"))
+    data += sse({**chunk(), "choices": [], "usage": usage}) + b"data: [DONE]\n\n"
     streams = []
 
     def handler(request):
         body = json.loads(request.content)
         assert body["stream"] is True
         assert "user" not in body
-        if name != "ollama":
-            assert body["stream_options"] == {"include_usage": True}
+        assert body["stream_options"] == {"include_usage": True}
         stream = Bytes([data[:3], data[3:19], data[19:]])
         streams.append(stream)
         return httpx.Response(200, stream=stream)
@@ -294,11 +276,7 @@ def test_stream_capture_redacts_across_chunks_and_marks_truncation(
 
 @pytest.mark.parametrize("name", ["ollama", "openai_compatible"])
 def test_missing_stream_usage_remains_unknown(runtime, name):  # noqa: F811
-    data = (
-        json.dumps({"message": {"content": "text"}, "done": True}).encode() + b"\n"
-        if name == "ollama"
-        else sse(chunk("text", "stop")) + b"data: [DONE]\n\n"
-    )
+    data = sse(chunk("text", "stop")) + b"data: [DONE]\n\n"
     app = runtime(
         overrides={
             "apps": [
@@ -328,7 +306,6 @@ def test_missing_stream_usage_remains_unknown(runtime, name):  # noqa: F811
         {"stream": "true"},
         {"stream": True, "stream_options": {"include_usage": 1}},
         {"stream": False, "stream_options": {"include_usage": False}},
-        {"stream": True, "stream_options": {"unknown": True}},
     ],
 )
 def test_stream_options_are_strict(runtime, payload):  # noqa: F811

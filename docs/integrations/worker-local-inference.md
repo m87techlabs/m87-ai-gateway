@@ -30,10 +30,11 @@ sequenceDiagram
 ## Compatibility boundary
 
 The inspected reference Worker relays `/v1/chat/completions`, `/v1/models`,
-and `/v1/embeddings` and can pass streaming responses. This gateway currently
-supports complete and streaming text chat. Live streaming through the Worker/tunnel
-remains unverified. It rejects embeddings, tool/multimodal fields and unsupported
-fields; models and embeddings endpoints are not implemented.
+and `/v1/embeddings` and can pass streaming responses. This gateway serves all
+three. Live traffic through the Worker/tunnel path remains unverified. Route only those
+three paths through the tunnel, so the console and `/metrics` stay private. A tunnel
+that previously pointed at Ollama also needs its Host header rewrite removed if the
+gateway should see the original host; the gateway does not require it.
 
 Use a separate test Worker/origin or a dedicated chat test route first. Preserve
 existing user authentication, Cloudflare Access, origin authentication, rate
@@ -42,8 +43,8 @@ controls. Existing app/tunnel deployments are not changed by this example.
 
 The reference Worker does not currently forward `X-Request-ID` to its client.
 That response-header mapping will be needed during a later app integration.
-Raw model names may also need mapping to the gateway's `provider:model` format,
-or to an authorized `auto` route.
+Upstream model names such as `qwen3:14b` work unchanged when that provider is the
+default; see [connect your app](../connect-your-app.md#model-names).
 
 ## Test setup
 

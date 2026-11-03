@@ -1,5 +1,6 @@
 """Synthetic SDK and adapter acceptance tests; no cloud credentials required."""
 
+import dataclasses
 import hashlib
 import json
 
@@ -47,7 +48,7 @@ def test_sdk_lists_authorized_models_over_real_local_http():
     with serving(app) as url:
         app.state.model_catalog.replace("ollama", "http://localhost:11434", ["ollama:secret"])
         with sdk.OpenAI(api_key="synthetic-sdk-key", base_url=url + "/v1", max_retries=0) as client:
-            assert [model.id for model in client.models.list()] == ["auto", "ollama:test"]
+            assert [model.id for model in client.models.list()] == ["auto", "ollama:test", "test"]
         with httpx.Client(base_url=url, trust_env=False) as client:
             assert client.get("/v1/models").status_code == 401
             response = client.get(
@@ -96,19 +97,11 @@ def test_builtin_parameter_mapping(runtime, monkeypatch, name, format_type):  # 
         "response_format": response_format,
         "user": "synthetic-client-user",
     }
-    if name != "ollama":
-        options.update(presence_penalty=0.2, frequency_penalty=-0.2)
+    options.update(presence_penalty=0.2, frequency_penalty=-0.2)
 
     def handler(request):
         body = json.loads(request.content)
         assert "user" not in body
-        if name == "ollama":
-            assert body["options"] == {"top_p": 0.7, "stop": ["END"], "seed": 42}
-            assert (
-                body.get("format")
-                == {"text": None, "json_object": "json", "json_schema": schema}[format_type]
-            )
-            return httpx.Response(200, json={"message": {"content": "synthetic"}})
         assert body["response_format"] == response_format
         for field in ("top_p", "stop", "seed", "presence_penalty", "frequency_penalty"):
             assert body[field] == options[field]
@@ -157,10 +150,20 @@ def test_builtin_parameter_mapping(runtime, monkeypatch, name, format_type):  # 
         },
     ],
 )
-def test_unsupported_ollama_options_never_reach_provider(runtime, options):  # noqa: F811
+def test_adapter_without_a_parameter_rejects_it_before_the_provider(
+    runtime,  # noqa: F811
+    monkeypatch,
+    options,
+):
     def handler(request):
         pytest.fail("Unsupported options reached provider")
 
+    narrow = Capabilities(streaming=True, response_formats=frozenset({"text", "json_schema"}))
+    registered = adapters()
+    monkeypatch.setitem(
+        registered, "ollama", dataclasses.replace(registered["ollama"], capabilities=narrow)
+    )
+    monkeypatch.setattr("m87_gateway.api.routes.adapters", lambda: registered)
     with TestClient(runtime(handler=handler)) as client:
         response = chat(client, **options)
         assert response.status_code == 422
@@ -172,8 +175,9 @@ def test_capability_declarations_match_gateway_protocol():
         matrix = adapter.capabilities.as_dict()
         assert matrix["text_chat"]
         assert matrix["streaming"]
-        assert not any(
-            matrix[field] for field in ("tools", "images", "embeddings", "multiple_choices")
+        assert all(
+            matrix[field]
+            for field in ("tools", "images", "embeddings", "multiple_choices", "passthrough")
         )
         for parameter in adapter.capabilities.generation_parameters:
             value = "end" if parameter == "stop" else 1
@@ -182,7 +186,7 @@ def test_capability_declarations_match_gateway_protocol():
                 messages=[{"role": "user", "content": "x"}],
                 **{parameter: value},
             )
-            validate_capabilities(payload, name)
+            validate_capabilities(payload, name, GatewaySettings())
     assert Capabilities().response_formats == frozenset({"text"})
 
 
@@ -258,4 +262,4 @@ def test_model_catalog_filters_disabled_providers_and_app_allowlists(runtime):  
     app = runtime(overrides={"providers": {"openai": {"enabled": False}}})
     with TestClient(app) as client:
         response = client.get("/v1/models", headers=HEADERS)
-        assert [item["id"] for item in response.json()["data"]] == ["auto", "ollama:test"]
+        assert [item["id"] for item in response.json()["data"]] == ["auto", "ollama:test", "test"]

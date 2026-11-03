@@ -376,6 +376,7 @@ async function loadControls() {
   const form = $("controls-form");
   for (const name of ["max_concurrent_requests", "max_request_bytes", "max_message_chars", "max_attempts", "backoff_ms", "ttl_seconds", "max_entries", "retention_days", "content_retention_days", "max_content_chars"]) form.elements[name].value = fields[name] ?? (name === "content_retention_days" ? 30 : "");
   form.elements.cache_enabled.checked = values.cache.enabled;
+  form.elements.strict_requests.checked = Boolean(values.compatibility?.strict_requests);
   form.elements.queue_enabled.checked = (fields.queue_max_depth || 0) > 0;
   form.elements.queue_max_depth.value = fields.queue_max_depth || 64;
   form.elements.queue_max_depth_per_app.value = fields.queue_max_depth_per_app ?? 16;
@@ -541,7 +542,7 @@ $("tester-detail").addEventListener("click", async () => {
 
 $("controls-form").addEventListener("submit", async (event) => {
   event.preventDefault(); const form = new FormData(event.currentTarget); const number = (name) => Number(form.get(name));
-  const payload = {cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), content_retention_days: number("content_retention_days"), max_content_chars: number("max_content_chars")};
+  const payload = {compatibility: {strict_requests: form.has("strict_requests")}, cache: {enabled: form.has("cache_enabled"), ttl_seconds: number("ttl_seconds"), max_entries: number("max_entries")}, retry: {max_attempts: number("max_attempts"), backoff_ms: number("backoff_ms")}, limits: {max_concurrent_requests: number("max_concurrent_requests"), queue_max_depth: form.has("queue_enabled") ? number("queue_max_depth") : 0, queue_max_depth_per_app: number("queue_max_depth_per_app"), queue_wait_timeout_seconds: number("queue_wait_timeout_seconds")}, max_request_bytes: number("max_request_bytes"), max_message_chars: number("max_message_chars"), retention_days: number("retention_days"), content_retention_days: number("content_retention_days"), max_content_chars: number("max_content_chars")};
   const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
   try { await api("/controls", {method: "PUT", headers: controlsEtag ? {"If-Match": controlsEtag} : {}, body: JSON.stringify(payload)}); notice("Controls saved and response cache cleared"); await loadControls(); }
   catch (error) { notice(error.message); }

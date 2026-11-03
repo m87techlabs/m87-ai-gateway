@@ -48,9 +48,30 @@ restart without losing data, stop only that profile, and recover or roll back
 through documented procedures. No plaintext secrets or captured prompts appear
 in metrics, process arguments, generated manifests, or default logs.
 
+## Direction: plug-and-play for developers
+
+The gateway is public and aimed at developers building locally or using any LLM API. Judge
+work by time to first request and by how little a calling app has to change. Docker Compose
+is the primary package, so the same setup runs on a laptop or a cloud host.
+
+1. **Runnable by a stranger** — [x] demo key no longer loaded implicitly; [x] Compose settings
+   and shared network; [x] multi-architecture image published from `main`; make the package
+   public; add a clean-machine test from install to first completion.
+2. **Drop-in** — [x] upstream model names; [x] forwarding of unmodelled fields with an optional
+   strict mode; [x] embeddings; [x] upstream status in logs; [x] live Ollama verification with a
+   real RAG client; named connections for several providers of one type; live OpenAI check.
+3. **Console** — one Features page driven by a single backend list, and a rebuilt modern UI.
+   Blocklists, routing rules, metrics and JSON logs become editable there.
+4. **Cloud** — TLS Compose profile, authenticated `/metrics`, admin key throttling, and a
+   verified deployment on a real cloud host.
+
+Optional services are Compose profiles rather than containers started from the UI: controlling
+containers needs the Docker socket, which is effectively root on the host. PyPI (`pipx`) becomes
+the non-Docker route; portable ZIPs are no longer published.
+
 ## Streaming and disconnect cancellation — implemented; live checks deferred
 
-- [x] Stream text SSE from Ollama NDJSON and compatible/OpenAI adapters, with
+- [x] Stream text SSE from Ollama and compatible/OpenAI adapters, with
   declared capabilities and include_usage support; missing usage stays unknown.
 - [x] Hold admission through the full response and bypass cache/retry for streams.
 - [x] Validate before headers; terminate later failures with safe SSE error events.

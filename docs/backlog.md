@@ -20,11 +20,10 @@ The authenticated inference API exposes `GET /v1/models` and
 `/ready` and `/metrics` provide operational endpoints. Supported fields are
 documented in [configuration](configuration.md#chat-generation-parameters).
 
-Logging is the current development focus. Local showcase/content separation/search/
+Local showcase/content separation/search/
 recording-health work is implemented. **O2** now has a bounded metadata outbox and
-webhook delivery; remaining logging work is OTLP and live monitoring verification,
-then **O1 dashboards/alerts** and **O3/O4 tracing/performance**. Other priorities remain
-recorded below. See [logging plan](logging-plan.md).
+webhook delivery. The current priority is the [plug-and-play direction](roadmap.md#direction-plug-and-play-for-developers).
+See [logging plan](logging-plan.md) for what remains of logging.
 
 ## Priority summary
 
@@ -35,10 +34,8 @@ recorded below. See [logging plan](logging-plan.md).
 | P2 | [R4 Priority classes](#r4-priority-classes) | Routing | M |
 | P2 | [S1 Budget enforcement](#s1-budget-enforcement) | Security | M |
 | P2 | [S2 Response policies](#s2-response-policies) | Security | M–L |
-| P2 | [O1 Dashboards and alerts](#o1-dashboards-and-alerts) | Observability | S–M |
 | P2 | [A5 Multiple choices (`n`)](#a5-multiple-choices-n) | API | S |
-| P3 | [A6 Embeddings](#a6-embeddings) | API | M |
-| P3 | [A7 Tool calling](#a7-tool-calling) | API | L |
+| P3 | [A7/A8 Tool and image awareness](#a7-tool-calling-and-a8-multimodal-gateway-awareness) | API | M |
 | P3 | [P1 Cloud and vendor adapters](#p1-cloud-and-vendor-adapters) | Providers | L each |
 | P3 | Remaining items below | — | — |
 
@@ -48,10 +45,7 @@ Sizes are rough: S ≈ days, M ≈ one to two weeks, L ≈ several weeks.
 flowchart LR
     A2[A2 Model listing complete] --> A1[A1 Streaming live verification]
     A1 --> A3[A3 Cancellation implemented]
-    A1 --> O4[O4 Latency metrics]
-    A1 --> A7[A7 Tool calling]
     P2[P2 Capability matrix complete] --> A1
-    P2 --> A7
     R3[R3 Queueing complete] --> R4[R4 Priority classes]
     R2[R2 Provider health] --> R1[R1 Fallback routes]
     R5[R5 Shared state] --> S1[S1 Budgets]
@@ -67,15 +61,15 @@ The streaming runtime, adapter contracts and browser Stop flow are implemented;
 see [streaming and cancellation](runbooks/streaming-and-cancellation.md). Remaining
 work is live evidence before the original A1 acceptance gate is satisfied.
 
-**Scope:** run text streaming against Windows/local Ollama, OpenAI and a compatible
-server; inspect final usage, bounded capture and initial/terminal errors. Verify
-Stop closes HTTP and that each backend actually stops generation. Repeat through
-the Worker/tunnel/proxy path with buffering and timeout checks. Preserve unknown
+Verified against Windows Ollama on 2026-11-03, including final usage and generation stopping
+on disconnect; see [validation](validation.md).
+
+**Scope:** repeat against OpenAI and another compatible server, and through the
+Worker/tunnel/proxy path with buffering and timeout checks. Preserve unknown
 counts when no provider usage arrives; do not introduce token estimates.
 
 **Acceptance:** record provider/model versions and successful completion, token
 accounting, truncation and disconnect recovery in [validation](validation.md).
-Local Ollama discovery was unavailable on 2026-10-06, so this gate remains planned.
 
 ### A5 Multiple choices (`n`)
 
@@ -88,37 +82,11 @@ concurrency controls. Record one outcome event with combined usage.
 
 **Acceptance:** usage equals the sum over all choices, limits apply, and the maximum `n` is enforced.
 
-### A6 Embeddings
+### A7 Tool calling and A8 multimodal: gateway awareness
 
-**Why:** retrieval-augmented generation and semantic search need embeddings, and
-Ollama and OpenAI both provide them.
-
-**Scope:** `POST /v1/embeddings` with per-application model authorization, usage
-accounting, size limits and adapter support.
-
-**Acceptance:** contract tests and a live Ollama embedding check pass. Embedding
-usage is shown separately from chat usage in the console.
-
-### A7 Tool calling
-
-**Why:** agent-style applications need function/tool calling.
-
-**Scope:** `tools`, `tool_choice`, assistant `tool_calls` and `tool`-role messages,
-both non-streaming and streaming. Capture and guardrails cover tool arguments and results.
-
-**Acceptance:** the round trip passes tests on each adapter that declares the
-capability. Adapters without it reject tool requests with a 422.
-
-### A8 Multimodal input
-
-**Why:** vision models need image content parts.
-
-**Scope:** accept image content parts with size, count and MIME-type limits, and
-define how captured content handles images (store a reference or hash, never the
-raw data by default).
-
-**Acceptance:** limits fail closed, capture never stores raw images by default,
-and a vision model passes a live check.
+Tools, images and other fields are forwarded unchanged, so they work where the model supports
+them. Remaining work is making the gateway aware of them: guardrails and capture covering tool
+arguments and results, image size, count and type limits, and capture of tool deltas in streams.
 
 ---
 
@@ -181,7 +149,7 @@ selection, with health awareness (needs [R2](#r2-provider-health-and-circuit-bre
 ### R7 Semantic cache
 
 **Scope:** an optional cache keyed by embedding similarity, scoped per application
-and model, with a similarity threshold, TTL and exclusions. Needs [A6](#a6-embeddings).
+and model, with a similarity threshold, TTL and exclusions.
 
 **Acceptance:** cache hits never cross applications and are labelled as cache hits
 in usage. An opt-out works for each request.
@@ -255,15 +223,6 @@ claim is made.
 
 ## O. Observability
 
-### O1 Dashboards and alerts
-
-**Scope:** Grafana dashboards for the existing Prometheus metrics (requests,
-latency, outcomes, provider errors, guardrails, tokens, cache), plus example
-alert rules and a runbook.
-
-**Acceptance:** dashboards import cleanly into a stock Grafana, and alerts fire in a
-documented failure exercise.
-
 ### O2 Remote log exporters
 
 **Status: partial.** Schema-8 transactional metadata outbox, webhook adapter, stable IDs,
@@ -291,7 +250,7 @@ attempt, retries and cache. Propagate `traceparent` from callers.
 ### O4 Latency and throughput metrics
 
 **Scope:** time to first token, tokens per second and queue wait, broken down by
-provider, model and application. Needs [A1](#a1-streaming-live-verification) and [implemented queueing](runbooks/inference-api-and-queueing.md).
+provider, model and application. Needs [implemented queueing](runbooks/inference-api-and-queueing.md).
 
 ### O5 Cost and resource estimates
 
@@ -313,8 +272,7 @@ opt-in live smoke check.
 
 ### P3 Live verification of existing adapters
 
-OpenAI, generic OpenAI-compatible servers (vLLM), Ollama from a container, and the
-Worker/tunnel path still need recorded live evidence in [validation](validation.md).
+OpenAI, generic OpenAI-compatible servers (vLLM) and the Worker/tunnel path still need recorded live evidence in [validation](validation.md).
 
 ---
 

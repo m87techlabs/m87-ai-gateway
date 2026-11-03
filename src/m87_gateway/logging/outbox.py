@@ -35,6 +35,8 @@ EXPORT_FIELDS = (
     "cache_status",
     "queue_wait_ms",
     "queue_outcome",
+    "endpoint",
+    "upstream_status",
 )
 
 

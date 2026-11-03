@@ -8,8 +8,11 @@ the supported fields and apply to new requests.
 ## File selection and overrides
 
 The loader uses an explicit code-supplied path, then `M87_GATEWAY_CONFIG` or
-`GATEWAY_CONFIG`, then `config.yaml` or `config.example.yaml` in the working
-directory. An explicitly selected missing file fails startup. Without a file,
+`GATEWAY_CONFIG`, then `config.yaml` in the working directory. `config.example.yaml`
+and its demo key are loaded only when selected explicitly. A selected file that is
+missing fails startup. The `m87-gateway` command and the container use the console and
+environment instead of YAML, so blocklists and routing rules cannot be set on that path
+yet. Without a file,
 the default configuration has no app keys and denies application access. Ancestor
 directories are not searched for demonstration keys.
 
@@ -71,11 +74,11 @@ contain embedded credentials, queries, or fragments.
 
 OpenAI defaults to `https://api.openai.com/v1`. It first uses the encrypted
 `default` key from the enabled local control plane, then its configured environment
-variable. Ollama defaults to `http://localhost:11434` and calls
-`/api/chat`. A disabled provider is rejected before invocation. Missing OpenAI
+variable. Ollama defaults to `http://localhost:11434`, or `OLLAMA_BASE_URL` on the
+`m87-gateway` path, and calls its OpenAI-compatible `/v1` API. A disabled provider is rejected before invocation. Missing OpenAI
 credentials return a safe 503 when that provider is selected.
 
-`providers.openai_compatible` supports the current complete/streaming text contract at
+`providers.openai_compatible` supports the same forwarding contract at
 an explicitly configured base URL, typically ending in `/v1`. Its key is optional;
 Ollama can also use a gateway-stored or environment bearer key for protected endpoints.
 Registered source extensions use `providers.custom.<adapter-name>`; see
@@ -155,19 +158,21 @@ startup; follow [backend acceptance](runbooks/backend-storage-testing.md) before
 
 | Field | Bounds / mapping |
 | --- | --- |
-| `temperature`, `max_tokens` | Existing temperature/output bound; Ollama maps max_tokens to num_predict |
-| `top_p` | 0–1; forwarded to compatible APIs or Ollama options |
-| `stop` | One string or 1–4 strings, each 1–1,024 characters; Ollama receives a list |
-| `seed` | Signed 64-bit integer; forwarded to compatible APIs or Ollama options |
-| `presence_penalty`, `frequency_penalty` | −2–2; compatible APIs only; Ollama returns 422 |
+| `temperature`, `max_tokens` | Existing temperature/output bound |
+| `top_p` | 0–1 |
+| `stop` | One string or 1–4 strings, each 1–1,024 characters |
+| `seed` | Signed 64-bit integer |
+| `presence_penalty`, `frequency_penalty` | −2–2 |
 | `response_format` | text, json_object or json_schema; see below |
 | `user` | Optional 1–200 character attribution; stored as client_user_hash (SHA-256); never sent upstream |
 
-JSON object mode maps to Ollama `format: "json"`. JSON schema mode requires a
-name and nonempty schema object (serialized maximum 65,536 characters); Ollama
-receives the schema as `format`. Compatible APIs receive the response_format object,
-including optional strict/description. Ollama rejects an explicitly supplied strict
-flag, including false. The gateway validates the request shape and bounds; inference
+These fields are forwarded unchanged, along with any field the gateway does not model;
+see [connect your app](connect-your-app.md#what-is-forwarded). **Strict mode**
+(`compatibility.strict_requests`, also in **Controls**) rejects unmodelled fields instead.
+
+JSON schema mode requires a name and nonempty schema object (serialized maximum 65,536
+characters). All built-in adapters receive the response_format object, including optional
+strict/description. The gateway validates the request shape and bounds; inference
 services enforce their supported schema subset and output format. It does not
 validate generated output against the schema or resolve remote schema references.
 

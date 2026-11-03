@@ -1,10 +1,20 @@
+# Start: docker compose up -d    Stop, keeping data: docker compose stop
+# Optional settings come from .env; see .env.example.
 services:
   m87-ai-gateway:
     image: ${GATEWAY_IMAGE:-ghcr.io/m87techlabs/m87-ai-gateway:preview}
     ports:
-      - "127.0.0.1:${GATEWAY_PORT:-8087}:8087"
+      - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-8087}:8087"
+    environment:
+      # Empty generates a key at /data/gateway/admin.key on first start.
+      GATEWAY_ADMIN_API_KEY: ${GATEWAY_ADMIN_API_KEY:-}
+      # Suggested endpoint for a model server running on this host.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - m87-gateway
     volumes:
       - gateway-data:/data
     read_only: true
@@ -16,6 +26,11 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
     stop_grace_period: 60s
+
+networks:
+  # Other Compose projects can join this and call http://m87-ai-gateway:8087/v1.
+  m87-gateway:
+    name: m87-gateway
 
 volumes:
   gateway-data:

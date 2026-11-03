@@ -152,8 +152,9 @@ event detail, bounded JSON export, key operations, and a destination inventory.
 
 The gateway sees only traffic that passes through it. If the local machine,
 Docker, or tunnel is down, a Worker/edge failure occurs before the gateway and
-must be recorded at that layer. Streaming, embeddings, traces,
-cost estimation, OTLP and remote content export remain planned. Optional sanitized
+must be recorded at that layer. Each event records `endpoint` (`chat` or `embeddings`), and
+`upstream_status` holds the provider's HTTP status when it refused or failed a request.
+Traces, cost estimation, OTLP and remote content export remain planned. Optional sanitized
 metadata webhook and Loki delivery are implemented.
 
 
