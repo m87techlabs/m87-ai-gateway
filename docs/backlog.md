@@ -37,6 +37,7 @@ See [logging plan](logging-plan.md) for what remains of logging.
 | P2 | [A5 Multiple choices (`n`)](#a5-multiple-choices-n) | API | S |
 | P3 | [A7/A8 Tool and image awareness](#a7-tool-calling-and-a8-multimodal-gateway-awareness) | API | M |
 | P3 | [P1 Cloud and vendor adapters](#p1-cloud-and-vendor-adapters) | Providers | L each |
+| P3 | [U1 Console branding](#u1-console-branding) | Console | S–M |
 | P3 | Remaining items below | — | — |
 
 Sizes are rough: S ≈ days, M ≈ one to two weeks, L ≈ several weeks.
@@ -258,6 +259,26 @@ provider, model and application. Needs [implemented queueing](runbooks/inference
 and GPU-seconds or token throughput for self-hosted providers.
 
 **Acceptance:** estimates are clearly marked as estimates, and maintaining the price table is documented.
+
+---
+
+## U. Console
+
+### U1 Console branding
+
+**Why:** the console currently uses a plain text "M87" placeholder and a neutral palette. It
+should look like an M87 product, with an identity of its own.
+
+**Scope:** replace the placeholder with the official M87 mark, and create a gateway identity that
+matches the M87 theme: a lockup or product mark, a favicon, a palette and a sign-in screen. The
+official artwork and palette (amber, gold, jet blue, space navy) are in the M87 brand folder; Horizon
+and Sentinel are existing examples. Apply it through the console's CSS tokens, in both themes.
+
+Decide first how logo files may be used in this public, Apache-2.0 repository, and keep them in one
+replaceable place, because the product name may still change.
+
+**Acceptance:** the mark and favicon appear on sign-in and in the sidebar in both themes, text and
+controls keep readable contrast, and chart and status colours stay distinct from brand accents.
 
 ---
 
