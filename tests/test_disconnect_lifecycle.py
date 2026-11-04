@@ -115,9 +115,10 @@ def test_real_disconnect_cancels_backend_and_records_one_outcome(
                     ) as response:
                         assert response.status_code == 200
                         request_id = response.headers["x-request-id"]
-                        line = next(
-                            line for line in response.iter_lines() if line.startswith("data:")
-                        )
+                        # Keep this open: dropping the iterator closes the connection, and
+                        # the disconnect below must only happen once the client leaves.
+                        lines = response.iter_lines()
+                        line = next(line for line in lines if line.startswith("data:"))
                         assert "synthetic fragment" in line
                         assert gateway.state.inflight_limiter.snapshot()["active_requests"] == 1
             else:
