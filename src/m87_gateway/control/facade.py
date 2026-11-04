@@ -154,6 +154,9 @@ class BackendFacade:
     def revoke_app_key(self, app_id: str, key_id: str) -> bool:
         return self.identities.revoke_app_key(app_id, key_id)
 
+    def record_access_event(self, action: str) -> None:
+        self.management_audit.record_access_event(action)
+
     def list_management_events(self, limit: int = 100, project_id: str | None = None):
         return self.management_audit.list_management_events(limit, project_id)
 

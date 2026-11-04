@@ -248,6 +248,23 @@ class ObservabilityConfig(ConfigModel):
     log_export: LogExportConfig = Field(default_factory=LogExportConfig)
 
 
+class OidcConfig(ConfigModel):
+    """Console sign-in. Off until an issuer is set; the secret is only ever read from the environment."""
+
+    issuer: str = ""
+    client_id: str = ""
+    client_secret_env: str = "GATEWAY_OIDC_CLIENT_SECRET"
+    public_url: str = ""
+    scopes: str = Field(default="openid profile email", min_length=6, max_length=512)
+    # Dotted path to the role list. Empty means Keycloak's resource_access.<client_id>.roles.
+    role_claim: str = Field(default="", max_length=256)
+    admin_role: str = Field(default="admin", min_length=1, max_length=128)
+    readonly_role: str = Field(default="readonly", min_length=1, max_length=128)
+    session_minutes: int = Field(default=60, ge=5, le=720)
+
+    _secret_env = field_validator("client_secret_env")(ProviderConfig.valid_env_name.__func__)
+
+
 class ControlPlaneConfig(ConfigModel):
     backend_adapter: str = Field(default="sqlite", pattern=r"^[a-z][a-z0-9_-]{0,63}$")
     management_audit_retention_days: int = Field(default=365, ge=1, le=3650)
@@ -258,6 +275,7 @@ class ControlPlaneConfig(ConfigModel):
     admin_api_key_env: str = "GATEWAY_ADMIN_API_KEY"
     retention_days: int = Field(default=30, ge=1, le=3650)
     content_retention_days: int = Field(default=30, ge=1, le=3650)
+    oidc: OidcConfig = Field(default_factory=OidcConfig)
 
     @field_validator("admin_api_key_env")
     @classmethod
@@ -345,6 +363,8 @@ class GatewaySettings(ConfigModel):
 def load_settings(config_path: str | Path | None = None) -> GatewaySettings:
     data = _load_yaml_config(config_path)
     _apply_environment_overrides(data, os.environ)
+    for name, value in oidc_environment(os.environ).items():
+        _set_if_present(data, ("control_plane", "oidc", name), value)
     # Resolve endpoints once, at startup, so malformed environment overrides fail closed.
     for name, default_url in (
         ("openai", "https://api.openai.com/v1"),
@@ -471,6 +491,24 @@ def _apply_environment_overrides(data: dict[str, Any], environ: os._Environ[str]
     }.items():
         if variable in environ:
             _set_if_present(data, path, _parse_bool(variable, environ[variable]))
+
+
+def oidc_environment(environ) -> dict[str, str]:
+    """Compose passes unset options as empty strings, and those must keep the defaults."""
+    values = {}
+    for variable, name in {
+        "GATEWAY_OIDC_ISSUER": "issuer",
+        "GATEWAY_OIDC_CLIENT_ID": "client_id",
+        "GATEWAY_PUBLIC_URL": "public_url",
+        "GATEWAY_OIDC_SCOPES": "scopes",
+        "GATEWAY_OIDC_ROLE_CLAIM": "role_claim",
+        "GATEWAY_OIDC_ADMIN_ROLE": "admin_role",
+        "GATEWAY_OIDC_READONLY_ROLE": "readonly_role",
+        "GATEWAY_OIDC_SESSION_MINUTES": "session_minutes",
+    }.items():
+        if environ.get(variable):
+            values[name] = environ[variable]
+    return values
 
 
 def _parse_bool(name: str, value: str) -> bool:

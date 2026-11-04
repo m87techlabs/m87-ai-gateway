@@ -26,10 +26,6 @@
         "label": "Prometheus",
         "type": "datasource",
         "query": "prometheus",
-        "current": {
-          "text": "m87-prometheus",
-          "value": "m87-prometheus"
-        },
         "refresh": 1
       },
       {
@@ -77,7 +73,9 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "noValue": "Unknown"
+          "noValue": "Unknown",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -221,7 +219,9 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
-          "noValue": "Unknown"
+          "noValue": "Unknown",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },

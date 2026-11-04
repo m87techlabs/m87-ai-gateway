@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from m87_gateway.api.errors import GatewayError
-from .api import AdminStore
+from .identity import AdminStore, ReaderStore
 from .configuration_service import (
     changed_credentials,
     changed_export_credentials,
@@ -24,7 +24,7 @@ class RevisionRestore(BaseModel):
 
 
 @router.get("/admin/api/configuration/revisions")
-async def config_revisions(store: AdminStore, limit: int = Query(default=100, ge=1, le=100)):
+async def config_revisions(store: ReaderStore, limit: int = Query(default=100, ge=1, le=100)):
     items = store.list_config_revisions(limit)
     return {
         "items": items,
@@ -115,7 +115,7 @@ async def restore_revision(
 
 
 @router.get("/admin/api/storage")
-async def storage_health(store: AdminStore):
+async def storage_health(store: ReaderStore):
     from starlette.concurrency import run_in_threadpool
 
     return await run_in_threadpool(store.storage_health)
@@ -129,7 +129,7 @@ async def verify_storage(store: AdminStore):
 
 
 @router.get("/admin/api/configuration/revisions/{revision_id}")
-async def revision_detail(revision_id: int, request: Request, store: AdminStore):
+async def revision_detail(revision_id: int, request: Request, store: ReaderStore):
     try:
         snapshot = store.config_revision(revision_id)
     except Exception as exc:

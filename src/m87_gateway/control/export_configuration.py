@@ -13,7 +13,7 @@ from m87_gateway.api.errors import GatewayError
 from m87_gateway.config.settings import LogExportConfig
 from m87_gateway.logging.exporters import ExportService, activate_export, exporter_adapters
 from m87_gateway.logging.outbox import DeliveryOutbox, destination_binding
-from .api import AdminStore
+from .identity import AdminStore, ReaderStore
 from .configuration_service import parse_revision, persist_configuration, revision_etag
 from .setup import apply_overrides
 
@@ -115,7 +115,7 @@ def prepare_export(request, store, payload, *, probe=False):
 
 
 @router.get("/admin/api/log-export")
-async def export_settings(request: Request, store: AdminStore, response: Response):
+async def export_settings(request: Request, store: ReaderStore, response: Response):
     require_management(store)
     response.headers["ETag"] = revision_etag(store)
     config = request.app.state.settings.observability.log_export

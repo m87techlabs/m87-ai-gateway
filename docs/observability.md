@@ -179,7 +179,9 @@ charged to provider accounting. See [streaming operations](runbooks/streaming-an
 
 Management audit includes configuration, controls, setup, connections, restore and
 provider-key changes with safe provider/alias/revision references. Select All projects
-to see gateway-wide actions; actor remains the shared operator role. No credential
+to see gateway-wide actions. The actor is the person's name under
+[single sign-on](runbooks/single-sign-on.md), with their stable subject identifier, or `admin-key`. Sign-ins,
+refused sign-ins and sign-outs are recorded too. No credential
 values, settings bodies or inference content are stored in this audit.
 Storage provides basic access/privacy/credential checks and operator-triggered
 SQLite integrity/reversible write verification, sizes and free space. It does not

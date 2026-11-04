@@ -19,7 +19,7 @@ Run safely on a cloud host such as EC2.
 
 - A Compose profile with TLS through a reverse proxy.
 - `/metrics` that needs authentication.
-- Throttling for admin key attempts, and a `Secure` session cookie behind a TLS proxy.
+- Throttling for admin key attempts.
 - A runbook verified on a real cloud host.
 
 **Done when:** someone can deploy to a fresh server from the runbook, with no unauthenticated
@@ -45,8 +45,7 @@ streamed responses.
 
 ### Later
 
-AWS Bedrock, Azure OpenAI and Vertex AI adapters, shared state for several gateway instances, operator
-roles, and tracing. See the [backlog](backlog.md) for scope and acceptance criteria.
+AWS Bedrock, Azure OpenAI and Vertex AI adapters, shared state for several gateway instances, and tracing. See the [backlog](backlog.md) for scope and acceptance criteria.
 
 ### 1.0: stable contract
 

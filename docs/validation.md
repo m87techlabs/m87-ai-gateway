@@ -25,6 +25,33 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | Safari, Firefox and screen readers | **Not checked** |
 | Upgrade or rollback between released versions | **Not checked** |
 
+## Single sign-on and an existing Grafana: 2026-11-04
+
+Built from source and run with Compose as an isolated project, against a disposable Keycloak 26.7.1 with
+a realm built like the runbook, in Chrome.
+
+| Checked | Result |
+| --- | --- |
+| Admin, read-only and no-role people, through the real provider | Each got the expected access or refusal |
+| Read-only writes sent directly to the API, and a content export | Refused with 403 |
+| Read-only console | Banner shown, changes disabled, filters still work, layout unchanged |
+| Session cookie, and the address bar after sign-in | `HttpOnly`, `SameSite=Strict`, no code left in the address |
+| Sign-out | Ended both the gateway and provider sessions; the password was asked for again |
+| Provider stopped | Clear message, and the admin key still signed in |
+| Audit log | Named each person and their subject, including the refusal |
+| Container logs | No authorization code or client secret |
+| Unit tests with a fake provider using real signatures | Forged, expired, unsigned, symmetric-key and misdirected tokens all rejected; every admin route walked as read-only |
+| Prometheus 3.14 with this repo's scrape job and rules, on an internal plus an external network | Target up through `host.docker.internal`; 9 rules loaded |
+| Grafana 13.2 with the overview dashboard from a separate folder and data source | Provisioned; 27 of 27 queries valid, 23 returning data under synthetic traffic; panels reviewed by eye |
+
+Bugs this found, now fixed: Compose settings never reached the container's settings path; the Features
+page hid the new group; a cached discovery document sent people to a stopped provider; dashboards named
+the profile's data source.
+
+**Not checked:** a provider other than Keycloak; a long-running Keycloak and Grafana rather than disposable
+ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
+session reaching its real expiry; dashboard panels below the first screen by eye.
+
 ## Quickstart as a new user: 2026-11-04
 
 In an empty folder on Docker Desktop with WSL2, with no registry credentials: the release's Compose file

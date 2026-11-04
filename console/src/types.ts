@@ -66,6 +66,7 @@ export interface LogEvent {
   capture_enabled?: number | boolean | null;
   guardrail_action?: string | null;
   guardrail_reason?: string | null;
+  content_hidden?: boolean;
   request_content?: unknown;
   response_content?: unknown;
   request_content_status?: string;
@@ -195,6 +196,7 @@ export interface Feature {
   status: "on" | "off" | "planned";
   enabled: boolean;
   toggleable: boolean;
+  badge?: string;
   values: Record<string, unknown>;
   fields: FeatureField[];
 }

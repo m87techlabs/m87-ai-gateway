@@ -26,10 +26,6 @@
         "label": "Loki",
         "type": "datasource",
         "query": "loki",
-        "current": {
-          "text": "m87-loki",
-          "value": "m87-loki"
-        },
         "refresh": 1
       },
       {

@@ -5,6 +5,7 @@ import sqlite3
 from typing import Any
 from datetime import datetime, timedelta, timezone
 
+from ..identity import current_principal
 from .base import SQLiteRepository
 
 
@@ -22,6 +23,7 @@ class SQLiteManagementAuditRepository(SQLiteRepository):
             "alias": "TEXT",
             "revision_id": "INTEGER",
             "restored_from": "INTEGER",
+            "actor_subject": "TEXT",
         }.items():
             if name not in columns:
                 connection.execute(f"ALTER TABLE management_events ADD COLUMN {name} {kind}")
@@ -47,13 +49,16 @@ class SQLiteManagementAuditRepository(SQLiteRepository):
         restored_from: int | None = None,
     ) -> None:
         now = datetime.now(timezone.utc)
+        principal = current_principal.get()
         connection.execute(
-            "INSERT INTO management_events(event_id, created_at, actor, action, project_id, "
-            "app_id, key_id, provider, alias, revision_id, restored_from) "
-            "VALUES (?, ?, 'operator', ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO management_events(event_id, created_at, actor, actor_subject, action, "
+            "project_id, app_id, key_id, provider, alias, revision_id, restored_from) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 secrets.token_hex(16),
                 now.isoformat(),
+                principal.actor,
+                principal.subject,
                 action,
                 project_id,
                 app_id,
@@ -68,6 +73,11 @@ class SQLiteManagementAuditRepository(SQLiteRepository):
         connection.execute(
             "DELETE FROM management_events WHERE created_at < ?", (cutoff.isoformat(),)
         )
+
+    def record_access_event(self, action: str) -> None:
+        """Sign-ins and other actions that have no configuration change to attach to."""
+        with self._connect() as connection:
+            self.record(connection, action)
 
     def list_management_events(
         self, limit: int = 100, project_id: str | None = None

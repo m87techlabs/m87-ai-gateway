@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.config import GatewaySettings
 
-from .api import AdminStore
+from .identity import AdminStore, ReaderStore
 from .configuration_service import parse_revision, persist_configuration, revision_etag
 from .setup import activate, apply_overrides
 
@@ -339,7 +339,7 @@ class FeatureWrite(BaseModel):
 
 
 @router.get("/admin/api/features")
-async def features(request: Request, store: AdminStore):
+async def features(request: Request, store: ReaderStore):
     settings = request.app.state.settings
     items = [_describe(feature, settings) for feature in FEATURES]
     items.extend(
@@ -356,6 +356,23 @@ async def features(request: Request, store: AdminStore):
             "fields": [],
         }
         for identifier, name, group, summary in PLANNED
+    )
+    sso = getattr(request.app.state, "oidc", None) is not None
+    items.append(
+        {
+            "id": "single_sign_on",
+            "name": "Single sign-on",
+            "group": "Access",
+            "summary": "Sign in through your identity provider, as an admin or read-only.",
+            "note": "Set by the GATEWAY_OIDC_ environment settings, so the console cannot turn it off."
+            " The admin key keeps working for recovery.",
+            "status": "on" if sso else "off",
+            "enabled": sso,
+            "toggleable": False,
+            "badge": "On" if sso else "Off",
+            "values": {},
+            "fields": [],
+        }
     )
     return JSONResponse({"items": items}, headers={"ETag": revision_etag(store)})
 

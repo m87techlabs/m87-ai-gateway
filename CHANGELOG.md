@@ -5,6 +5,26 @@ Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- Single sign-on for the console through OpenID Connect, off until configured, with admin and read-only
+  roles. Read-only people can see activity and settings, but cannot change anything or read captured
+  content. See the [runbook](docs/runbooks/single-sign-on.md).
+- The audit log names the person, with a stable subject identifier, and records sign-ins, refused
+  sign-ins, sign-outs and cache clears. Admin key actions appear as `admin-key`.
+- Guidance for using an existing Prometheus and Grafana instead of the monitoring profile.
+
+### Changed
+
+- Store schema 12. Back up first, because an older gateway refuses a migrated store. Console sessions
+  use a new format, so everyone signs in again.
+- Session cookies are `Secure` behind a TLS proxy when `GATEWAY_PUBLIC_URL` is an HTTPS address.
+
+### Fixed
+
+- Bundled dashboards no longer name the monitoring profile's data sources, so they work in another Grafana.
+- The HTTP 5xx and scrape availability panels keep a sensible axis when every value is zero.
+
 ## [0.1.2] - 2026-11-04
 
 [Release notes](docs/releases/0.1.2.md)

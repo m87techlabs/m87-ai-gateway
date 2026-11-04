@@ -5,6 +5,7 @@ import { ScopeFilters } from "../components/filters";
 import { Button, Card, Dialog, ErrorNotice, Field, Notice, PageHeader, Skeleton, Table, useToast } from "../components/ui";
 import { useFilters } from "../filters";
 import { dateTime } from "../format";
+import { useReadOnly } from "../session";
 import type { AuditEvent, Revision, RevisionDetail } from "../types";
 
 function Restore({ revision, expected, onClose }: { revision: Revision; expected: number; onClose: () => void }) {
@@ -73,6 +74,7 @@ function Restore({ revision, expected, onClose }: { revision: Revision; expected
 }
 
 export function History() {
+  const readOnly = useReadOnly();
   const [reviewing, setReviewing] = useState<Revision | null>(null);
   const revisions = useQuery({
     queryKey: ["revisions"],
@@ -97,7 +99,7 @@ export function History() {
               {
                 header: "",
                 render: (item) => (
-                  <Button small disabled={item.revision_id === current} onClick={() => setReviewing(item)}>
+                  <Button small disabled={item.revision_id === current || readOnly} onClick={() => setReviewing(item)}>
                     Review and restore
                   </Button>
                 ),
@@ -120,7 +122,7 @@ export function Audit() {
   });
   return (
     <>
-      <PageHeader title="Audit log" description="Project, application, configuration, connection and key changes. Actor is the shared operator role. Credential values are never recorded." />
+      <PageHeader title="Audit log" description="Project, application, configuration, connection and key changes. Who made each change and who signed in. Credential values are never recorded." />
       <div className="filters">
         <ScopeFilters />
       </div>
@@ -133,6 +135,7 @@ export function Audit() {
             rowKey={(item) => `${item.created_at}-${item.action}-${item.key_id ?? ""}-${item.revision_id ?? ""}`}
             columns={[
               { header: "Time", render: (item) => dateTime(item.created_at), className: "nowrap" },
+              { header: "Who", render: (item) => item.actor },
               { header: "Action", render: (item) => <span className="mono">{item.action}</span> },
               { header: "Project", render: (item) => item.project_id ?? "—" },
               { header: "Application", render: (item) => item.app_id ?? "—" },

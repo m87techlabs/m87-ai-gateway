@@ -6,6 +6,7 @@ import { ScopeFilters } from "../components/filters";
 import { LogDetail, LogTable } from "../components/logs";
 import { Badge, Button, Card, Empty, ErrorNotice, LiveDot, Notice, PageHeader, Skeleton, useConfirm, useToast } from "../components/ui";
 import { useFilters } from "../filters";
+import { useReadOnly } from "../session";
 import { count, number } from "../format";
 import type { LoggingHealth, LogsPage } from "../types";
 
@@ -59,6 +60,7 @@ export function Logs({ requestId }: { requestId: string }) {
   const [status, setStatus] = useState("");
   const [cursors, setCursors] = useState<(string | null)[]>([null]);
   const [includeContent, setIncludeContent] = useState(false);
+  const readOnly = useReadOnly();
   const [open, setOpen] = useState<string | null>(requestId || null);
   const page = cursors.length - 1;
   const filters = { project_id: project, app_id: app, request_id: submitted, status };
@@ -192,7 +194,7 @@ export function Logs({ requestId }: { requestId: string }) {
               Export JSON
             </Button>
             <label className="check">
-              <input type="checkbox" checked={includeContent} onChange={(event) => setIncludeContent(event.target.checked)} />
+              <input type="checkbox" checked={includeContent} disabled={readOnly} onChange={(event) => setIncludeContent(event.target.checked)} />
               Include captured input and output
             </label>
           </div>
@@ -200,7 +202,7 @@ export function Logs({ requestId }: { requestId: string }) {
             <Button
               variant="danger"
               icon={<Trash2 size={14} aria-hidden />}
-              disabled={remove.isPending}
+              disabled={remove.isPending || readOnly}
               onClick={async () => {
                 if (
                   await confirm({
@@ -218,7 +220,7 @@ export function Logs({ requestId }: { requestId: string }) {
             <Button
               variant="danger"
               icon={<Trash2 size={14} aria-hidden />}
-              disabled={remove.isPending}
+              disabled={remove.isPending || readOnly}
               onClick={async () => {
                 if (
                   await confirm({

@@ -666,3 +666,112 @@ describe("playground", () => {
     expect(screen.queryByDisplayValue("m87_app_key")).not.toBeInTheDocument();
   });
 });
+
+describe("single sign-on and roles", () => {
+  const signedInAs = (role: "admin" | "readonly", extra: (request: { method: string; path: string }) => Response | undefined = () => undefined) =>
+    gateway((request) => {
+      if (request.method === "GET" && request.path === "/session") {
+        return respond({ authenticated: true, actor: "alice", role, method: "sso" });
+      }
+      return extra(request);
+    });
+
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("offers SSO first and keeps the admin key available for recovery", async () => {
+    gateway((request) => (request.path === "/sign-in-options" ? respond({ sso: true }) : undefined), { signedIn: false });
+    openConsole();
+    const link = await screen.findByRole("link", { name: "Sign in with SSO" });
+    expect(link).toHaveAttribute("href", "/admin/auth/login");
+    expect(screen.getByText("Use the admin key instead")).toBeInTheDocument();
+  });
+
+  it("does not offer SSO when it is not configured", async () => {
+    gateway(undefined, { signedIn: false });
+    openConsole();
+    expect(await screen.findByLabelText("Admin key")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in with SSO" })).not.toBeInTheDocument();
+  });
+
+  it("explains a refused sign-in, then forgets it", async () => {
+    window.history.replaceState(null, "", "/?sign_in_error=no_role");
+    gateway(undefined, { signedIn: false });
+    openConsole();
+    expect(await screen.findByText(/no role on this gateway/)).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("never shows text from the address bar as an error", async () => {
+    window.history.replaceState(null, "", "/?sign_in_error=%3Cb%3Eyour%20account%20is%20locked%3C%2Fb%3E");
+    gateway(undefined, { signedIn: false });
+    openConsole();
+    expect(await screen.findByText(/Single sign-on failed/)).toBeInTheDocument();
+    expect(screen.queryByText(/account is locked/)).not.toBeInTheDocument();
+  });
+
+  it("shows who is signed in, with a sign-out instead of a lock", async () => {
+    signedInAs("admin");
+    openConsole();
+    await heading("Overview");
+    expect(await screen.findByText("alice")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(screen.queryByText("Read-only access")).not.toBeInTheDocument();
+  });
+
+  it("makes the read-only role visible and hides the Playground", async () => {
+    signedInAs("readonly");
+    openConsole();
+    await heading("Overview");
+    expect(await screen.findByText("Read-only access")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
+  });
+
+  it("disables changes on configuration pages for read-only", async () => {
+    signedInAs("readonly");
+    openConsole("applications");
+    await heading("Applications");
+    expect(await screen.findByRole("button", { name: "Create application" })).toBeDisabled();
+  });
+
+  it("keeps log filters usable but disables deleting and content export for read-only", async () => {
+    signedInAs("readonly");
+    openConsole("logs");
+    await heading("Logs");
+    expect(await screen.findByRole("button", { name: "Export JSON" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Delete all logs" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Delete captured content" })).toBeDisabled();
+    expect(screen.getByLabelText("Include captured input and output")).toBeDisabled();
+  });
+
+  it("says captured content needs an admin rather than implying there is none", async () => {
+    signedInAs("readonly", (request) =>
+      request.path === "/logs/fixture-request" ? respond({ ...EVENT, content_hidden: true }) : undefined,
+    );
+    openConsole("logs?request_id=fixture-request");
+    expect(await screen.findByText(/Reading them needs the admin role/)).toBeInTheDocument();
+  });
+
+  it("shows single sign-on on the Features page, with no switch", async () => {
+    gateway((request) =>
+      request.path === "/features"
+        ? respond({ items: [{ id: "single_sign_on", name: "Single sign-on", group: "Access", summary: "Sign in through your identity provider.", note: null, status: "off", enabled: false, toggleable: false, badge: "Off", values: {}, fields: [] }] })
+        : undefined,
+    );
+    openConsole("features");
+    expect(await screen.findByText("Single sign-on")).toBeInTheDocument();
+    expect(screen.getByText("Off")).toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("names the person in the audit log", async () => {
+    signedInAs("admin", (request) =>
+      request.path === "/management-events"
+        ? respond({ items: [{ created_at: "2026-11-03T12:00:00+00:00", actor: "bob", action: "console.signed_in", project_id: null, app_id: null, key_id: null, provider: null, alias: null, revision_id: null, restored_from: null }] })
+        : undefined,
+    );
+    openConsole("audit");
+    expect(await screen.findByText("bob")).toBeInTheDocument();
+  });
+});

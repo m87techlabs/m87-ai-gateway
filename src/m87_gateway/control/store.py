@@ -24,7 +24,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 class LocalControlStore(BackendFacade):

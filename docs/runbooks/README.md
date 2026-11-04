@@ -37,6 +37,7 @@ Step-by-step procedures for running the gateway.
 
 | Runbook | Use it to |
 | --- | --- |
+| [Single sign-on](single-sign-on.md) | Sign in through your identity provider, as an admin or read-only |
 | [Control plane](control-plane.md) | Understand the console and its API |
 | [Configuration changes](configuration-changes.md) | Change settings safely |
 | [Configuration recovery](configuration-recovery.md) | Restore settings and check storage |

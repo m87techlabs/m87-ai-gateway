@@ -51,6 +51,25 @@ everything. Their data stays in Docker volumes.
 
 Skip this section if you use the Compose profile.
 
+If you already run Prometheus and Grafana, you do not need the profile. Three files are all you need:
+
+| Copy | Into |
+| --- | --- |
+| The `m87-gateway` scrape job in `deploy/observability/prometheus/prometheus.yml` | Your Prometheus configuration |
+| `deploy/observability/prometheus/alerts.yml` | Your Prometheus rule files |
+| `deploy/observability/grafana/dashboards/gateway-overview.json` | Your Grafana dashboards |
+
+The dashboard uses your default Prometheus data source, and you can pick another at the top of the page.
+`gateway-logs.json` also needs [Loki export](loki-export.md).
+
+Choose the scrape address by how Prometheus reaches the gateway:
+
+| Prometheus runs | Target | Note |
+| --- | --- | --- |
+| On the same Compose network | `m87-ai-gateway:8087` | Join the external `m87-gateway` network, which must exist before Prometheus starts |
+| In another Compose project on this host | `host.docker.internal:8087` | Add `extra_hosts: ["host.docker.internal:host-gateway"]`. Works whichever stack starts first |
+| On another machine | Your private address | Keep it off public networks. `/metrics` needs no key |
+
 The example target in `prometheus/prometheus.yml` is `m87-ai-gateway:8087`, for the Compose network.
 Edit it in a private copy for your deployment, using an address reachable from Prometheus's own
 network. Preserve job name **m87-gateway**, which scopes the bundled queries and rules. Multiple targets

@@ -84,7 +84,7 @@ function FeatureRow({ feature, etag }: { feature: Feature; etag: string | null }
           <div className="feature-title">
             {feature.name}
             {planned && <Badge>Planned</Badge>}
-            {!planned && !feature.toggleable && <Badge>Always on</Badge>}
+            {!planned && !feature.toggleable && <Badge>{feature.badge ?? "Always on"}</Badge>}
           </div>
           <p className="muted">{feature.summary}</p>
         </div>
@@ -145,7 +145,7 @@ function FeatureRow({ feature, etag }: { feature: Feature; etag: string | null }
   );
 }
 
-const GROUPS = ["Traffic", "Safety", "Routing", "Observability"];
+const GROUPS = ["Traffic", "Safety", "Routing", "Observability", "Access"];
 
 export function Features() {
   const features = useQuery({

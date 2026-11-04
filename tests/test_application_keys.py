@@ -80,7 +80,7 @@ def test_immediate_rotation_and_audit_are_atomic_and_secret_free(store, monkeypa
     ]
     assert any(e["key_id"] == replacement["key_id"] for e in events)
     assert old not in json.dumps(events) and new not in json.dumps(events)
-    assert all(e["actor"] == "operator" for e in events)
+    assert all(e["actor"] == "system" for e in events)
     assert store.delete_app("sample")
     assert store.authenticate_app_key(new) is None
     assert store.list_app_keys("sample") is None

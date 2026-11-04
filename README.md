@@ -79,6 +79,7 @@ Most OpenAI SDKs also read `OPENAI_BASE_URL` and `OPENAI_API_KEY`. See
 | Per-application dashboards, log filters, key use and metrics | Implemented |
 | Web console with live dashboards, a Playground and on/off switches for each feature | Implemented |
 | Encrypted provider keys, configuration history and rollback | Implemented |
+| [Single sign-on](docs/runbooks/single-sign-on.md) for the console, with admin and read-only roles and a per-person audit log | Implemented; verified with Keycloak |
 | Prometheus metrics, Grafana dashboards, webhook and Loki export | Implemented; run them with one Compose profile |
 | Fallback routes, budgets, response policies | [Planned](docs/backlog.md) |
 | Anthropic, AWS Bedrock, Azure OpenAI and Vertex AI adapters | [Planned](docs/backlog.md) |

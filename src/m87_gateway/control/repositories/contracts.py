@@ -88,6 +88,8 @@ class UsageRepository(Protocol):
 
 @runtime_checkable
 class ManagementAuditRepository(Protocol):
+    def record_access_event(self, action: str) -> None: ...
+
     def list_management_events(
         self, limit: int = 100, project_id: str | None = None
     ) -> list[dict[str, Any]]: ...

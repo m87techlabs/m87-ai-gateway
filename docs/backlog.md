@@ -180,7 +180,7 @@ never blocks traffic.
 
 **Why:** application-key lifecycle, configuration/provider-key audit, encrypted
 settings history, atomic activation and rollback are implemented. Crypto key versions
-and cache-clear audit and crypto key versions still need coverage. Explicit content/log deletion is now audited.
+still need coverage. Explicit content/log deletion is now audited.
 
 **Scope:** versioned master/digest keys with re-encryption, remaining management
 actions and stable connection identities for multiple connections of one adapter.
@@ -191,11 +191,12 @@ backup/recovery pass shared contracts. Current settings rollback never restores 
 
 ### S5 Operator roles
 
-**Scope:** multiple operator identities with at least an admin role and a read-only
-role. Optionally add OIDC sign-in for the console.
+**Status:** implemented with [single sign-on](runbooks/single-sign-on.md), with admin and read-only
+roles. Negative tests cover every admin route. Verified against Keycloak 26; see
+[validation](validation.md).
 
-**Acceptance:** negative tests show that read-only operators cannot change state
-or read secrets.
+**Remaining:** back-channel logout, and throttling admin key attempts, which is on the
+[roadmap](roadmap.md).
 
 ### S6 Project policy and tenant boundaries
 

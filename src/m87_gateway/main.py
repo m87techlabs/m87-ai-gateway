@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -16,6 +17,8 @@ from m87_gateway.control.api import router as control_router
 from m87_gateway.control.recovery import router as recovery_router
 from m87_gateway.control.export_configuration import router as export_router
 from m87_gateway.control.features import router as features_router
+from m87_gateway.control.oidc import CALLBACK_PATH, OidcClient, OidcConfigError
+from m87_gateway.control.oidc import router as oidc_router
 from m87_gateway.control.setup import apply_overrides, managed_snapshot
 from m87_gateway.controls import ExactResponseCache, InFlightLimiter, SlidingWindowRateLimiter
 from m87_gateway.logging.audit import AuditRecorder
@@ -24,6 +27,19 @@ from m87_gateway.logging.exporters import ExportService
 from m87_gateway.metrics import GatewayMetrics
 from m87_gateway.metrics.logging import LoggingCollector
 from m87_gateway.model_catalog import ModelCatalog
+
+
+class HideSignInCode(logging.Filter):
+    """The access log prints query strings, and this one holds a one-time authorization code."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if isinstance(args, tuple) and len(args) > 2 and str(args[2]).startswith(CALLBACK_PATH):
+            record.args = (*args[:2], CALLBACK_PATH, *args[3:])
+        return True
+
+
+logging.getLogger("uvicorn.access").addFilter(HideSignInCode())
 
 
 def create_app(settings: GatewaySettings | None = None) -> FastAPI:
@@ -38,11 +54,14 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
             application.state.inflight_limiter = InFlightLimiter(application.state.metrics)
             application.state.control_store = None
             application.state.admin_api_key = ""
+            application.state.oidc = None
             if active.control_plane.enabled:
                 admin_key = os.getenv(active.control_plane.admin_api_key_env, "")
                 if len(admin_key) < 24 or any(character.isspace() for character in admin_key):
                     raise ValueError("Control plane requires a strong admin key")
                 application.state.admin_api_key = admin_key
+                if active.control_plane.oidc.issuer:
+                    application.state.oidc = OidcClient.create(active.control_plane.oidc, admin_key)
                 application.state.control_store = create_backend(active.control_plane)
                 active = apply_overrides(active, application.state.control_store.runtime_config())
                 application.state.settings = active
@@ -64,6 +83,8 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
                 application.state.control_store,
                 application.state.recorder,
             )
+        except OidcConfigError as exc:
+            raise RuntimeError(f"Single sign-on is misconfigured: {exc}") from None
         except Exception:
             raise RuntimeError(
                 "Gateway configuration or traffic log initialization failed"
@@ -101,6 +122,7 @@ def create_app(settings: GatewaySettings | None = None) -> FastAPI:
     application.include_router(recovery_router)
     application.include_router(export_router)
     application.include_router(features_router)
+    application.include_router(oidc_router)
 
     @application.exception_handler(GatewayError)
     async def gateway_error(request: Request, exc: GatewayError):

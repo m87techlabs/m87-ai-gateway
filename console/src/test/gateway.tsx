@@ -64,6 +64,7 @@ const CONNECTION = {
 };
 
 const defaults: Record<string, unknown> = {
+  "GET /sign-in-options": { sso: false },
   "GET /about": { version: "9.8.7", revision: "abcdef1234567890" },
   "GET /overview": { requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12 },
   "GET /usage": {
@@ -107,7 +108,7 @@ export function gateway(handler: Handler = () => undefined, { signedIn = true } 
     const custom = await handler(request);
     if (custom) return custom;
     if (path === "/session") {
-      if (method === "GET") return state.signedIn ? respond({ authenticated: true }) : failure(401, "Missing or invalid admin key");
+      if (method === "GET") return state.signedIn ? respond({ authenticated: true, actor: "admin-key", role: "admin", method: "key" }) : failure(401, "Missing or invalid admin key");
       if (method === "DELETE") {
         state.signedIn = false;
         return respond(null, 204);

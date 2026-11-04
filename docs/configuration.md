@@ -37,6 +37,7 @@ The loader does not read `.env` itself. Compose injects it; local Uvicorn needs
 | `GATEWAY_USAGE_RETENTION_DAYS` | Independent usage retention; default 365 days |
 | `GATEWAY_CONTROL_PLANE_RETENTION_DAYS` | SQLite event retention in days; pruned at startup and on event writes |
 | `GATEWAY_ADMIN_API_KEY` | Default environment source for the local admin key |
+| `GATEWAY_OIDC_ISSUER`, `GATEWAY_OIDC_CLIENT_ID`, `GATEWAY_OIDC_CLIENT_SECRET`, `GATEWAY_PUBLIC_URL` | Console single sign-on, off until the issuer is set. See [single sign-on](runbooks/single-sign-on.md) for these and the optional settings |
 | `GATEWAY_CACHE_ENABLED`, `GATEWAY_CACHE_TTL_SECONDS`, `GATEWAY_CACHE_MAX_ENTRIES` | Cache enablement, expiry, and capacity |
 | `GATEWAY_PROVIDER_MAX_ATTEMPTS`, `GATEWAY_PROVIDER_RETRY_BACKOFF_MS` | Maximum attempts and initial retry delay |
 | `OPENAI_API_KEY` | Default OpenAI credential variable |

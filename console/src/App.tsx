@@ -32,6 +32,7 @@ import { Projects } from "./pages/Projects";
 import { Providers } from "./pages/Providers";
 import { Storage } from "./pages/Storage";
 import { href, useRoute } from "./router";
+import { SessionProvider, useReadOnly, useSession, type Session } from "./session";
 import { currentTheme, saveTheme, type Theme } from "./theme";
 
 const NAVIGATION: { group: string; items: { id: string; label: string; icon: ReactNode }[] }[] = [
@@ -68,7 +69,23 @@ const NAVIGATION: { group: string; items: { id: string; label: string; icon: Rea
   },
 ];
 
+/** Pages whose controls only look, so a read-only role can still use their filters. */
+const READABLE_CONTROLS = new Set(["overview", "logs", "history", "audit"]);
+
 function Page() {
+  const route = useRoute();
+  const readOnly = useReadOnly();
+  if (readOnly && !READABLE_CONTROLS.has(route.path[0])) {
+    return (
+      <fieldset className="read-only-page" disabled>
+        <PageContent />
+      </fieldset>
+    );
+  }
+  return <PageContent />;
+}
+
+function PageContent() {
   const route = useRoute();
   const [view, detail] = route.path;
   switch (view) {
@@ -144,6 +161,8 @@ function Version() {
 function Shell({ onLock }: { onLock: () => void }) {
   const route = useRoute();
   const [theme, setTheme] = useState<Theme>(currentTheme);
+  const session = useSession();
+  const readOnly = session?.role === "readonly";
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -157,17 +176,19 @@ function Shell({ onLock }: { onLock: () => void }) {
           {NAVIGATION.map((section) => (
             <div className="nav-group" key={section.group}>
               <span>{section.group}</span>
-              {section.items.map((item) => (
-                <a
-                  key={item.id}
-                  className={`nav-link${route.path[0] === item.id ? " active" : ""}`}
-                  aria-current={route.path[0] === item.id ? "page" : undefined}
-                  href={href(item.id)}
-                >
-                  {item.icon}
-                  {item.label}
-                </a>
-              ))}
+              {section.items
+                .filter((item) => !(readOnly && item.id === "playground"))
+                .map((item) => (
+                  <a
+                    key={item.id}
+                    className={`nav-link${route.path[0] === item.id ? " active" : ""}`}
+                    aria-current={route.path[0] === item.id ? "page" : undefined}
+                    href={href(item.id)}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </a>
+                ))}
             </div>
           ))}
         </nav>
@@ -186,14 +207,25 @@ function Shell({ onLock }: { onLock: () => void }) {
           </button>
           <button type="button" className="button ghost small" onClick={onLock}>
             <Lock size={14} aria-hidden />
-            Lock console
+            {session?.method === "sso" ? "Sign out" : "Lock console"}
           </button>
+          {session && (
+            <div className="who" title={session.method === "sso" ? "Signed in through single sign-on" : "Signed in with the admin key"}>
+              {session.method === "sso" ? session.actor : "Admin key"}
+              <span className="muted"> · {readOnly ? "Read-only" : "Admin"}</span>
+            </div>
+          )}
           <Version />
         </div>
       </aside>
       <main>
         <div className="content">
           <Reconnecting />
+          {readOnly && (
+            <Notice title="Read-only access">
+              You can see this gateway's activity and settings. Changes and captured input and output need an admin.
+            </Notice>
+          )}
           <Page />
         </div>
       </main>
@@ -208,10 +240,9 @@ export function App() {
     queryKey: ["session", session],
     queryFn: async () => {
       try {
-        await getJson("/session");
-        return true;
+        return await getJson<Session>("/session");
       } catch (error) {
-        if (error instanceof ApiError && error.status === 401) return false;
+        if (error instanceof ApiError && error.status === 401) return null;
         throw error;
       }
     },
@@ -222,7 +253,7 @@ export function App() {
   // Only the first answer decides. After that, signing in and session expiry are explicit,
   // and a later check (clearing the cache re-runs it) must not silently undo a sign-out.
   useEffect(() => {
-    if (check.data !== undefined) setSignedIn((current) => current ?? check.data);
+    if (check.data !== undefined) setSignedIn((current) => current ?? check.data !== null);
   }, [check.data]);
   useEffect(() => {
     onSessionExpired(() => {
@@ -263,24 +294,28 @@ export function App() {
     );
   }
   return (
-    <ToastProvider>
-      <ConfirmProvider>
-        {/* A new session remounts everything, so nothing from the last one can reappear. */}
-        <FiltersProvider key={session}>
-          <Shell
-            key={session}
-            onLock={async () => {
-              try {
-                await send("/session", { method: "DELETE" });
-              } finally {
-                client.cancelQueries();
-                client.clear();
-                setSignedIn(false);
-              }
-            }}
-          />
-        </FiltersProvider>
-      </ConfirmProvider>
-    </ToastProvider>
+    <SessionProvider value={check.data ?? null}>
+      <ToastProvider>
+        <ConfirmProvider>
+          {/* A new session remounts everything, so nothing from the last one can reappear. */}
+          <FiltersProvider key={session}>
+            <Shell
+              key={session}
+              onLock={async () => {
+                try {
+                  await send("/session", { method: "DELETE" });
+                } finally {
+                  client.cancelQueries();
+                  client.clear();
+                  setSignedIn(false);
+                  // Otherwise the provider's own session would sign straight back in.
+                  if (check.data?.method === "sso") window.location.assign("/admin/auth/logout");
+                }
+              }}
+            />
+          </FiltersProvider>
+        </ConfirmProvider>
+      </ToastProvider>
+    </SessionProvider>
   );
 }

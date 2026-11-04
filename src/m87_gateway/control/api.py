@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import hmac
 import json
 import os
 import re
@@ -12,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Header, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
@@ -34,7 +32,18 @@ from m87_gateway.control.configuration_service import (
     parse_revision,
     revision_etag,
 )
-from m87_gateway.control.backends import Backend
+from m87_gateway.control.identity import (
+    ADMIN_KEY_PRINCIPAL,
+    SESSION_COOKIE,
+    SESSION_SECONDS,
+    AdminStore,
+    ReaderStore,
+    current_principal,
+    issue_session,
+    read_session,
+    secure_cookie,
+    store_of as _store,
+)
 from m87_gateway.control.log_queries import decode_cursor, encode_cursor
 from m87_gateway.control.repositories.identities import KeyLimitError
 
@@ -42,66 +51,6 @@ STATIC_DIR = Path(__file__).with_name("static")
 router = APIRouter()
 
 
-def _store(request: Request) -> Backend:
-    store = getattr(request.app.state, "control_store", None)
-    if store is None:
-        raise GatewayError(404, "control_plane_disabled", "Control plane is disabled")
-    return store
-
-
-SESSION_COOKIE = "m87_console_session"
-SESSION_SECONDS = 12 * 3600
-SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
-
-
-def _session_signature(admin_key: str, issued: str) -> str:
-    return hmac.new(
-        admin_key.encode(), f"console-session:{issued}".encode(), hashlib.sha256
-    ).hexdigest()
-
-
-def _issue_session(admin_key: str) -> str:
-    issued = str(int(time.time()))
-    return f"{issued}.{_session_signature(admin_key, issued)}"
-
-
-def _valid_session(token: str | None, admin_key: str) -> bool:
-    """Signed with the admin key, so changing that key ends every console session."""
-    issued, separator, signature = (token or "").partition(".")
-    if not separator or not issued.isdecimal() or len(issued) > 12:
-        return False
-    if not 0 <= time.time() - int(issued) < SESSION_SECONDS:
-        return False
-    return secrets.compare_digest(
-        signature.encode(), _session_signature(admin_key, issued).encode()
-    )
-
-
-async def require_admin(
-    request: Request, authorization: Annotated[str | None, Header()] = None
-) -> Backend:
-    scheme, _, token = (authorization or "").partition(" ")
-    expected = getattr(request.app.state, "admin_api_key", "")
-    bearer = (
-        scheme.lower() == "bearer"
-        and token
-        and expected
-        and secrets.compare_digest(token.encode(), expected.encode())
-    )
-    # Browsers cannot add this header cross-site without CORS, on top of SameSite=Strict.
-    session = (
-        expected
-        and _valid_session(request.cookies.get(SESSION_COOKIE), expected)
-        and (request.method in SAFE_METHODS or "x-gateway-console" in request.headers)
-    )
-    if not bearer and not session:
-        raise GatewayError(
-            401, "invalid_admin_key", "Missing or invalid admin key", "authentication_error"
-        )
-    return _store(request)
-
-
-AdminStore = Annotated[Backend, Depends(require_admin)]
 ProjectIdentifier = Annotated[
     str, Field(min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9_.-]+$")
 ]
@@ -207,40 +156,54 @@ async def create_session(payload: SessionCreate, request: Request):
         raise GatewayError(
             401, "invalid_admin_key", "Missing or invalid admin key", "authentication_error"
         )
+    current_principal.set(ADMIN_KEY_PRINCIPAL)
+    _store(request).record_access_event("console.signed_in")
     response = Response(status_code=204)
     response.set_cookie(
         SESSION_COOKIE,
-        _issue_session(expected),
+        issue_session(expected, ADMIN_KEY_PRINCIPAL),
         max_age=SESSION_SECONDS,
         path="/admin",
         httponly=True,
         samesite="strict",
-        secure=request.url.scheme == "https",
+        secure=secure_cookie(request),
     )
     return response
 
 
 @router.get("/admin/api/session")
-async def session_status(store: AdminStore):
-    return {"authenticated": True}
+async def session_status(request: Request, store: ReaderStore):
+    principal = request.state.principal
+    return {
+        "authenticated": True,
+        "actor": principal.actor,
+        "role": principal.role,
+        "method": principal.method,
+    }
 
 
 @router.get("/admin/api/about")
-async def about(store: AdminStore):
+async def about(store: ReaderStore):
     """The running build, for operators. Published images record their commit; local builds do not."""
     revision = os.getenv("M87_GATEWAY_REVISION", "")
     return {"version": __version__, "revision": None if revision in {"", "unknown"} else revision}
 
 
 @router.delete("/admin/api/session", status_code=204)
-async def end_session():
+async def end_session(request: Request):
+    principal = read_session(
+        request.cookies.get(SESSION_COOKIE), getattr(request.app.state, "admin_api_key", "")
+    )
+    if principal is not None:
+        current_principal.set(principal)
+        _store(request).record_access_event("console.signed_out")
     response = Response(status_code=204)
     response.delete_cookie(SESSION_COOKIE, path="/admin", samesite="strict", httponly=True)
     return response
 
 
 @router.get("/admin/api/controls")
-async def controls(request: Request, store: AdminStore, response: Response):
+async def controls(request: Request, store: ReaderStore, response: Response):
     response.headers["ETag"] = revision_etag(store)
     settings = request.app.state.settings
     return ControlsWrite(
@@ -281,11 +244,12 @@ async def save_controls(
 @router.post("/admin/api/cache/clear", status_code=204)
 async def clear_cache(request: Request, store: AdminStore):
     request.app.state.response_cache.clear()
+    store.record_access_event("cache.cleared")
     return Response(status_code=204)
 
 
 @router.get("/admin/api/diagnostics")
-async def gateway_diagnostics(request: Request, store: AdminStore):
+async def gateway_diagnostics(request: Request, store: ReaderStore):
     from m87_gateway.control.diagnostics import diagnostics
 
     return diagnostics(request.app.state)
@@ -351,7 +315,7 @@ async def dashboard_asset(request: Request, filename: str):
 
 @router.get("/admin/api/overview")
 def overview(
-    store: AdminStore,
+    store: ReaderStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
     app_id: AppFilter = None,
@@ -361,7 +325,7 @@ def overview(
 
 @router.get("/admin/api/usage")
 def usage(
-    store: AdminStore,
+    store: ReaderStore,
     hours: int = Query(default=24, ge=1, le=2160),
     project_id: ProjectFilter = None,
     app_id: AppFilter = None,
@@ -370,12 +334,12 @@ def usage(
 
 
 @router.get("/admin/api/app-names")
-def app_names(store: AdminStore):
+def app_names(store: ReaderStore):
     return {"items": store.known_app_ids()}
 
 
 @router.get("/admin/api/projects")
-async def projects(store: AdminStore):
+async def projects(store: ReaderStore):
     return {"items": store.list_projects()}
 
 
@@ -389,7 +353,7 @@ async def create_project(payload: ProjectCreate, store: AdminStore):
 
 @router.get("/admin/api/logs")
 def logs(
-    store: AdminStore,
+    store: ReaderStore,
     limit: int = Query(default=100, ge=1, le=1000),
     app_id: str | None = Query(default=None, max_length=100),
     status: str | None = Query(default=None, pattern=r"^(success|error)$"),
@@ -410,9 +374,25 @@ def logs(
     return {"items": items, "next_cursor": encode_cursor(items[-1]) if more else None}
 
 
+def _can_read_content(request: Request) -> bool:
+    """Captured prompts can hold private data, so read-only access stops at metadata."""
+    return request.state.principal.role == "admin"
+
+
+def _require_content_access(request: Request) -> None:
+    if not _can_read_content(request):
+        raise GatewayError(
+            403,
+            "insufficient_role",
+            "Your role is read-only. Captured content is available to admins.",
+            "permission_error",
+        )
+
+
 @router.get("/admin/api/logs/export")
 def export_logs(
-    store: AdminStore,
+    request: Request,
+    store: ReaderStore,
     limit: int = Query(default=1000, ge=1, le=10000),
     project_id: ProjectFilter = None,
     app_id: str | None = Query(default=None, max_length=100),
@@ -420,6 +400,8 @@ def export_logs(
     request_id: str | None = Query(default=None, min_length=1, max_length=128),
     include_content: bool = False,
 ):
+    if include_content:
+        _require_content_access(request)
     body = json.dumps(
         store.export_events(
             limit=limit,
@@ -439,7 +421,7 @@ def export_logs(
 
 
 @router.get("/admin/api/logging-health")
-async def logging_health(request: Request, store: AdminStore):
+async def logging_health(request: Request, store: ReaderStore):
     report = request.app.state.recorder.health()
     report["export"] = request.app.state.log_export.health()
     report["traffic_retention_days"] = store.config.retention_days
@@ -454,17 +436,21 @@ def remove_log_content(payload: LogDeletion, store: AdminStore):
 
 
 @router.get("/admin/api/logs/{request_id}")
-async def log_detail(request_id: str, store: AdminStore):
+async def log_detail(request_id: str, request: Request, store: ReaderStore):
     if len(request_id) > 128:
         raise GatewayError(404, "not_found", "Log event was not found")
     event = store.get_event(request_id)
     if event is None:
         raise GatewayError(404, "not_found", "Log event was not found")
+    if not _can_read_content(request):
+        event["content_hidden"] = bool(event.pop("request_content", None)) | bool(
+            event.pop("response_content", None)
+        )
     return event
 
 
 @router.get("/admin/api/apps")
-async def apps(store: AdminStore):
+async def apps(store: ReaderStore):
     return {"items": store.list_apps()}
 
 
@@ -522,7 +508,7 @@ async def delete_app(app_id: str, store: AdminStore):
 
 
 @router.get("/admin/api/apps/{app_id}/keys")
-async def application_keys(app_id: str, store: AdminStore):
+async def application_keys(app_id: str, store: ReaderStore):
     keys = store.list_app_keys(app_id)
     if keys is None:
         raise GatewayError(404, "not_found", "Application was not found")
@@ -556,7 +542,7 @@ async def revoke_application_key(app_id: str, key_id: str, store: AdminStore):
 
 @router.get("/admin/api/management-events")
 async def management_events(
-    store: AdminStore,
+    store: ReaderStore,
     project_id: ProjectFilter = None,
     limit: int = Query(default=100, ge=1, le=1000),
 ):
@@ -564,7 +550,7 @@ async def management_events(
 
 
 @router.get("/admin/api/provider-keys")
-async def provider_keys(store: AdminStore):
+async def provider_keys(store: ReaderStore):
     return {"items": store.list_provider_keys()}
 
 
@@ -629,7 +615,7 @@ class SetupWrite(BaseModel):
 
 
 @router.get("/admin/api/setup")
-async def setup(request: Request, store: AdminStore, response: Response):
+async def setup(request: Request, store: ReaderStore, response: Response):
     response.headers["ETag"] = revision_etag(store)
     settings = request.app.state.settings
     keys = {item["provider"] for item in store.list_provider_keys() if item["alias"] == "default"}
@@ -700,7 +686,7 @@ async def save_connection(
 
 
 @router.get("/admin/api/connections/{provider}/models")
-async def connection_models(provider: str, request: Request, store: AdminStore):
+async def connection_models(provider: str, request: Request, store: ReaderStore):
     settings = request.app.state.settings
     adapter = get_provider(provider, settings, store)
     config = settings.providers.for_adapter(provider)
@@ -817,7 +803,7 @@ async def save_setup(
 
 
 @router.get("/admin/api/destinations")
-async def destinations(request: Request, store: AdminStore):
+async def destinations(request: Request, store: ReaderStore):
     settings = request.app.state.settings
     traffic = settings.observability.traffic_log
     return {

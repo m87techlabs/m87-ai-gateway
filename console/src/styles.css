@@ -140,6 +140,9 @@ small { font-size: 12px; }
 .nav-link:hover { background: var(--surface-2); text-decoration: none; }
 .nav-link.active { background: var(--surface-3); color: var(--text); font-weight: 550; }
 .sidebar-foot { display: grid; gap: 6px; margin-top: auto; padding-top: 12px; }
+.who { padding: 4px 8px 0; font-size: 12px; text-align: center; overflow-wrap: anywhere; }
+.read-only-page { display: contents; }
+.login details.stack[open] { display: grid; gap: 12px; }
 .version { padding: 4px 8px 0; color: var(--text-2); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
 main { min-width: 0; padding: 28px 32px 56px; }
 .content { display: grid; gap: 20px; max-width: 1240px; margin: 0 auto; }

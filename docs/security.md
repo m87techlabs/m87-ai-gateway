@@ -10,7 +10,7 @@ flowchart LR
     Gateway -->|Provider credentials| Provider[Model service]
     Gateway --> Metadata[Metadata logs and metrics]
     Gateway -. Explicit app and environment permission .-> Content[Private traffic stores]
-    Operator[Operator with admin key] --> Console[Local admin API and console]
+    Operator[Operator with admin key or single sign-on] --> Console[Local admin API and console]
     Console --> Content
 ```
 
@@ -51,9 +51,18 @@ It shares a port with the inference API and console. When publishing the gateway
 loaded only when selected explicitly.
 
 The console exchanges the admin key for a session cookie that scripts cannot read, signed with
-that key and valid for 12 hours. It is `HttpOnly` and `SameSite=Strict`, is `Secure` over HTTPS,
-and writes also need a console-only header. Locking clears it from that browser. Changing the
-admin key ends every session. API clients can keep sending the admin key as a bearer token.
+that key and valid for 12 hours. It is `HttpOnly` and `SameSite=Strict`, is `Secure` over HTTPS or
+when the request is for an HTTPS `GATEWAY_PUBLIC_URL`, and writes also need a console-only header.
+Locking clears it from that browser. Changing the admin key ends every session. API clients can
+keep sending the admin key as a bearer token.
+
+[Single sign-on](runbooks/single-sign-on.md) is optional and uses OpenID Connect Authorization Code
+with PKCE, state and nonce. ID tokens are checked for signature, issuer, audience, expiry and nonce
+against an allowlist of asymmetric algorithms. The redirect address comes from configuration, never
+from the request. It adds two roles, admin and read-only. Admin routes are closed to read-only unless
+marked otherwise, and read-only cannot read captured content or change anything. People with no
+recognised role are refused. The admin key keeps working for recovery. SSO sessions last 60 minutes by
+default, which also bounds how long a removed person keeps access.
 
 Fields the gateway does not model are forwarded by default, so guardrails and capture cover
 message text only, not tool arguments or images. Enable Strict mode to reject such requests.
