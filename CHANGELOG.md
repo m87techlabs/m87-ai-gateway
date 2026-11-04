@@ -15,6 +15,11 @@ Keep a Changelog format.
 - `GET /admin/api/about` returns the running version and commit.
 - Release notes for each version under `docs/releases`, used as the GitHub release text.
 
+### Fixed
+
+- The console could return to a signed-in view just after a session expired.
+- Readiness and startup messages named pages the console no longer has.
+
 ## [0.1.1] - 2026-11-03
 
 [Release notes](docs/releases/0.1.1.md)
