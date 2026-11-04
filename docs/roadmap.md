@@ -6,10 +6,10 @@ and by how little a calling app has to change. Releases follow readiness rather 
 
 ## Released
 
-**0.1.1, the first release.** Drop-in OpenAI-compatible API with chat, streaming and embeddings. Ollama,
+See the [release notes](releases/README.md). The 0.1 line includes a drop-in OpenAI-compatible API with chat, streaming and embeddings. Ollama,
 OpenAI and OpenAI-compatible adapters. Per-application keys, reporting and limits. A web console with a
-Features page. Docker Compose packaging, with optional monitoring. See the [changelog](../CHANGELOG.md)
-and [what has been verified](validation.md).
+Features page, and Docker Compose packaging, with optional monitoring. See
+[what has been verified](validation.md).
 
 ## Next
 

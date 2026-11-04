@@ -79,6 +79,30 @@ def test_expired_and_forged_sessions_are_rejected():
     assert not control_api._valid_session("not-a-session", KEY)
 
 
+def test_about_reports_the_running_build_to_operators_only(gateway, monkeypatch):
+    from m87_gateway import __version__
+
+    assert gateway.get("/admin/api/about").status_code == 401
+    monkeypatch.setenv("M87_GATEWAY_REVISION", "abc123")
+    assert gateway.get("/admin/api/about", headers=ADMIN).json() == {
+        "version": __version__,
+        "revision": "abc123",
+    }
+    monkeypatch.setenv("M87_GATEWAY_REVISION", "unknown")
+    assert gateway.get("/admin/api/about", headers=ADMIN).json()["revision"] is None
+
+
+def test_every_release_has_notes_and_the_version_agrees():
+    from pathlib import Path
+
+    from m87_gateway import __version__
+
+    root = Path(__file__).resolve().parents[1]
+    assert (root / "docs" / "releases" / f"{__version__}.md").is_file()
+    assert f'version = "{__version__}"' in (root / "pyproject.toml").read_text()
+    assert f"## [{__version__}]" in (root / "CHANGELOG.md").read_text()
+
+
 def test_console_page_explains_itself_when_it_has_not_been_built(gateway, tmp_path, monkeypatch):
     monkeypatch.setattr(control_api, "STATIC_DIR", tmp_path / "missing")
     page = gateway.get("/admin")

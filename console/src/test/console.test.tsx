@@ -56,6 +56,22 @@ describe("session", () => {
   });
 });
 
+describe("version", () => {
+  it("shows what is running and links to its release notes", async () => {
+    gateway();
+    openConsole();
+    const link = await screen.findByRole("link", { name: /v9\.8\.7/ });
+    expect(link).toHaveTextContent("abcdef1");
+    expect(link).toHaveAttribute("href", expect.stringContaining("/blob/v9.8.7/docs/releases/9.8.7.md"));
+  });
+
+  it("says when a build has no recorded commit", async () => {
+    gateway((request) => (request.path === "/about" ? respond({ version: "9.8.7", revision: null }) : undefined));
+    openConsole();
+    expect(await screen.findByText(/local build/)).toBeInTheDocument();
+  });
+});
+
 describe("outage", () => {
   it("shows one banner, keeps the last data, and recovers by itself", async () => {
     let down = false;

@@ -145,6 +145,7 @@ jobs:
           grep -q "^version = \"$version\"$" pyproject.toml
           grep -q "^__version__ = \"$version\"$" src/m87_gateway/__init__.py
           grep -q "^## \[$version\]" CHANGELOG.md
+          test -s "docs/releases/$version.md"
       - name: Publish amd64 and arm64 images
         env:
           GH_TOKEN: ${{ github.token }}
@@ -184,7 +185,5 @@ jobs:
           mkdir release
           sed -e "s#m87-ai-gateway:latest#m87-ai-gateway:$version#" -e '/^    build: \.$/d' docker-compose.yml > release/docker-compose.yml
           (cd release && docker compose config --quiet)
-          awk -v section="## [$version]" 'index($0, section) == 1 {found = 1; next} found && /^## \[/ {exit} found' CHANGELOG.md > release/notes.md
-          test -s release/notes.md
           gh release create "$GITHUB_REF_NAME" release/docker-compose.yml --verify-tag \
-            --title "M87 AI Gateway $version" --notes-file release/notes.md
+            --title "M87 AI Gateway $version" --notes-file "docs/releases/$version.md"

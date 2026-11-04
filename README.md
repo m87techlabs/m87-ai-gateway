@@ -97,7 +97,7 @@ put a TLS proxy with path rules in front of it. See [security](docs/security.md)
 - [Container deployment](docs/runbooks/container-deployment.md) · [Runbooks](docs/runbooks/README.md)
 - [Security](docs/security.md) · [Observability](docs/observability.md) · [Adapters](docs/adapters.md)
 - [Roadmap](docs/roadmap.md) · [Backlog](docs/backlog.md) · [What has been verified](docs/validation.md)
-- [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+- [Documentation index](docs/README.md) · [Release notes](docs/releases/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 

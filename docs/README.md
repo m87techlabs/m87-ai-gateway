@@ -38,7 +38,8 @@ M87 AI Gateway is a self-hosted gateway for developers, run with Docker Compose.
 | [Backend architecture](backend-architecture.md) | Storage design |
 | [Stack](stack.md) | Technology choices |
 | [Lifecycle](lifecycle.md) | Release gates and compatibility |
-| [Changelog](../CHANGELOG.md) | What changed in each version |
+| [Release notes](releases/README.md) | What changed in each version, and how to upgrade |
+| [Changelog](../CHANGELOG.md) | A short list of changes |
 
 ## Read implementation status literally
 

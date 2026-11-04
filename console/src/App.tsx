@@ -119,6 +119,28 @@ function Reconnecting() {
   );
 }
 
+function Version() {
+  const about = useQuery({
+    queryKey: ["about"],
+    queryFn: () => getJson<{ version: string; revision: string | null }>("/about"),
+    staleTime: Infinity,
+  });
+  if (!about.data) return null;
+  const { version, revision } = about.data;
+  return (
+    <a
+      className="version"
+      href={`https://github.com/m87techlabs/m87-ai-gateway/blob/v${version}/docs/releases/${version}.md`}
+      target="_blank"
+      rel="noreferrer"
+      title={revision ? `Commit ${revision}. Open the release notes` : "Built locally. Open the release notes"}
+    >
+      v{version}
+      <span className="muted"> · {revision ? revision.slice(0, 7) : "local build"}</span>
+    </a>
+  );
+}
+
 function Shell({ onLock }: { onLock: () => void }) {
   const route = useRoute();
   const [theme, setTheme] = useState<Theme>(currentTheme);
@@ -166,6 +188,7 @@ function Shell({ onLock }: { onLock: () => void }) {
             <Lock size={14} aria-hidden />
             Lock console
           </button>
+          <Version />
         </div>
       </aside>
       <main>

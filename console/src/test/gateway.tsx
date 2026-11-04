@@ -64,6 +64,7 @@ const CONNECTION = {
 };
 
 const defaults: Record<string, unknown> = {
+  "GET /about": { version: "9.8.7", revision: "abcdef1234567890" },
   "GET /overview": { requests: 1, total_tokens: 13, prompt_tokens: 8, completion_tokens: 5, cache_hits: 0, errors: 0, usage_unknown: 0, average_latency_ms: 12 },
   "GET /usage": {
     series: [{ bucket: "2026-11-03T12:00:00Z", requests: 1, total_tokens: 13 }],

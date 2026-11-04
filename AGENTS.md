@@ -85,7 +85,7 @@ SQLite is the default, through the repositories in `src/m87_gateway/control/repo
 - Keep Docker independent of ordinary checks: docs, lint, unit tests and builds run without it. It is
   enabled on demand on a resource-limited machine, so run container checks together and stop what you
   started. Do not start optional services during routine development.
-- Releases follow [docs/runbooks/release.md](docs/runbooks/release.md).
+- Releases follow [docs/runbooks/release.md](docs/runbooks/release.md). Each needs notes in `docs/releases/`.
 
 ## M87 ecosystem knowledge: use Horizon
 

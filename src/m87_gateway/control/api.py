@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
+from m87_gateway import __version__
 from m87_gateway.api.errors import GatewayError
 from m87_gateway.config import validate_model
 from m87_gateway.config.settings import (
@@ -222,6 +223,13 @@ async def create_session(payload: SessionCreate, request: Request):
 @router.get("/admin/api/session")
 async def session_status(store: AdminStore):
     return {"authenticated": True}
+
+
+@router.get("/admin/api/about")
+async def about(store: AdminStore):
+    """The running build, for operators. Published images record their commit; local builds do not."""
+    revision = os.getenv("M87_GATEWAY_REVISION", "")
+    return {"version": __version__, "revision": None if revision in {"", "unknown"} else revision}
 
 
 @router.delete("/admin/api/session", status_code=204)

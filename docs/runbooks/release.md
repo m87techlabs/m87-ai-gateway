@@ -8,7 +8,7 @@ A version tag makes CI run every check, then publish:
 
 - Images for amd64 and arm64 at `ghcr.io/m87techlabs/m87-ai-gateway`, tagged with the commit,
   the version (`0.1.1`), the minor line (`0.1`) and `latest`.
-- A GitHub release, with notes taken from the changelog and a `docker-compose.yml` pinned to that image.
+- A GitHub release, with text from `docs/releases/<version>.md` and a `docker-compose.yml` pinned to that image.
 
 Pushes to `main` publish only the commit tag and `preview`. `latest` moves only on a release.
 
@@ -16,17 +16,19 @@ Pushes to `main` publish only the commit tag and `preview`. `latest` moves only 
 
 1. Choose an unused version. Do not move or recreate an existing tag. `v0.1.0` is the historical scaffold.
 2. Set the version in `pyproject.toml` and `src/m87_gateway/__init__.py`. CI refuses a tag that does
-   not match them, or that has no changelog section.
-3. Move the changelog's `Unreleased` notes under `## [x.y.z] - YYYY-MM-DD`. Include upgrade steps,
-   breaking changes and known limitations. This text becomes the release notes.
-4. Run the [lifecycle gates](../lifecycle.md#release-gates) and update [validation](../validation.md).
-5. Scan for secrets:
+   not match them, or that has no changelog section or release notes.
+3. Move the changelog's `Unreleased` notes under `## [x.y.z] - YYYY-MM-DD`.
+4. Write `docs/releases/x.y.z.md` with what changed, upgrade steps, breaking changes and known
+   limitations, and add it to `docs/releases/README.md`. Use full URLs for links, because this text is
+   also the GitHub release. The console links to this page.
+5. Run the [lifecycle gates](../lifecycle.md#release-gates) and update [validation](../validation.md).
+6. Scan for secrets:
 
    ```bash
    gitleaks git --no-banner --redact .
    ```
 
-6. Commit, push to `main`, and confirm CI passes on that commit.
+7. Commit, push to `main`, and confirm CI passes on that commit.
 
 ## Publish
 
@@ -47,9 +49,8 @@ docker compose up -d
 docker compose exec m87-ai-gateway cat /data/gateway/admin.key
 ```
 
-Sign in, connect a provider, create an application and send a request. Confirm that the version in
-`docker compose exec m87-ai-gateway m87-gateway --version` matches, then clean up with
-`docker compose down --volumes`.
+Sign in, connect a provider, create an application and send a request. Confirm that the console's
+sidebar shows the new version, then clean up with `docker compose down --volumes`.
 
 ## If something is wrong
 

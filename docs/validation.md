@@ -3,7 +3,7 @@
 What was actually checked, and what was not. A feature being implemented does not mean it has been
 checked against every provider or platform. Earlier checks are in the Git history of this file.
 
-## Status for 0.1.1
+## Status for 0.1.2
 
 | Area | Status |
 | --- | --- |
@@ -22,7 +22,7 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | macOS | **Not checked** |
 | Cloud hosts | **Not checked**; see the [roadmap](roadmap.md) |
 | Safari, Firefox and screen readers | **Not checked** |
-| Upgrade or rollback between released versions | **Not checked**; this is the first release |
+| Upgrade or rollback between released versions | **Not checked** |
 
 ## Compose packaging and monitoring: 2026-11-03
 
@@ -50,7 +50,7 @@ blocked real traffic, see Overview update without a refresh, refresh and stay si
 earlier configuration, rotate a key, stop the gateway and watch the page report it and recover, lock,
 and confirm a refresh did not sign back in. All 25 checks passed with no script or CSP errors.
 
-The narrow-screen navigation was changed after its last visual check.
+Screens were reviewed at 1440 pixels in both themes, and the overview and navigation at 420 pixels.
 
 ## Per-application reporting: 2026-11-03
 

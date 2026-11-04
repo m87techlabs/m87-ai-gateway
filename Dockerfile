@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.title="M87 AI Gateway" \
       org.opencontainers.image.source="https://github.com/m87techlabs/m87-ai-gateway" \
       org.opencontainers.image.revision="$SOURCE_REVISION" \
       org.opencontainers.image.licenses="Apache-2.0"
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 M87_GATEWAY_REVISION=$SOURCE_REVISION
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels m87-ai-gateway \
     && rm -rf /wheels \

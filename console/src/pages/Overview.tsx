@@ -38,11 +38,11 @@ function GettingStarted() {
     <Card title="Get started" description="Three steps to your first request through the gateway.">
       <ol className="stack" style={{ margin: 0, padding: 0, listStyle: "none" }}>
         {steps.map((step) => (
-          <li key={step.label} className="row">
+          <li key={step.label} className="row" style={{ flexWrap: "nowrap" }}>
             {step.done ? (
-              <CheckCircle2 size={16} className="muted" aria-label="Done" />
+              <CheckCircle2 size={16} className="muted" aria-label="Done" style={{ flex: "none" }} />
             ) : (
-              <Circle size={16} className="muted" aria-label="To do" />
+              <Circle size={16} className="muted" aria-label="To do" style={{ flex: "none" }} />
             )}
             <a href={step.link}>{step.label}</a>
           </li>
