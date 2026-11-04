@@ -2,8 +2,8 @@
 
 ## Use this when
 
-Use this to run dashboards and alerts for the gateway. Prometheus, Grafana and Loki are an optional
-Compose profile, off by default. The gateway works without them.
+Use this to run dashboards and alerts for the gateway. Prometheus, Grafana, Loki and Alertmanager are an
+optional Compose profile, off by default. The gateway works without them.
 
 No provider, application or operator key is needed to scrape `/metrics`, so never forward those keys to
 these services. Keep metrics and monitoring ports on trusted networks.
@@ -17,7 +17,8 @@ flowchart LR
     Gateway --> Metrics[Private metrics endpoint]
     Metrics --> Prometheus[Prometheus scrape and history]
     Prometheus --> Rules[Evaluate alert rules]
-    Rules -. User supplied routing .-> Alertmanager[Optional Alertmanager]
+    Rules --> Alertmanager[Alertmanager]
+    Alertmanager -. Destination you add .-> Notify[Email, chat or webhook]
     Prometheus --> Overview[Grafana overview]
     Gateway --> Outbox[(Metadata queue)]
     Outbox --> Loki[Existing Loki]
@@ -35,7 +36,8 @@ docker compose --profile monitoring up -d
 | --- | --- | --- |
 | Grafana | http://localhost:3000 | Sign in as `admin`. Dashboards are in the **M87 Gateway** folder |
 | Prometheus | http://localhost:9090 | Scrapes the gateway and loads the alert rules |
-| Loki | http://localhost:3100 | Receives request metadata once you turn on export |
+| Loki | http://localhost:3100 | Receives request metadata once you turn on export. Keeps 30 days |
+| Alertmanager | http://localhost:9093 | Collects firing alerts. Sends nothing until you add a destination |
 
 These ports always bind to `127.0.0.1`. Set `GRAFANA_PORT`, `PROMETHEUS_PORT` or `LOKI_PORT` in `.env` to
 change them. Without `GRAFANA_ADMIN_PASSWORD`, Grafana starts with `admin` and asks you to change it.
@@ -58,9 +60,12 @@ If you already run Prometheus and Grafana, you do not need the profile. Three fi
 | The `m87-gateway` scrape job in `deploy/observability/prometheus/prometheus.yml` | Your Prometheus configuration |
 | `deploy/observability/prometheus/alerts.yml` | Your Prometheus rule files |
 | `deploy/observability/grafana/dashboards/gateway-overview.json` | Your Grafana dashboards |
+| `deploy/observability/grafana/dashboards/gateway-logs.json` | Your Grafana dashboards, if you also run Loki |
 
-The dashboard uses your default Prometheus data source, and you can pick another at the top of the page.
-`gateway-logs.json` also needs [Loki export](loki-export.md).
+The dashboards use your default data sources, and you can pick others at the top of the page. The logs
+dashboard fills once you turn on [Loki export](loki-export.md). A gateway in Compose reaches a Loki in another
+project on this host at `http://host.docker.internal:3100/loki/api/v1/push`. Set a retention limit on your
+Loki; `deploy/observability/loki/loki.yml` is an example. The gateway exports metadata only, never prompts.
 
 Choose the scrape address by how Prometheus reaches the gateway:
 
@@ -165,20 +170,55 @@ send a synthetic request to verify recovery. Disabled export suppresses storage,
 backlog and held alerts. Drops remain visible after disabling; they describe actual
 lost export metadata. A zero drop count does not prove local recording succeeded.
 
-Notifications require your own Alertmanager receiver/routing. The supplied scrape
-config intentionally has no notification destination. Add your private Alertmanager
-configuration to Prometheus if needed, for example:
+## Send alert notifications
+
+Prometheus evaluates the rules and sends firing alerts to Alertmanager. Until you add a destination, they
+are visible in Alertmanager and in Grafana under **Alerting**, and nobody is told.
+
+To get email, edit `deploy/observability/alertmanager/alertmanager.yml` in your checkout. Keep the password
+in a file, not in this file, because the config lives in a Git checkout:
+
+```yaml
+global:
+  smtp_smarthost: smtp.example.com:587
+  smtp_from: alerts@example.com
+  smtp_auth_username: your-username
+  smtp_auth_password_file: /etc/alertmanager/smtp-password
+
+route:
+  receiver: email
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: email
+    email_configs:
+      - to: you@example.com
+        send_resolved: true
+```
+
+Put the password in `deploy/observability/alertmanager/smtp-password`, keep it out of Git, and restart with
+`docker compose --profile monitoring restart alertmanager`.
+
+Then prove delivery with a test alert. A firing alert in Prometheus is not proof that anyone was told:
+
+```bash
+docker compose exec alertmanager amtool --alertmanager.url=http://localhost:9093 \
+  alert add TestAlert severity=warning --annotation=summary="Testing notifications"
+```
+
+For chat or paging tools, see [Alertmanager receivers](https://prometheus.io/docs/alerting/latest/configuration/#receiver-integration-settings).
+
+If you run your own Prometheus, add this to its configuration:
 
 ```yaml
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ["127.0.0.1:9093"]
+        - targets: ["your-alertmanager:9093"]
 ```
-
-Do not treat a firing alert in Prometheus as proof an email/page was delivered.
-Configure and test notifications separately; no external notification is sent by
-this repository's verification.
 
 ## Metrics and durability boundaries
 

@@ -374,24 +374,8 @@ def logs(
     return {"items": items, "next_cursor": encode_cursor(items[-1]) if more else None}
 
 
-def _can_read_content(request: Request) -> bool:
-    """Captured prompts can hold private data, so read-only access stops at metadata."""
-    return request.state.principal.role == "admin"
-
-
-def _require_content_access(request: Request) -> None:
-    if not _can_read_content(request):
-        raise GatewayError(
-            403,
-            "insufficient_role",
-            "Your role is read-only. Captured content is available to admins.",
-            "permission_error",
-        )
-
-
 @router.get("/admin/api/logs/export")
 def export_logs(
-    request: Request,
     store: ReaderStore,
     limit: int = Query(default=1000, ge=1, le=10000),
     project_id: ProjectFilter = None,
@@ -400,8 +384,6 @@ def export_logs(
     request_id: str | None = Query(default=None, min_length=1, max_length=128),
     include_content: bool = False,
 ):
-    if include_content:
-        _require_content_access(request)
     body = json.dumps(
         store.export_events(
             limit=limit,
@@ -436,16 +418,12 @@ def remove_log_content(payload: LogDeletion, store: AdminStore):
 
 
 @router.get("/admin/api/logs/{request_id}")
-async def log_detail(request_id: str, request: Request, store: ReaderStore):
+async def log_detail(request_id: str, store: ReaderStore):
     if len(request_id) > 128:
         raise GatewayError(404, "not_found", "Log event was not found")
     event = store.get_event(request_id)
     if event is None:
         raise GatewayError(404, "not_found", "Log event was not found")
-    if not _can_read_content(request):
-        event["content_hidden"] = bool(event.pop("request_content", None)) | bool(
-            event.pop("response_content", None)
-        )
     return event
 
 

@@ -36,3 +36,4 @@ GEMINI.md
 .cursorrules
 .clinerules
 .windsurfrules
+deploy/observability/alertmanager/smtp-password

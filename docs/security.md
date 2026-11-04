@@ -60,8 +60,8 @@ keep sending the admin key as a bearer token.
 with PKCE, state and nonce. ID tokens are checked for signature, issuer, audience, expiry and nonce
 against an allowlist of asymmetric algorithms. The redirect address comes from configuration, never
 from the request. It adds two roles, admin and read-only. Admin routes are closed to read-only unless
-marked otherwise, and read-only cannot read captured content or change anything. People with no
-recognised role are refused. The admin key keeps working for recovery. SSO sessions last 60 minutes by
+marked otherwise, and read-only cannot change anything. Read-only can read captured content when capture
+is on, so treat the role as access to that content. People with no recognised role are refused. The admin key keeps working for recovery. SSO sessions last 60 minutes by
 default, which also bounds how long a removed person keeps access.
 
 Fields the gateway does not model are forwarded by default, so guardrails and capture cover

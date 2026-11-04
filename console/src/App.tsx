@@ -223,7 +223,7 @@ function Shell({ onLock }: { onLock: () => void }) {
           <Reconnecting />
           {readOnly && (
             <Notice title="Read-only access">
-              You can see this gateway's activity and settings. Changes and captured input and output need an admin.
+              You can see this gateway's activity, settings and captured input and output. Changes need an admin.
             </Notice>
           )}
           <Page />

@@ -194,7 +194,7 @@ export function Logs({ requestId }: { requestId: string }) {
               Export JSON
             </Button>
             <label className="check">
-              <input type="checkbox" checked={includeContent} disabled={readOnly} onChange={(event) => setIncludeContent(event.target.checked)} />
+              <input type="checkbox" checked={includeContent} onChange={(event) => setIncludeContent(event.target.checked)} />
               Include captured input and output
             </label>
           </div>

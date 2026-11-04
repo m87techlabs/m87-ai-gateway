@@ -38,7 +38,7 @@ create an application in **Applications**. It gives you a key and copy-paste set
 | Stop, keeping data | `docker compose stop` |
 | Start again | `docker compose start` |
 | Update | Download the Compose file again, then `docker compose pull && docker compose up -d` |
-| Add Prometheus, Grafana and Loki | See [monitoring](docs/runbooks/grafana-monitoring.md) |
+| Add Prometheus, Grafana, Loki and Alertmanager | See [monitoring](docs/runbooks/grafana-monitoring.md) |
 
 It restarts with Docker unless you stopped it. To build from a checkout instead, run
 `docker compose up -d --build`. See [run with Docker](docs/runbooks/container-deployment.md).

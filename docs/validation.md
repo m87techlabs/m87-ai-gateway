@@ -33,7 +33,7 @@ a realm built like the runbook, in Chrome.
 | Checked | Result |
 | --- | --- |
 | Admin, read-only and no-role people, through the real provider | Each got the expected access or refusal |
-| Read-only writes sent directly to the API, and a content export | Refused with 403 |
+| Read-only writes sent directly to the API | Refused with 403 |
 | Read-only console | Banner shown, changes disabled, filters still work, layout unchanged |
 | Session cookie, and the address bar after sign-in | `HttpOnly`, `SameSite=Strict`, no code left in the address |
 | Sign-out | Ended both the gateway and provider sessions; the password was asked for again |
@@ -51,6 +51,24 @@ the profile's data source.
 **Not checked:** a provider other than Keycloak; a long-running Keycloak and Grafana rather than disposable
 ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
 session reaching its real expiry; dashboard panels below the first screen by eye.
+
+## Loki and alert notifications: 2026-11-04
+
+Run against a test gateway, with Loki 3.7.9, Alertmanager 0.34.2, Prometheus 3.14 and Grafana 13.2 from a
+separate Compose project on the same host, and a local mail catcher instead of a real mail service.
+
+| Checked | Result |
+| --- | --- |
+| Export from the gateway to Loki through `host.docker.internal` | Test accepted; 30 of 30 requests delivered, none dropped |
+| Prompt text in Loki and in the gateway's logs | None found; sent prompts carried a marker to search for |
+| Logs dashboard in Grafana | Shows per-application records, reviewed by eye |
+| Gateway stopped | `M87GatewayDown` email about 3 minutes later |
+| Gateway restarted | `RESOLVED` email about 5 minutes later |
+| Monitoring profile | Starts with Alertmanager connected to Prometheus, which accepted a test alert, and all three data sources in Grafana |
+
+**Not checked:** delivery through a real mail service; Loki's retention actually deleting data, as only the
+setting was applied; Loki readiness in the profile, which still reported starting after 35 seconds, while the
+same configuration in the other project became ready; alerts other than the two above.
 
 ## Quickstart as a new user: 2026-11-04
 

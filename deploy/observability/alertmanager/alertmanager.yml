@@ -1,0 +1,11 @@
+# Collects alerts from Prometheus and shows them in Grafana. It sends nothing until you add a
+# destination. See "Send alert notifications" in docs/runbooks/grafana-monitoring.md.
+route:
+  receiver: none
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: none

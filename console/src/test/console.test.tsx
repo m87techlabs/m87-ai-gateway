@@ -735,22 +735,24 @@ describe("single sign-on and roles", () => {
     expect(await screen.findByRole("button", { name: "Create application" })).toBeDisabled();
   });
 
-  it("keeps log filters usable but disables deleting and content export for read-only", async () => {
+  it("keeps log filters and content export usable but disables deleting for read-only", async () => {
     signedInAs("readonly");
     openConsole("logs");
     await heading("Logs");
     expect(await screen.findByRole("button", { name: "Export JSON" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Delete all logs" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Delete captured content" })).toBeDisabled();
-    expect(screen.getByLabelText("Include captured input and output")).toBeDisabled();
+    expect(screen.getByLabelText("Include captured input and output")).toBeEnabled();
   });
 
-  it("says captured content needs an admin rather than implying there is none", async () => {
+  it("shows captured content to read-only", async () => {
     signedInAs("readonly", (request) =>
-      request.path === "/logs/fixture-request" ? respond({ ...EVENT, content_hidden: true }) : undefined,
+      request.path === "/logs/fixture-request"
+        ? respond({ ...EVENT, request_content: "the captured prompt", request_content_status: "captured", response_content_status: "disabled" })
+        : undefined,
     );
     openConsole("logs?request_id=fixture-request");
-    expect(await screen.findByText(/Reading them needs the admin role/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/the captured prompt/)).length).toBeGreaterThan(0);
   });
 
   it("shows single sign-on on the Features page, with no switch", async () => {

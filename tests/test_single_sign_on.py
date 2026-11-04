@@ -548,7 +548,7 @@ def test_admin_passes_every_role_check(gateway, provider):
         assert response.status_code != 403, (method, path)
 
 
-def test_read_only_sees_metadata_but_not_captured_content(make_gateway, provider):
+def test_read_only_can_read_captured_content_but_not_delete_it(make_gateway, provider):
     prompt = "my private prompt text"
     with TestClient(
         make_gateway(capture=True), base_url="http://localhost", follow_redirects=False
@@ -572,13 +572,14 @@ def test_read_only_sees_metadata_but_not_captured_content(make_gateway, provider
         sign_in(browser, provider)
         listed = browser.get("/admin/api/logs")
         assert request_id in listed.text and prompt not in listed.text
-        detail = browser.get(f"/admin/api/logs/{request_id}")
-        assert detail.json()["request_id"] == request_id
-        assert detail.json()["content_hidden"] is True
-        assert prompt not in detail.text and "request_content" not in detail.json()
-        assert browser.get("/admin/api/logs/export?include_content=true").status_code == 403
-        exported = browser.get("/admin/api/logs/export")
-        assert exported.status_code == 200 and prompt not in exported.text
+        assert prompt in browser.get(f"/admin/api/logs/{request_id}").text
+        assert prompt in browser.get("/admin/api/logs/export?include_content=true").text
+        assert prompt not in browser.get("/admin/api/logs/export").text
+        body = {"confirmation": "DELETE"}
+        for path in ("/admin/api/logs", "/admin/api/logs/content"):
+            refused = browser.request("DELETE", path, json=body, headers=CONSOLE)
+            assert refused.status_code == 403
+        assert prompt in browser.get(f"/admin/api/logs/{request_id}").text
         for path in (
             "/admin/api/apps",
             "/admin/api/apps/reader-test/keys",

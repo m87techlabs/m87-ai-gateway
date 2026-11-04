@@ -66,7 +66,6 @@ export interface LogEvent {
   capture_enabled?: number | boolean | null;
   guardrail_action?: string | null;
   guardrail_reason?: string | null;
-  content_hidden?: boolean;
   request_content?: unknown;
   response_content?: unknown;
   request_content_status?: string;

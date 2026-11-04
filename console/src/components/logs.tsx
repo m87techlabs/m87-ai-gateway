@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getJson } from "../api";
 import { dateTime, latency, number, time } from "../format";
 import type { LogEvent } from "../types";
-import { Badge, Dialog, ErrorNotice, Notice, Skeleton, Table, type Column, type Tone } from "./ui";
+import { Badge, Dialog, ErrorNotice, Skeleton, Table, type Column, type Tone } from "./ui";
 
 export const statusTone = (event: LogEvent): Tone => {
   if (event.request_outcome === "cancelled") return "warning";
@@ -143,14 +143,8 @@ export function LogDetail({ requestId, onClose }: { requestId: string; onClose: 
                 </div>
               ))}
           </dl>
-          {item.content_hidden ? (
-            <Notice>Input and output were captured for this request. Reading them needs the admin role.</Notice>
-          ) : (
-            <>
           <Content label="Input" value={item.request_content} status={item.request_content_status} event={item} />
           <Content label="Output" value={item.response_content} status={item.response_content_status} event={item} />
-            </>
-          )}
         </div>
       )}
     </Dialog>

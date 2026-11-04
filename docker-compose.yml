@@ -56,11 +56,28 @@ services:
   loki:
     profiles: [monitoring]
     image: grafana/loki:3.7.9
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki.yml
     ports:
       - "127.0.0.1:${LOKI_PORT:-3100}:3100"
     volumes:
+      - ./deploy/observability/loki/loki.yml:/etc/loki/loki.yml:ro
       - loki-data:/loki
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  alertmanager:
+    profiles: [monitoring]
+    image: prom/alertmanager:v0.34.2
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --cluster.listen-address=
+    ports:
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./deploy/observability/alertmanager:/etc/alertmanager:ro
+      - alertmanager-data:/alertmanager
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
@@ -94,4 +111,5 @@ volumes:
   gateway-data:
   prometheus-data:
   loki-data:
+  alertmanager-data:
   grafana-data:

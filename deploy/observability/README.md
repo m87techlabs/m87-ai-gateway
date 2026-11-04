@@ -4,7 +4,9 @@ Configuration for the optional monitoring profile: `docker compose --profile mon
 also use these with your own Prometheus, Grafana and Loki. The gateway works without them.
 
 - `prometheus/prometheus.yml`: scrape configuration for the Compose network.
-- `prometheus/alerts.yml`: nine alert rules; notifications need your own Alertmanager.
+- `prometheus/alerts.yml`: nine alert rules.
+- `alertmanager/alertmanager.yml`: collects alerts, and sends nothing until you add a destination.
+- `loki/loki.yml`: Loki with 30-day retention.
 - `prometheus/alerts.test.yml`: synthetic firing, hold and recovery tests.
 - `grafana/dashboards/gateway-overview.json`: traffic, tokens, latency and logging health, including per application.
 - `grafana/dashboards/gateway-logs.json`: Loki metadata filtered by project, application and request.

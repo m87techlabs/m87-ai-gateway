@@ -30,8 +30,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Overview, usage, audit log, configuration history | Yes | Yes |
 | Settings, features, providers and applications, as metadata | Yes | Yes |
-| Logs and metadata exports | Yes | Yes |
-| Captured input and output, in the console or an export | Yes | **No** |
+| Logs, exports and captured input and output | Yes | Yes |
 | Any change, including keys, settings, restores and deleting logs | Yes | **No** |
 | Stored credential values | Never returned | Never returned |
 
@@ -39,7 +38,8 @@ The gateway enforces this on every request, and the console only hides what woul
 admin route is admin-only until someone deliberately opens it to read-only, and a test walks every route
 to hold that in place.
 
-A person holding both roles is an admin. A person with neither is refused, and the refusal is recorded.
+If capture is on, read-only people can read prompts and responses, so give the role only to people who may
+see that content. A person holding both roles is an admin. A person with neither is refused, and the refusal is recorded.
 There is no default role.
 
 ## Set up the identity provider

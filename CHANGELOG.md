@@ -8,11 +8,14 @@ Keep a Changelog format.
 ### Added
 
 - Single sign-on for the console through OpenID Connect, off until configured, with admin and read-only
-  roles. Read-only people can see activity and settings, but cannot change anything or read captured
-  content. See the [runbook](docs/runbooks/single-sign-on.md).
+  roles. Read-only people can see activity, settings and captured content, but cannot change anything.
+  See the [runbook](docs/runbooks/single-sign-on.md).
 - The audit log names the person, with a stable subject identifier, and records sign-ins, refused
   sign-ins, sign-outs and cache clears. Admin key actions appear as `admin-key`.
 - Guidance for using an existing Prometheus and Grafana instead of the monitoring profile.
+- Alertmanager in the monitoring profile, with a guide to sending notifications. It sends nothing until
+  you add a destination.
+- Loki in the monitoring profile keeps 30 days and then deletes.
 
 ### Changed
 
