@@ -11,6 +11,7 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | Horizon, a production RAG app, running through the gateway | Verified live in daily use |
 | Cloudflare Worker, Access and tunnel path | Verified live, including that the console and `/metrics` are not routed |
 | Docker Compose on Docker Desktop with WSL2 | Verified |
+| Quickstart from the published image, with no registry login | Verified on 0.1.2 |
 | Compose on a Linux CI runner, with a synthetic model server | Verified on each push |
 | Backup and restore through Compose | Verified |
 | Prometheus, Grafana and Loki through the monitoring profile | Verified live |
@@ -23,6 +24,14 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | Cloud hosts | **Not checked**; see the [roadmap](roadmap.md) |
 | Safari, Firefox and screen readers | **Not checked** |
 | Upgrade or rollback between released versions | **Not checked** |
+
+## Quickstart as a new user: 2026-11-04
+
+In an empty folder on Docker Desktop with WSL2, with no registry credentials: the release's Compose file
+downloaded, 0.1.2 pulled anonymously, and the gateway was healthy about 10 seconds later. Connecting Ollama,
+creating an application and sending a request through the API returned a real answer. The image is
+published for linux/amd64 and linux/arm64, and reported its commit. This used the API rather than the
+console's pages.
 
 ## Compose packaging and monitoring: 2026-11-03
 
