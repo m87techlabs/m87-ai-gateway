@@ -5,6 +5,7 @@ config.yaml
 config.local.yaml
 *.pem
 *.key
+*.m87backup
 .venv/
 __pycache__/
 .pytest_cache/
