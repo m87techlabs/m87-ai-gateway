@@ -23,3 +23,15 @@ var/lib/
 
 # Built from console/ by npm run build
 src/m87_gateway/control/static/
+
+# Agent instructions stay local
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.claude/
+.codex/
+.cursor/
+.cursorrules
+.clinerules
+.windsurfrules

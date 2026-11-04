@@ -2,7 +2,7 @@
 
 ## Working agreement
 
-Read [AGENTS.md](AGENTS.md), the [design](docs/design.md), and the
+Read the [design](docs/design.md) and the
 [roadmap](docs/roadmap.md) before making a substantial change. Keep scope focused
 on gateway capabilities and label implementation status accurately.
 
