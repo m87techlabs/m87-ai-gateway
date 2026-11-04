@@ -161,7 +161,7 @@ def run_gateway(args):
     else:
         print(f"Admin key: {key}", flush=True)
     print(
-        "Connect a provider in Setup, choose a model, then create an application key.", flush=True
+        "Connect a provider in Providers, choose a model, then create an application.", flush=True
     )
     if args.open_browser:
 

@@ -219,8 +219,10 @@ export function App() {
     refetchOnWindowFocus: false,
   });
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // Only the first answer decides. After that, signing in and session expiry are explicit,
+  // and a later check (clearing the cache re-runs it) must not silently undo a sign-out.
   useEffect(() => {
-    if (check.data !== undefined) setSignedIn(check.data);
+    if (check.data !== undefined) setSignedIn((current) => current ?? check.data);
   }, [check.data]);
   useEffect(() => {
     onSessionExpired(() => {

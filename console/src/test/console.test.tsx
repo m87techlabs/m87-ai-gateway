@@ -41,8 +41,13 @@ describe("session", () => {
     await heading("Overview");
     expired = true;
     await user.click(screen.getByRole("link", { name: "Logs" }));
-    expect(await screen.findByLabelText("Admin key")).toBeInTheDocument();
+    await screen.findByLabelText("Admin key");
     expect(mock.requests.length).toBeGreaterThan(0);
+    // Clearing the cache re-runs the session check. Its result must not undo the sign-out.
+    await waitFor(() => expect(mock.find("GET", "/session").length).toBeGreaterThan(1));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByLabelText("Admin key")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Logs" })).not.toBeInTheDocument();
   });
 
   it("locking ends the session and removes what was on screen", async () => {
