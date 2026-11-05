@@ -5,6 +5,11 @@ Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+
+- A console left open while the gateway is upgraded now says so within a minute and offers to reload. Before, it kept
+  running the old console against the new gateway, and the Features page could look empty.
+
 ## [0.2.0] - 2026-11-05
 
 [Release notes](docs/releases/0.2.0.md)

@@ -54,6 +54,12 @@ the profile's data source.
 ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
 session reaching its real expiry; dashboard panels below the first screen by eye.
 
+## Upgrade with the console open: 2026-11-05
+
+A console opened in Chrome, then the gateway restarted underneath it as a different build. The page showed the update
+notice within its one-minute check, and **Reload** loaded the new build. Found after a page left open across the 0.2.0
+upgrade showed an empty Features page.
+
 ## Upgrade and rollback, 0.1.2 to 0.2.0: 2026-11-05
 
 The published 0.1.2 image and the 0.2.0 build, in isolated Compose projects, following the release notes' commands.

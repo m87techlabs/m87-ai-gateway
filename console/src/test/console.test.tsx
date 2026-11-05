@@ -860,3 +860,30 @@ describe("single sign-on and roles", () => {
     expect(await screen.findByText("bob")).toBeInTheDocument();
   });
 });
+
+describe("upgrades", () => {
+  it("asks for a reload when the gateway changes under an open page", async () => {
+    let upgraded = false;
+    gateway((request) =>
+      request.path === "/about"
+        ? respond(upgraded ? { version: "0.2.0", revision: "bbbbbbb" } : { version: "0.1.2", revision: "aaaaaaa" })
+        : undefined,
+    );
+    const { client } = openConsole();
+    await heading("Overview");
+    expect(await screen.findByText(/v0\.1\.2/)).toBeInTheDocument();
+    expect(screen.queryByText(/The gateway was updated/)).not.toBeInTheDocument();
+    upgraded = true;
+    await client.refetchQueries({ queryKey: ["about"] });
+    expect(await screen.findByText("The gateway was updated to v0.2.0")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+  });
+
+  it("says nothing while the version stays the same", async () => {
+    gateway();
+    const { client } = openConsole();
+    await heading("Overview");
+    await client.refetchQueries({ queryKey: ["about"] });
+    expect(screen.queryByText(/The gateway was updated/)).not.toBeInTheDocument();
+  });
+});

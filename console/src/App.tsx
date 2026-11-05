@@ -136,12 +136,38 @@ function Reconnecting() {
   );
 }
 
-function Version() {
-  const about = useQuery({
+const useAbout = () =>
+  useQuery({
     queryKey: ["about"],
     queryFn: () => getJson<{ version: string; revision: string | null }>("/about"),
-    staleTime: Infinity,
+    // Checked now and then, so a page left open across an upgrade notices it.
+    refetchInterval: 60_000,
   });
+
+/** An open page keeps running the console it loaded, which may not match an upgraded gateway. */
+function Upgraded() {
+  const about = useAbout();
+  const loaded = useRef<string | null>(null);
+  const current = about.data ? `${about.data.version} ${about.data.revision ?? ""}` : null;
+  if (current && loaded.current === null) loaded.current = current;
+  if (!current || current === loaded.current) return null;
+  return (
+    <Notice
+      tone="warning"
+      title={`The gateway was updated to v${about.data?.version}`}
+      action={
+        <button type="button" className="button primary small" onClick={() => window.location.reload()}>
+          Reload
+        </button>
+      }
+    >
+      This page is still running the console from before. Reload to use the new one.
+    </Notice>
+  );
+}
+
+function Version() {
+  const about = useAbout();
   if (!about.data) return null;
   const { version, revision } = about.data;
   return (
@@ -221,6 +247,7 @@ function Shell({ onLock }: { onLock: () => void }) {
       <main>
         <div className="content">
           <Reconnecting />
+          <Upgraded />
           {readOnly && (
             <Notice title="Read-only access">
               You can see this gateway's activity, settings and captured input and output. Changes need an admin.

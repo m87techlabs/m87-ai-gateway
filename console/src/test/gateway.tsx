@@ -140,7 +140,7 @@ export function openConsole(route = "overview") {
       <App />
     </QueryClientProvider>,
   );
-  return { user, ...view };
+  return { user, client, ...view };
 }
 
 export const heading = (name: string) => screen.findByRole("heading", { name });
