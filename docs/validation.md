@@ -52,6 +52,12 @@ the profile's data source.
 ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
 session reaching its real expiry; dashboard panels below the first screen by eye.
 
+## Features page: 2026-11-05
+
+Checked in Chrome against a temporary gateway from source, in both themes and at phone width. All nine cards
+show the right state, a card opens its page, a switch saves, and there were no script errors or overflow. Live
+numbers come from real requests. **Not checked:** cards with real provider traffic through this build.
+
 ## Loki and alert notifications: 2026-11-04
 
 Run against a test gateway, with Loki 3.7.9, Alertmanager 0.34.2, Prometheus 3.14 and Grafana 13.2 from a

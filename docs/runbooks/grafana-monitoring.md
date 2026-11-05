@@ -2,6 +2,8 @@
 
 ## Use this when
 
+To understand how the pieces connect first, see [how data reaches Grafana](../grafana-data-flow.md).
+
 Use this to run dashboards and alerts for the gateway. Prometheus, Grafana, Loki and Alertmanager are an
 optional Compose profile, off by default. The gateway works without them.
 

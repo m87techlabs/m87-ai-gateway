@@ -110,6 +110,8 @@ public tunnel route.
 
 ## Grafana, Loki, and future exporters
 
+For the short version, see [how data reaches Grafana](grafana-data-flow.md).
+
 Prometheus collects numeric time-series metrics. Loki stores logs; Grafana can
 query both. See the official [Prometheus overview](https://prometheus.io/docs/introduction/overview/)
 and [Loki overview](https://grafana.com/docs/loki/latest/get-started/overview/).

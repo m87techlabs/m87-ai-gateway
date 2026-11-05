@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { ApiError, getVersioned, send, type Versioned } from "../api";
-import { Badge, Button, Card, ErrorNotice, Field, PageHeader, Skeleton, Switch, useToast } from "../components/ui";
+import { Activity, Coins, Gauge, KeyRound, Plus, RefreshCw, ScrollText, ShieldCheck, Waypoints, X, Zap } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ApiError, getJson, getVersioned, send } from "../api";
+import { Badge, Button, Card, Empty, ErrorNotice, Field, PageHeader, Skeleton, Switch, useToast } from "../components/ui";
+import { count, number, percent } from "../format";
 import { href } from "../router";
-import type { Feature, FeatureField } from "../types";
+import type { Capability, Feature, FeatureField, Summary } from "../types";
 
-type Features = Versioned<{ items: Feature[] }>;
 type Route = { task: string; model: string };
 
 const toDraft = (field: FeatureField, value: unknown): unknown => {
@@ -83,11 +83,11 @@ function FeatureRow({ feature, etag }: { feature: Feature; etag: string | null }
         <div>
           <div className="feature-title">
             {feature.name}
-            {planned && <Badge>Planned</Badge>}
-            {!planned && !feature.toggleable && <Badge>{feature.badge ?? "Always on"}</Badge>}
+            {!planned && !feature.toggleable && !feature.link && <Badge>{feature.badge ?? "Always on"}</Badge>}
           </div>
           <p className="muted">{feature.summary}</p>
         </div>
+        {feature.link && <a href={href(feature.link)}>Open</a>}
         {feature.toggleable && (
           <Switch checked={feature.enabled} disabled={save.isPending} label={feature.name} onChange={(enabled) => save.mutate({ enabled })} />
         )}
@@ -145,50 +145,136 @@ function FeatureRow({ feature, etag }: { feature: Feature; etag: string | null }
   );
 }
 
-const GROUPS = ["Traffic", "Safety", "Routing", "Observability", "Access"];
+const ICONS: Record<string, ReactNode> = {
+  authentication: <KeyRound size={18} aria-hidden />,
+  routing: <Waypoints size={18} aria-hidden />,
+  caching: <Zap size={18} aria-hidden />,
+  rate_limits: <Gauge size={18} aria-hidden />,
+  reliability: <RefreshCw size={18} aria-hidden />,
+  guardrails: <ShieldCheck size={18} aria-hidden />,
+  logging: <ScrollText size={18} aria-hidden />,
+  monitoring: <Activity size={18} aria-hidden />,
+  cost: <Coins size={18} aria-hidden />,
+};
 
-export function Features() {
-  const features = useQuery({
+const useFeatures = () =>
+  useQuery({
     queryKey: ["features"],
-    queryFn: () => getVersioned<Features["data"]>("/features"),
+    queryFn: () => getVersioned<{ capabilities: Capability[]; items: Feature[] }>("/features"),
     refetchOnWindowFocus: false,
   });
-  const items = features.data?.data.items;
+
+/** A real number from the last 24 hours, only where a capability has one worth showing. */
+function liveFact(capability: Capability, active: boolean, summary?: Summary) {
+  if (!summary) return null;
+  switch (capability.id) {
+    case "caching":
+      return active && summary.requests > 0 ? `${percent(summary.cache_hits, summary.requests)} of requests served from cache in the last 24 hours` : null;
+    case "logging":
+      return `${count(summary.requests, "request")} logged in the last 24 hours`;
+    case "cost":
+      return `${number(summary.total_tokens)} tokens used in the last 24 hours`;
+    default:
+      return null;
+  }
+}
+
+function CapabilityCard({ capability, items, summary }: { capability: Capability; items: Feature[]; summary?: Summary }) {
+  const available = items.filter((item) => item.status !== "planned");
+  const on = available.filter((item) => item.enabled).length;
+  const planned = items.length - available.length;
+  const fact = liveFact(capability, on > 0, summary);
+  return (
+    <a className="card capability" href={href("features", capability.id)} data-capability={capability.id}>
+      <div className="capability-head">
+        <span className="capability-icon">{ICONS[capability.id]}</span>
+        <h2>{capability.name}</h2>
+        {available.length === 0 ? <Badge>Planned</Badge> : on > 0 ? <Badge tone="good">On</Badge> : <Badge>Off</Badge>}
+      </div>
+      <p className="muted">{capability.summary}</p>
+      {fact && <p className="capability-fact">{fact}</p>}
+      <small className="muted">
+        {available.length > 0 && `${on} of ${available.length} on`}
+        {available.length > 0 && planned > 0 && " · "}
+        {planned > 0 && `${planned} planned`}
+      </small>
+    </a>
+  );
+}
+
+export function Features() {
+  const features = useFeatures();
+  const summary = useQuery({
+    queryKey: ["overview", "features"],
+    queryFn: () => getJson<Summary>("/overview?hours=24"),
+    refetchInterval: 30_000,
+  });
+  const data = features.data?.data;
   return (
     <>
       <PageHeader
         title="Features"
-        description={
-          <>
-            Turn gateway features on and off. Changes apply to new requests straight away, survive restarts, and can be undone from{" "}
-            <a href={href("history")}>Configuration history</a>.
-          </>
-        }
+        description="The jobs this gateway does between your apps and your models. Open one to see what it does and change its settings."
       />
       {features.isError && <ErrorNotice error={features.error} retry={() => features.refetch()} />}
       {features.isPending && <Skeleton lines={10} />}
-      {items &&
-        GROUPS.map((group) => (
-          <Card key={group} className="feature-group">
-            <h2>{group}</h2>
-            {items
-              .filter((item) => item.group === group)
-              .map((item) => (
+      {data && (
+        <div className="capabilities">
+          {data.capabilities.map((capability) => (
+            <CapabilityCard
+              key={capability.id}
+              capability={capability}
+              items={data.items.filter((item) => item.group === capability.id)}
+              summary={summary.data}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+export function CapabilityPage({ id }: { id: string }) {
+  const features = useFeatures();
+  const data = features.data?.data;
+  const capability = data?.capabilities.find((item) => item.id === id);
+  const items = data?.items.filter((item) => item.group === id) ?? [];
+  const available = items.filter((item) => item.status !== "planned");
+  const planned = items.filter((item) => item.status === "planned");
+  return (
+    <>
+      {features.isError && <ErrorNotice error={features.error} retry={() => features.refetch()} />}
+      {features.isPending && <Skeleton lines={10} />}
+      {data && !capability && <Empty title="That feature does not exist" />}
+      {capability && (
+        <>
+          <PageHeader
+            eyebrow={<a href={href("features")}>Features</a>}
+            title={capability.name}
+            description={
+              <>
+                {capability.summary} Changes apply to new requests straight away, survive restarts, and can be undone from{" "}
+                <a href={href("history")}>Configuration history</a>.
+              </>
+            }
+          />
+          {available.length > 0 && (
+            <Card className="feature-group">
+              {available.map((item) => (
                 <FeatureRow key={item.id} feature={item} etag={features.data?.etag ?? null} />
               ))}
-            {group === "Observability" && (
-              <div className="feature">
-                <div className="feature-head">
-                  <div>
-                    <div className="feature-title">Log export</div>
-                    <p className="muted">Send request metadata to a webhook or Loki.</p>
-                  </div>
-                  <a href={href("export")}>Configure</a>
-                </div>
-              </div>
-            )}
-          </Card>
-        ))}
+            </Card>
+          )}
+          {planned.length > 0 && (
+            <Card className="feature-group">
+              <h2>Planned</h2>
+              {planned.map((item) => (
+                <FeatureRow key={item.id} feature={item} etag={null} />
+              ))}
+            </Card>
+          )}
+        </>
+      )}
     </>
   );
 }

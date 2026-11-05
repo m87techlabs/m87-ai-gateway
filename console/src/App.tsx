@@ -22,7 +22,7 @@ import { FiltersProvider } from "./filters";
 import { ApplicationDetail } from "./pages/ApplicationDetail";
 import { Applications } from "./pages/Applications";
 import { Audit, History } from "./pages/Admin";
-import { Features } from "./pages/Features";
+import { CapabilityPage, Features } from "./pages/Features";
 import { LogExport } from "./pages/LogExport";
 import { Login } from "./pages/Login";
 import { Logs } from "./pages/Logs";
@@ -37,9 +37,10 @@ import { currentTheme, saveTheme, type Theme } from "./theme";
 
 const NAVIGATION: { group: string; items: { id: string; label: string; icon: ReactNode }[] }[] = [
   {
-    group: "Monitor",
+    group: "Gateway",
     items: [
       { id: "overview", label: "Overview", icon: <LayoutDashboard size={16} aria-hidden /> },
+      { id: "features", label: "Features", icon: <ToggleRight size={16} aria-hidden /> },
       { id: "logs", label: "Logs", icon: <ScrollText size={16} aria-hidden /> },
     ],
   },
@@ -54,7 +55,6 @@ const NAVIGATION: { group: string; items: { id: string; label: string; icon: Rea
     group: "Configure",
     items: [
       { id: "providers", label: "Providers", icon: <Plug size={16} aria-hidden /> },
-      { id: "features", label: "Features", icon: <ToggleRight size={16} aria-hidden /> },
       { id: "export", label: "Log export", icon: <Send size={16} aria-hidden /> },
     ],
   },
@@ -100,7 +100,7 @@ function PageContent() {
     case "providers":
       return <Providers />;
     case "features":
-      return <Features />;
+      return detail ? <CapabilityPage key={detail} id={detail} /> : <Features />;
     case "export":
       return <LogExport />;
     case "projects":

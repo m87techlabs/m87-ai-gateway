@@ -1,5 +1,7 @@
 """Console sessions and the feature list behind its Features page."""
 
+from pathlib import Path
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
@@ -249,13 +251,15 @@ def test_stale_feature_saves_are_refused_and_changes_reach_history(gateway):
     assert any(item["action"] == "feature.response_cache.updated" for item in events)
 
 
-def test_console_shows_every_feature_group():
-    """A group the console does not list would hide its features with no error."""
-    from pathlib import Path
+def test_every_feature_belongs_to_a_capability_and_none_is_empty(gateway):
+    body = gateway.get("/admin/api/features", headers=ADMIN).json()
+    capabilities = {item["id"] for item in body["capabilities"]}
+    used = {item["group"] for item in body["items"]}
+    assert used == capabilities
 
-    from m87_gateway.control.features import FEATURES, PLANNED
 
-    source = (Path(__file__).parents[1] / "console/src/pages/Features.tsx").read_text()
-    listed = source.split("const GROUPS = [", 1)[1].split("]", 1)[0]
-    groups = {item.group for item in FEATURES} | {item[2] for item in PLANNED} | {"Access"}
-    assert all(f'"{group}"' in listed for group in groups)
+def test_features_managed_elsewhere_point_at_a_console_page(gateway):
+    items = gateway.get("/admin/api/features", headers=ADMIN).json()["items"]
+    links = {item["link"] for item in items if item.get("link")}
+    source = (Path(__file__).parents[1] / "console/src/App.tsx").read_text()
+    assert links and all(f'case "{link}":' in source for link in links)

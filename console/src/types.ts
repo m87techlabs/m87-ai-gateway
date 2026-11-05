@@ -186,6 +186,12 @@ export interface FeatureField {
   help: string | null;
 }
 
+export interface Capability {
+  id: string;
+  name: string;
+  summary: string;
+}
+
 export interface Feature {
   id: string;
   name: string;
@@ -196,6 +202,7 @@ export interface Feature {
   enabled: boolean;
   toggleable: boolean;
   badge?: string;
+  link?: string;
   values: Record<string, unknown>;
   fields: FeatureField[];
 }

@@ -13,6 +13,10 @@ Keep a Changelog format.
 - The audit log names the person, with a stable subject identifier, and records sign-ins, refused
   sign-ins, sign-outs and cache clears. Admin key actions appear as `admin-key`.
 - Guidance for using an existing Prometheus and Grafana instead of the monitoring profile.
+- The console's **Features** page shows one card for each job a gateway does, such as Authentication, Caching and
+  Rate limiting, with its state and live numbers. Each opens its own page of settings, and shows what is planned.
+- New documentation: [what the gateway does](docs/features.md) and
+  [how data reaches Grafana](docs/grafana-data-flow.md).
 - Alertmanager in the monitoring profile, with a guide to sending notifications. It sends nothing until
   you add a destination.
 - Loki in the monitoring profile keeps 30 days and then deletes.

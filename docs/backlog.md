@@ -20,6 +20,10 @@ The current priorities are on the [roadmap](roadmap.md).
 | P2 | [R4 Priority classes](#r4-priority-classes) | Routing | M |
 | P2 | [S1 Budget enforcement](#s1-budget-enforcement) | Security | M |
 | P2 | [S2 Response policies](#s2-response-policies) | Security | M–L |
+| P2 | [R8 Token rate limits](#r8-token-rate-limits) | Routing | S–M |
+| P2 | [R9 Per-request cache controls](#r9-per-request-cache-controls) | Routing | S |
+| P2 | [S7 Personal data detection](#s7-personal-data-detection) | Security | M |
+| P2 | [O6 Request tags](#o6-request-tags) | Observability | S |
 | P2 | [A5 Multiple choices (`n`)](#a5-multiple-choices-n) | API | S |
 | P3 | [A7/A8 Tool and image awareness](#a7-tool-calling-and-a8-multimodal-gateway-awareness) | API | M |
 | P3 | [P1 Cloud and vendor adapters](#p1-cloud-and-vendor-adapters) | Providers | L each |
@@ -142,6 +146,27 @@ in usage. An opt-out works for each request.
 
 ---
 
+### R8 Token rate limits
+
+**Why:** requests per minute treats a short question and a huge prompt the same. Providers and other gateways limit
+tokens too.
+
+**Scope:** tokens per minute per application, using provider-reported usage, with a clear 429 like the existing limit.
+
+**Acceptance:** an app over its token limit is refused without affecting others. Requests with unknown usage are
+handled by a documented rule, and streaming usage is counted.
+
+### R9 Per-request cache controls
+
+**Why:** one app setting cannot suit every request. Some must never be cached.
+
+**Scope:** request headers to skip the cache and to set a shorter lifetime, and a response header reporting hit or miss.
+
+**Acceptance:** a skipped request neither reads nor writes the cache, a caller cannot extend a lifetime beyond the
+gateway's setting, and hits stay per application.
+
+---
+
 ## S. Security and governance
 
 ### S1 Budget enforcement
@@ -208,6 +233,18 @@ claim is made.
 
 ---
 
+### S7 Personal data detection
+
+**Why:** prompts leave for third-party providers, and teams want to know or stop that when they hold personal data.
+
+**Scope:** detect common patterns such as email addresses, phone numbers and card numbers in requests, and flag, redact or
+block by application. Local patterns first, with no external service.
+
+**Acceptance:** each action is covered by tests, detection is labelled best effort, and matched values never appear in
+logs, metrics or exports.
+
+---
+
 ## O. Observability
 
 ### O2 Remote log exporters
@@ -236,6 +273,39 @@ provider, model and application. Needs [implemented queueing](runbooks/inference
 and GPU-seconds or token throughput for self-hosted providers.
 
 **Acceptance:** estimates are clearly marked as estimates, and maintaining the price table is documented.
+
+---
+
+### O6 Request tags
+
+**Why:** apps often need usage split by something the gateway cannot see, such as a customer or feature.
+
+**Scope:** a bounded metadata header, stored with the request, filterable in Logs and exported to Loki. Not a metric label,
+so it cannot grow without limit.
+
+**Acceptance:** size and count limits are enforced, tags filter in Logs and Loki, and they reach neither metric labels nor
+providers.
+
+---
+
+## C. Connectors
+
+### C1 Connectors (parked)
+
+**Status:** parked on 2026-11-05. Designed, not started.
+
+**Why:** today a user connects Grafana by editing their own Prometheus and copying files. Someone with managed Grafana
+cannot do it from the console, and Prometheus cannot pull from a gateway it cannot reach.
+
+**Scope:** a **Connectors** page with one card per service, each with an on/off switch, settings, a connection test and last
+status, reusing log export's encrypted secrets, history and audit. Grafana installs dashboards through its API. Metrics push
+through OTLP, or offer an authenticated scrape address. Logs add Basic authentication and tenant support, and the Log export
+page moves here. Alerts add an Alertmanager address and a test alert. Single sign-on moves to the console last, because a bad
+setting could lock people out: it must pass a test before saving, and the admin key remains the way back.
+
+A connector links to a service that is already running. The console does not start containers.
+
+**Acceptance:** a Grafana Cloud user gets dashboards and data from the console alone, verified against a real account.
 
 ---
 

@@ -403,24 +403,70 @@ describe("first-time provider setup", () => {
 });
 
 const FEATURES = [
-  { id: "response_cache", name: "Response cache", group: "Traffic", summary: "Stores answers.", note: null, status: "off", enabled: false, toggleable: true, values: { ttl_seconds: 300 }, fields: [{ name: "ttl_seconds", label: "Keep answers for", kind: "number", minimum: 1, maximum: 86400, step: null, unit: "s", help: null }] },
-  { id: "concurrency", name: "Concurrency limit", group: "Traffic", summary: "Limit.", note: null, status: "on", enabled: true, toggleable: false, values: { max_concurrent_requests: 64 }, fields: [{ name: "max_concurrent_requests", label: "Concurrent requests", kind: "number", minimum: 1, maximum: 10000, step: null, unit: null, help: null }] },
-  { id: "blocklist", name: "Blocklist", group: "Safety", summary: "Rejects phrases.", note: null, status: "on", enabled: true, toggleable: true, values: { blocked_terms: ["one"] }, fields: [{ name: "blocked_terms", label: "Blocked phrases", kind: "terms", minimum: null, maximum: null, step: null, unit: null, help: null }] },
-  { id: "task_routing", name: "Task routing", group: "Routing", summary: "Routes.", note: null, status: "on", enabled: true, toggleable: false, values: { routes: [] }, fields: [{ name: "routes", label: "Routes", kind: "routes", minimum: null, maximum: null, step: null, unit: null, help: null }] },
-  { id: "budgets", name: "Budgets", group: "Safety", summary: "Limit spend.", note: null, status: "planned", enabled: false, toggleable: false, values: {}, fields: [] },
+  { id: "response_cache", name: "Response cache", group: "caching", summary: "Stores answers.", note: null, status: "off", enabled: false, toggleable: true, values: { ttl_seconds: 300 }, fields: [{ name: "ttl_seconds", label: "Keep answers for", kind: "number", minimum: 1, maximum: 86400, step: null, unit: "s", help: null }] },
+  { id: "concurrency", name: "Concurrency limit", group: "rate_limits", summary: "Limit.", note: null, status: "on", enabled: true, toggleable: false, values: { max_concurrent_requests: 64 }, fields: [{ name: "max_concurrent_requests", label: "Concurrent requests", kind: "number", minimum: 1, maximum: 10000, step: null, unit: null, help: null }] },
+  { id: "blocklist", name: "Blocklist", group: "guardrails", summary: "Rejects phrases.", note: null, status: "on", enabled: true, toggleable: true, values: { blocked_terms: ["one"] }, fields: [{ name: "blocked_terms", label: "Blocked phrases", kind: "terms", minimum: null, maximum: null, step: null, unit: null, help: null }] },
+  { id: "task_routing", name: "Task routing", group: "routing", summary: "Routes.", note: null, status: "on", enabled: true, toggleable: false, values: { routes: [] }, fields: [{ name: "routes", label: "Routes", kind: "routes", minimum: null, maximum: null, step: null, unit: null, help: null }] },
+  { id: "budgets", name: "Budgets", group: "cost", summary: "Limit spend.", note: null, status: "planned", enabled: false, toggleable: false, values: {}, fields: [] },
+];
+
+const CAPABILITIES = [
+  { id: "caching", name: "Caching", summary: "Answers repeats." },
+  { id: "rate_limits", name: "Rate limiting", summary: "Stops spikes." },
+  { id: "guardrails", name: "Guardrails", summary: "Checks requests." },
+  { id: "routing", name: "Routing", summary: "Chooses models." },
+  { id: "cost", name: "Cost control", summary: "Tracks spend." },
 ];
 
 describe("features", () => {
   const withFeatures = (put: (request: { body: any }) => Response | undefined = () => undefined) =>
     gateway((request) => {
-      if (request.method === "GET" && request.path === "/features") return respond({ items: FEATURES }, 200, { ETag: '"3"' });
+      if (request.method === "GET" && request.path === "/features") return respond({ capabilities: CAPABILITIES, items: FEATURES }, 200, { ETag: '"3"' });
       if (request.method === "PUT" && request.path.startsWith("/features/")) return put(request) ?? respond(FEATURES[0]);
       return undefined;
     });
 
+  it("shows one card per gateway job, with its state and what is planned", async () => {
+    withFeatures();
+    openConsole("features");
+    expect(await heading("Features")).toBeInTheDocument();
+    const card = (name: string) => within(screen.getByRole("link", { name: new RegExp(`^${name}`) }));
+    await screen.findByRole("link", { name: /^Caching/ });
+    expect(card("Caching").getByText("Off")).toBeInTheDocument();
+    expect(card("Rate limiting").getByText("On")).toBeInTheDocument();
+    expect(card("Rate limiting").getByText("1 of 1 on")).toBeInTheDocument();
+    expect(card("Cost control").getByText("Planned")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Caching/ })).toHaveAttribute("href", "#/features/caching");
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("shows only real numbers, and no cache rate while caching is off", async () => {
+    withFeatures();
+    openConsole("features");
+    const caching = await screen.findByRole("link", { name: /^Caching/ });
+    await screen.findByText("Tracks spend.");
+    expect(await screen.findByText(/13 tokens used in the last 24 hours/)).toBeInTheDocument();
+    expect(within(caching).queryByText(/served from cache/)).not.toBeInTheDocument();
+  });
+
+  it("lists the settings for one job on its own page, with a way back", async () => {
+    withFeatures();
+    openConsole("features/caching");
+    expect(await heading("Caching")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Response cache" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Blocklist" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Features" , current: false })).toBeInTheDocument();
+  });
+
+  it("explains an unknown feature page", async () => {
+    withFeatures();
+    openConsole("features/nonsense");
+    expect(await screen.findByText("That feature does not exist")).toBeInTheDocument();
+  });
+
   it("turns a feature on with the version it loaded", async () => {
     const mock = withFeatures();
-    const { user } = openConsole("features");
+    const { user } = openConsole("features/caching");
     await user.click(await screen.findByRole("switch", { name: "Response cache" }));
     await waitFor(() => expect(mock.last("PUT", "/features/response_cache")?.body).toEqual({ enabled: true }));
     expect(mock.last("PUT", "/features/response_cache")?.headers["If-Match"]).toBe('"3"');
@@ -429,18 +475,23 @@ describe("features", () => {
 
   it("shows settings only for features that are on, and marks fixed and planned ones", async () => {
     withFeatures();
-    openConsole("features");
+    const first = openConsole("features/rate_limits");
     expect(await screen.findByLabelText("Concurrent requests")).toHaveValue(64);
-    expect(screen.queryByLabelText("Keep answers for (s)")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Always on")).toHaveLength(2);
-    expect(screen.getByText("Planned")).toBeInTheDocument();
-    expect(screen.queryByRole("switch", { name: "Budgets" })).not.toBeInTheDocument();
+    expect(screen.getByText("Always on")).toBeInTheDocument();
     expect(screen.queryByRole("switch", { name: "Concurrency limit" })).not.toBeInTheDocument();
+    first.unmount();
+    const second = openConsole("features/caching");
+    expect(await heading("Caching")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Keep answers for (s)")).not.toBeInTheDocument();
+    second.unmount();
+    openConsole("features/cost");
+    expect(await screen.findByRole("heading", { name: "Planned" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Budgets" })).not.toBeInTheDocument();
   });
 
   it("saves edited settings, and offers Save only once something changed", async () => {
     const mock = withFeatures();
-    const { user } = openConsole("features");
+    const { user } = openConsole("features/guardrails");
     const phrases = await screen.findByLabelText("Blocked phrases");
     expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
     await user.type(phrases, "\n two \n\n");
@@ -450,7 +501,7 @@ describe("features", () => {
 
   it("edits task routes", async () => {
     const mock = withFeatures();
-    const { user } = openConsole("features");
+    const { user } = openConsole("features/routing");
     await user.click(await screen.findByRole("button", { name: "Add route" }));
     await user.type(screen.getByLabelText("Task 1"), "code");
     await user.type(screen.getByLabelText("Model 1"), "ollama:large");
@@ -460,7 +511,7 @@ describe("features", () => {
 
   it("explains a refused save and reloads the latest values", async () => {
     const mock = withFeatures(() => failure(409, "Configuration changed; refresh history"));
-    const { user } = openConsole("features");
+    const { user } = openConsole("features/caching");
     await user.click(await screen.findByRole("switch", { name: "Response cache" }));
     expect(await screen.findByText(/Settings changed elsewhere/)).toBeInTheDocument();
     await waitFor(() => expect(mock.find("GET", "/features").length).toBeGreaterThan(1));
@@ -468,7 +519,7 @@ describe("features", () => {
 
   it("keeps a validation failure on screen until dismissed", async () => {
     withFeatures(() => failure(422, "Check Concurrent requests"));
-    const { user } = openConsole("features");
+    const { user } = openConsole("features/rate_limits");
     const input = await screen.findByLabelText("Concurrent requests");
     await user.clear(input);
     await user.type(input, "65");
@@ -758,10 +809,10 @@ describe("single sign-on and roles", () => {
   it("shows single sign-on on the Features page, with no switch", async () => {
     gateway((request) =>
       request.path === "/features"
-        ? respond({ items: [{ id: "single_sign_on", name: "Single sign-on", group: "Access", summary: "Sign in through your identity provider.", note: null, status: "off", enabled: false, toggleable: false, badge: "Off", values: {}, fields: [] }] })
+        ? respond({ capabilities: [{ id: "authentication", name: "Authentication", summary: "Keys and sign-in." }], items: [{ id: "single_sign_on", name: "Single sign-on", group: "authentication", summary: "Sign in through your identity provider.", note: null, status: "off", enabled: false, toggleable: false, badge: "Off", values: {}, fields: [] }] })
         : undefined,
     );
-    openConsole("features");
+    openConsole("features/authentication");
     expect(await screen.findByText("Single sign-on")).toBeInTheDocument();
     expect(screen.getByText("Off")).toBeInTheDocument();
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();

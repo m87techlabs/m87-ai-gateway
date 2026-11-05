@@ -85,6 +85,9 @@ Most OpenAI SDKs also read `OPENAI_BASE_URL` and `OPENAI_API_KEY`. See
 | Anthropic, AWS Bedrock, Azure OpenAI and Vertex AI adapters | [Planned](docs/backlog.md) |
 | TLS profile and a verified cloud deployment | [Planned](docs/roadmap.md) |
 
+See [what the gateway does](docs/features.md) for each of these, and
+[how data reaches Grafana](docs/grafana-data-flow.md).
+
 It runs as one instance on SQLite. Limits and cache are per process, so do not run
 several replicas against one store yet.
 

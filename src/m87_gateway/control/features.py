@@ -32,6 +32,63 @@ class FeatureField:
 
 
 @dataclass(frozen=True)
+class Capability:
+    id: str
+    name: str
+    summary: str
+
+
+# The jobs people expect an AI gateway to do. Every feature belongs to exactly one.
+CAPABILITIES: tuple[Capability, ...] = (
+    Capability(
+        "authentication",
+        "Authentication",
+        "Each app gets its own key and allowed models, and people sign in to the console.",
+    ),
+    Capability(
+        "routing",
+        "Routing",
+        "Choose which model answers. Apps keep their code and change only where they point.",
+    ),
+    Capability(
+        "caching",
+        "Caching",
+        "Answer repeated requests from a stored copy, so they cost nothing and return at once.",
+    ),
+    Capability(
+        "rate_limits",
+        "Rate limiting",
+        "Stop one app or a traffic spike from overwhelming your models.",
+    ),
+    Capability(
+        "reliability",
+        "Reliability",
+        "Recover from provider timeouts and failures before your app notices.",
+    ),
+    Capability(
+        "guardrails",
+        "Guardrails",
+        "Check requests before they reach a model, and reject what you do not allow.",
+    ),
+    Capability(
+        "logging",
+        "Logging",
+        "See every request: who sent it, which model answered, and what it took.",
+    ),
+    Capability(
+        "monitoring",
+        "Monitoring",
+        "Track traffic, tokens, latency and errors, here or in your own Grafana.",
+    ),
+    Capability(
+        "cost",
+        "Cost tracking",
+        "Know how many tokens each app uses. Budgets that cap spend are planned.",
+    ),
+)
+
+
+@dataclass(frozen=True)
 class Feature:
     id: str
     name: str
@@ -125,7 +182,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "response_cache",
         "Response cache",
-        "Traffic",
+        "caching",
         "Return a stored answer for an identical request from the same application.",
         lambda s: {"ttl_seconds": s.cache.ttl_seconds, "max_entries": s.cache.max_entries},
         _write_controls("cache"),
@@ -139,7 +196,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "retries",
         "Automatic retries",
-        "Traffic",
+        "reliability",
         "Retry a request when a provider times out, throttles or fails.",
         lambda s: {"max_attempts": s.retry.max_attempts, "backoff_ms": s.retry.backoff_ms},
         _write_retries,
@@ -153,7 +210,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "request_queue",
         "Request queue",
-        "Traffic",
+        "rate_limits",
         "Hold requests briefly when the concurrency limit is full, instead of rejecting them.",
         lambda s: {
             "queue_max_depth": s.limits.queue_max_depth,
@@ -180,7 +237,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "concurrency",
         "Concurrency limit",
-        "Traffic",
+        "rate_limits",
         "The most requests this gateway runs at once. Applications can have lower limits.",
         lambda s: {"max_concurrent_requests": s.limits.max_concurrent_requests},
         lambda saved, enabled, values, settings: _section(saved, "limits").update(values),
@@ -190,7 +247,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "strict_mode",
         "Strict mode",
-        "Safety",
+        "guardrails",
         "Reject tools, images and any field the gateway does not model.",
         lambda s: {},
         _write_strict,
@@ -201,7 +258,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "blocklist",
         "Blocklist",
-        "Safety",
+        "guardrails",
         "Reject requests whose text contains a listed phrase.",
         lambda s: {"blocked_terms": s.guardrails.blocklist.blocked_terms},
         _write_blocklist,
@@ -219,7 +276,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "request_size",
         "Request size limits",
-        "Safety",
+        "guardrails",
         "Reject oversized requests before they reach a provider.",
         lambda s: {
             "max_request_bytes": s.guardrails.max_request_bytes,
@@ -237,7 +294,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "task_routing",
         "Task routing",
-        "Routing",
+        "routing",
         "Send model auto to a different model based on the request's task field.",
         lambda s: {
             "routes": [
@@ -260,7 +317,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "content_capture",
         "Input and output capture",
-        "Observability",
+        "logging",
         "Store the text of each request and answer so you can read them in Logs.",
         lambda s: {
             "content_retention_days": s.control_plane.content_retention_days,
@@ -279,7 +336,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "log_retention",
         "Request log retention",
-        "Observability",
+        "logging",
         "How long request metadata stays in Logs. Usage totals are kept separately.",
         lambda s: {"retention_days": s.control_plane.retention_days},
         _write_top_controls,
@@ -289,7 +346,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "metrics",
         "Prometheus metrics",
-        "Observability",
+        "monitoring",
         "Publish request, token and latency metrics at /metrics.",
         lambda s: {},
         _write_flag("prometheus_metrics"),
@@ -300,7 +357,7 @@ FEATURES: tuple[Feature, ...] = (
     Feature(
         "json_logs",
         "Container logs",
-        "Observability",
+        "logging",
         "Write one line of JSON metadata to standard output for each request.",
         lambda s: {},
         _write_flag("json_logs"),
@@ -308,11 +365,134 @@ FEATURES: tuple[Feature, ...] = (
     ),
 )
 
+# Working features managed on another page of the console, so they stay findable from here.
+ELSEWHERE = (
+    (
+        "application_keys",
+        "Application keys",
+        "authentication",
+        "Give each app its own key, with rotation, expiry and revocation.",
+        "applications",
+    ),
+    (
+        "model_access",
+        "Allowed models",
+        "authentication",
+        "Choose which models each application may call.",
+        "applications",
+    ),
+    (
+        "default_model",
+        "Default model and providers",
+        "routing",
+        "Connect model servers, and choose what the model name auto means.",
+        "providers",
+    ),
+    (
+        "app_limits",
+        "Per-application limits",
+        "rate_limits",
+        "Set requests per minute and concurrent requests for each application.",
+        "applications",
+    ),
+    (
+        "request_logs",
+        "Request logs",
+        "logging",
+        "Search and filter requests by application, project and status.",
+        "logs",
+    ),
+    (
+        "log_export",
+        "Log export",
+        "logging",
+        "Send request metadata to Loki or a webhook.",
+        "export",
+    ),
+    (
+        "usage_dashboards",
+        "Usage dashboards",
+        "monitoring",
+        "Requests, tokens, latency and errors for each application.",
+        "overview",
+    ),
+    (
+        "audit_log",
+        "Audit log",
+        "logging",
+        "See who changed what, and who signed in.",
+        "audit",
+    ),
+    (
+        "token_usage",
+        "Token usage per application",
+        "cost",
+        "Record the tokens each application uses, as reported by the provider.",
+        "overview",
+    ),
+)
+
 PLANNED = (
-    ("fallback_routes", "Fallback routes", "Routing", "Try another provider when one fails."),
-    ("budgets", "Budgets", "Safety", "Limit spend or tokens per application or project."),
-    ("response_policies", "Response policies", "Safety", "Check and redact model output."),
-    ("semantic_cache", "Semantic cache", "Traffic", "Reuse answers to similar requests."),
+    (
+        "fallback_routes",
+        "Fallback routes",
+        "reliability",
+        "Try another provider or model when one fails.",
+    ),
+    (
+        "provider_health",
+        "Provider health checks",
+        "reliability",
+        "Stop sending traffic to a failing provider until it recovers.",
+    ),
+    (
+        "load_balancing",
+        "Load balancing",
+        "routing",
+        "Share traffic across several providers or keys.",
+    ),
+    (
+        "token_limits",
+        "Token rate limits",
+        "rate_limits",
+        "Limit tokens per minute, not only requests.",
+    ),
+    (
+        "semantic_cache",
+        "Semantic cache",
+        "caching",
+        "Reuse answers to questions that mean the same thing.",
+    ),
+    (
+        "cache_controls",
+        "Per-request cache controls",
+        "caching",
+        "Let a request skip the cache or set its own lifetime.",
+    ),
+    (
+        "response_policies",
+        "Response policies",
+        "guardrails",
+        "Check and redact model output.",
+    ),
+    (
+        "pii_redaction",
+        "Personal data detection",
+        "guardrails",
+        "Find personal data in requests, and flag, redact or block it.",
+    ),
+    (
+        "budgets",
+        "Budgets",
+        "cost",
+        "Limit spend or tokens per application or project.",
+    ),
+    (
+        "cost_estimates",
+        "Cost estimates",
+        "cost",
+        "Turn token usage into an estimated price per request.",
+    ),
 )
 
 
@@ -357,12 +537,28 @@ async def features(request: Request, store: ReaderStore):
         }
         for identifier, name, group, summary in PLANNED
     )
+    items.extend(
+        {
+            "id": identifier,
+            "name": name,
+            "group": group,
+            "summary": summary,
+            "note": None,
+            "status": "on",
+            "enabled": True,
+            "toggleable": False,
+            "link": link,
+            "values": {},
+            "fields": [],
+        }
+        for identifier, name, group, summary, link in ELSEWHERE
+    )
     sso = getattr(request.app.state, "oidc", None) is not None
     items.append(
         {
             "id": "single_sign_on",
             "name": "Single sign-on",
-            "group": "Access",
+            "group": "authentication",
             "summary": "Sign in through your identity provider, as an admin or read-only.",
             "note": "Set by the GATEWAY_OIDC_ environment settings, so the console cannot turn it off."
             " The admin key keeps working for recovery.",
@@ -374,7 +570,10 @@ async def features(request: Request, store: ReaderStore):
             "fields": [],
         }
     )
-    return JSONResponse({"items": items}, headers={"ETag": revision_etag(store)})
+    return JSONResponse(
+        {"capabilities": [asdict(item) for item in CAPABILITIES], "items": items},
+        headers={"ETag": revision_etag(store)},
+    )
 
 
 @router.put("/admin/api/features/{feature_id}")

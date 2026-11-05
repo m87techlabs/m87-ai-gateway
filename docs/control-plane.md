@@ -98,8 +98,8 @@ export, and recovery procedures.
 
 ## Traffic controls and readiness
 
-The **Features** page edits persistent traffic policies and shows configuration/
-storage readiness. Managed application rate/concurrency limits can be changed
+The **Features** page groups the gateway's jobs, such as caching and rate limiting. Each job has its own page
+that edits its persistent policies. See [what the gateway does](features.md). Managed application rate/concurrency limits can be changed
 without key replacement. `/health` is liveness; `/ready` returns 200 when the default
 provider configuration, required credential, and local storage checks pass, or 503.
 Readiness does not call upstream services or prove model availability. Explicit

@@ -11,6 +11,8 @@ M87 AI Gateway is a self-hosted gateway for developers, run with Docker Compose.
 | [Run with Docker](runbooks/container-deployment.md) | Start, stop, back up and upgrade |
 | [Guided setup](runbooks/guided-setup.md) | Connect a provider and create an application |
 | [Connect your app](connect-your-app.md) | Base URLs, model names, forwarded fields, embeddings and errors |
+| [What the gateway does](features.md) | Authentication, routing, caching, rate limiting and the other jobs it takes on |
+| [How data reaches Grafana](grafana-data-flow.md) | Where metrics, logs and alerts come from, and what you can see |
 | [Runbooks](runbooks/README.md) | Find a procedure |
 
 ## Reference
