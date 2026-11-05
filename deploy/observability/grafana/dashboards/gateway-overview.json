@@ -1023,6 +1023,42 @@
           "placement": "bottom"
         }
       }
+    },
+    {
+      "id": 28,
+      "title": "Fallbacks per second by application",
+      "description": "Requests another model answered because the first model failed. See the fallback routes runbook.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 104
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (app_id, from_provider, to_provider) (rate(m87_gateway_fallbacks_total{job=\"m87-gateway\",instance=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{app_id}}: {{from_provider}} to {{to_provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "Unknown"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     }
   ]
 }

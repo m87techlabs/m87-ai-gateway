@@ -16,7 +16,6 @@ The current priorities are on the [roadmap](roadmap.md).
 | Priority | Item | Area | Size |
 | --- | --- | --- | --- |
 | P1 | [A1 Streaming live verification](#a1-streaming-live-verification) | API | L |
-| P2 | [R1 Fallback routes](#r1-fallback-routes) | Routing | M |
 | P2 | [R4 Priority classes](#r4-priority-classes) | Routing | M |
 | P2 | [S1 Budget enforcement](#s1-budget-enforcement) | Security | M |
 | P2 | [S2 Response policies](#s2-response-policies) | Security | M–L |
@@ -83,6 +82,9 @@ arguments and results, image size, count and type limits, and capture of tool de
 ## R. Routing, reliability and traffic shaping
 
 ### R1 Fallback routes
+
+**Status:** implemented on 2026-11-05. See the [runbook](runbooks/fallback-routes.md) and [validation](validation.md).
+Remaining: skipping a known-dead provider, which is [R2](#r2-provider-health-and-circuit-breaking).
 
 **Why:** when the primary provider is unreachable (for example, a home GPU
 is switched off), requests fail even when another authorized provider exists.

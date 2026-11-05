@@ -48,6 +48,7 @@ export interface LogEvent {
   routed_model: string | null;
   status_code: number;
   http_status_code?: number | null;
+  fallback_from?: string | null;
   upstream_status?: number | null;
   latency_ms: number | null;
   prompt_tokens: number | null;
@@ -178,7 +179,7 @@ export interface Diagnostics {
 export interface FeatureField {
   name: string;
   label: string;
-  kind: "number" | "terms" | "routes";
+  kind: "number" | "terms" | "routes" | "fallbacks";
   minimum: number | null;
   maximum: number | null;
   step: number | null;

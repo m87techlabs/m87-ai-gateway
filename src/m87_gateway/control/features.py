@@ -23,7 +23,9 @@ router = APIRouter()
 class FeatureField:
     name: str
     label: str
-    kind: str = "number"  # number, terms or routes; the console renders a control for each.
+    kind: str = (
+        "number"  # number, terms, routes or fallbacks; the console renders a control for each.
+    )
     minimum: float | None = None
     maximum: float | None = None
     step: float | None = None
@@ -157,6 +159,22 @@ def _write_routes(saved, enabled, values, settings):
         ]
 
 
+def _write_fallbacks(saved, enabled, values, settings):
+    section = saved.setdefault(
+        "fallbacks",
+        {
+            "enabled": settings.routing.fallback_enabled,
+            "routes": [rule.model_dump() for rule in settings.routing.fallbacks],
+        },
+    )
+    if enabled is not None:
+        section["enabled"] = enabled
+    if "routes" in values:
+        section["routes"] = [
+            {"model": item["model"], "fallback": item["fallback"]} for item in values["routes"]
+        ]
+
+
 def _write_flag(key: str):
     def write(saved, enabled, values, settings):
         if enabled is not None:
@@ -206,6 +224,30 @@ FEATURES: tuple[Feature, ...] = (
             FeatureField("backoff_ms", "First retry delay", minimum=0, maximum=10000, unit="ms"),
         ),
         "Skipped for streams. A retry can repeat provider work and charges.",
+    ),
+    Feature(
+        "fallback_routes",
+        "Fallback routes",
+        "reliability",
+        "When a model fails, try another one instead of returning the error.",
+        lambda s: {
+            "routes": [
+                {"model": rule.model, "fallback": rule.fallback} for rule in s.routing.fallbacks
+            ]
+        },
+        _write_fallbacks,
+        lambda s: s.routing.fallback_enabled,
+        (
+            FeatureField(
+                "routes",
+                "Fallbacks",
+                kind="fallbacks",
+                help="Tried in order, up to three for each model.",
+            ),
+        ),
+        "Used for timeouts, provider overload and server errors, never for a bad request or key."
+        " An application falls back only to models it is allowed to call, so add the fallback"
+        " to its allowed models. Not used for embeddings, or for a stream once it has started.",
     ),
     Feature(
         "request_queue",
@@ -433,12 +475,6 @@ ELSEWHERE = (
 )
 
 PLANNED = (
-    (
-        "fallback_routes",
-        "Fallback routes",
-        "reliability",
-        "Try another provider or model when one fails.",
-    ),
     (
         "provider_health",
         "Provider health checks",

@@ -49,6 +49,7 @@ class TrafficMiddleware:
             "response_content_partial": False,
             "endpoint": "embeddings" if scope["path"] == "/v1/embeddings" else "chat",
             "upstream_status": None,
+            "fallback_from": None,
         }
         audit = state["audit"]
         started = perf_counter()

@@ -18,7 +18,12 @@ from m87_gateway.auth.api_key import authenticate_app
 from m87_gateway.config import AppConfig, GatewaySettings, get_settings
 from m87_gateway.guardrails.blocklist import check_blocklist, check_texts
 from m87_gateway.providers.factory import get_provider
-from m87_gateway.routing.router import ModelNotAllowedError, reported_model, select_model
+from m87_gateway.routing.router import (
+    RETRIABLE_PROVIDER_ERRORS,
+    ModelNotAllowedError,
+    reported_model,
+    select_model,
+)
 
 router = APIRouter()
 
@@ -157,12 +162,49 @@ def provider_for(provider_name: str, request: Request, settings: GatewaySettings
     return provider
 
 
+RETRIABLE = RETRIABLE_PROVIDER_ERRORS
+
+
+def fallback_targets(
+    selected: str,
+    app_context: AppConfig,
+    settings: GatewaySettings,
+    payload: ChatCompletionRequest,
+) -> list[str]:
+    """Fallbacks this application may use for this request, in order."""
+    if not settings.routing.fallback_enabled:
+        return []
+    targets = []
+    for rule in settings.routing.fallbacks:
+        if rule.model != selected or rule.fallback in targets:
+            continue
+        # The allowlist is the consent: an app never reaches a model it was not given.
+        if rule.fallback not in app_context.allowed_models:
+            continue
+        provider = rule.fallback.split(":", 1)[0]
+        if not settings.providers.for_adapter(provider).enabled:
+            continue
+        try:
+            validate_capabilities(payload, provider, settings)
+        except GatewayError:
+            continue
+        targets.append(rule.fallback)
+    return targets
+
+
+def use_target(audit: dict, primary: str, target: str) -> None:
+    audit.update(provider=target.split(":", 1)[0], routed_model=target)
+    if target != primary:
+        audit["fallback_from"] = primary
+        audit["provider_fallbacks"] = audit.get("provider_fallbacks", 0) + 1
+
+
 async def with_retries(call, audit: dict, settings: GatewaySettings):
     """Run one provider call, retrying only failures that a later attempt could fix."""
     audit["provider_attempted"] = True
-    retriable = {"provider_timeout", "provider_rate_limited", "provider_error"}
+    retriable = RETRIABLE
     for attempt in range(settings.retry.max_attempts):
-        audit["provider_attempts"] = attempt + 1
+        audit["provider_attempts"] = audit.get("provider_attempts", 0) + 1
         try:
             return await call()
         except GatewayError as exc:
@@ -310,7 +352,11 @@ def prepare(
     if settings.observability.traffic_log.capture_content:
         request.state.request_content = captured_messages(payload)
     provider = provider_for(provider_name, request, settings)
-    return provider, selected, request.app.state.response_cache
+    fallbacks = [
+        (target, provider_for(target.split(":", 1)[0], request, settings))
+        for target in fallback_targets(selected, app_context, settings, payload)
+    ]
+    return provider, selected, request.app.state.response_cache, fallbacks
 
 
 async def complete(
@@ -322,7 +368,7 @@ async def complete(
     prepared,
 ) -> ChatCompletionResponse:
     """Run inference with the arrival snapshot while holding concurrency capacity."""
-    provider, selected, cache = prepared
+    provider, selected, cache, fallbacks = prepared
     model = selected.split(":", 1)[1]
     reported = reported_model(payload.model, selected, settings)
     audit = request.state.audit
@@ -348,7 +394,28 @@ async def complete(
 
     audit["cache_status"] = "miss" if cache.enabled else "disabled"
     http_response.headers["X-Gateway-Cache"] = "MISS" if cache.enabled else "DISABLED"
-    result = await with_retries(lambda: provider.chat_completions(payload, model), audit, settings)
+    served = selected
+    try:
+        result = await with_retries(
+            lambda: provider.chat_completions(payload, model), audit, settings
+        )
+    except GatewayError as exc:
+        if exc.code not in RETRIABLE or not fallbacks:
+            raise
+        result = None
+        for position, (target, backup) in enumerate(fallbacks):
+            use_target(audit, selected, target)
+            name = target.split(":", 1)[1]
+            try:
+                result = await with_retries(
+                    lambda: backup.chat_completions(payload, name), audit, settings
+                )
+            except GatewayError as failure:
+                if failure.code not in RETRIABLE or position + 1 == len(fallbacks):
+                    raise
+                continue
+            served = target
+            break
     try:
         completion = ChatCompletionResponse.model_validate(result)
     except ValidationError as exc:
@@ -359,6 +426,11 @@ async def complete(
         audit.update(completion.usage.model_dump(include=set(USAGE_KEYS)))
     if capture:
         request.state.response_content = [choice.model_dump() for choice in completion.choices]
+    if served != selected:
+        # Say which model answered, and keep this answer out of the primary's cache.
+        http_response.headers["X-Gateway-Fallback"] = selected
+        completion.model = served
+        return completion
     cache.put(cache_key, completion.model_dump(mode="json"))
     completion.model = reported
     return completion

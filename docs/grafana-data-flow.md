@@ -68,6 +68,7 @@ Firing alerts go to Alertmanager, which groups them and sends notifications. A f
 | Which app uses the most tokens? | Overview: Provider tokens per second by application |
 | Is it getting slower, and for whom? | Overview: Request p95 duration, overall and by application |
 | Are requests failing? | Overview: Requests by status, HTTP 5xx fraction, Provider failures |
+| Are apps falling back to another model? | Overview: Fallbacks per second by application |
 | Is the cache helping? | Overview: Cache lookups per second |
 | Are apps hitting their limits? | Overview: Rate-limit rejections, Concurrency queue depth |
 | What happened to this request? | **M87 Gateway LLM Metadata**: filter by project, application or request ID |

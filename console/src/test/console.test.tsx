@@ -509,6 +509,29 @@ describe("features", () => {
     await waitFor(() => expect(mock.last("PUT", "/features/task_routing")?.body).toEqual({ values: { routes: [{ task: "code", model: "ollama:large" }] } }));
   });
 
+  it("edits fallbacks in order", async () => {
+    const fallback = { id: "fallback_routes", name: "Fallback routes", group: "reliability", summary: "Tries another model.", note: "Only allowed models.", status: "on", enabled: true, toggleable: true, values: { routes: [] }, fields: [{ name: "routes", label: "Fallbacks", kind: "fallbacks", minimum: null, maximum: null, step: null, unit: null, help: null }] };
+    const mock = gateway((request) => {
+      if (request.method === "GET" && request.path === "/features")
+        return respond({ capabilities: [{ id: "reliability", name: "Reliability", summary: "Recovers." }], items: [fallback] }, 200, { ETag: '"4"' });
+      if (request.method === "PUT") return respond(fallback);
+      return undefined;
+    });
+    const { user } = openConsole("features/reliability");
+    await user.click(await screen.findByRole("button", { name: "Add fallback" }));
+    await user.type(screen.getByLabelText("Model 1"), "ollama:qwen3:14b");
+    await user.type(screen.getByLabelText("Fallback 1"), "openai:gpt-4o-mini");
+    await user.click(screen.getByRole("button", { name: "Add fallback" }));
+    await user.type(screen.getByLabelText("Model 2"), "ollama:qwen3:14b");
+    await user.type(screen.getByLabelText("Fallback 2"), "openai:gpt-4o");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(mock.last("PUT", "/features/fallback_routes")?.body).toEqual({
+        values: { routes: [{ model: "ollama:qwen3:14b", fallback: "openai:gpt-4o-mini" }, { model: "ollama:qwen3:14b", fallback: "openai:gpt-4o" }] },
+      }),
+    );
+  });
+
   it("explains a refused save and reloads the latest values", async () => {
     const mock = withFeatures(() => failure(409, "Configuration changed; refresh history"));
     const { user } = openConsole("features/caching");
@@ -816,6 +839,15 @@ describe("single sign-on and roles", () => {
     expect(await screen.findByText("Single sign-on")).toBeInTheDocument();
     expect(screen.getByText("Off")).toBeInTheDocument();
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("shows when a fallback answered a request", async () => {
+    gateway((request) =>
+      request.path === "/logs/fixture-request" ? respond({ ...EVENT, routed_model: "openai:backup", fallback_from: "ollama:small" }) : undefined,
+    );
+    openConsole("logs?request_id=fixture-request");
+    const label = await screen.findByText("Fallback from");
+    expect(label.nextElementSibling).toHaveTextContent("ollama:small");
   });
 
   it("names the person in the audit log", async () => {

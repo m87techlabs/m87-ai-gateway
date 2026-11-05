@@ -19,6 +19,7 @@ Step-by-step procedures for running the gateway.
 | [Projects and usage](projects-and-usage.md) | Group applications and read per-app reports |
 | [Application key rotation](application-key-rotation.md) | Rotate keys without downtime |
 | [Traffic controls](traffic-controls.md) | Set limits, queueing, retries and caching |
+| [Fallback routes](fallback-routes.md) | Try another model when one fails |
 | [Inference API and queueing](inference-api-and-queueing.md) | Use and test the API |
 | [Streaming and cancellation](streaming-and-cancellation.md) | Understand stream outcomes and errors |
 

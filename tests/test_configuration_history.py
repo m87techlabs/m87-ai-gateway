@@ -364,6 +364,7 @@ def test_baseline_snapshot_excludes_keys_apps_and_paths(tmp_path):
         "log_export",
         "blocklist",
         "routing_rules",
+        "fallbacks",
         "prometheus_metrics",
         "json_logs",
     }

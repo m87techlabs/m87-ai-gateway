@@ -121,6 +121,7 @@ export function LogDetail({ requestId, onClose }: { requestId: string; onClose: 
                 ["Type", item.endpoint === "embeddings" ? "Embedding" : item.streaming ? "Stream" : "Chat"],
                 ["Requested model", item.model],
                 ["Routed model", item.routed_model],
+                ["Fallback from", item.fallback_from],
                 ["Provider status", item.upstream_status],
                 ["Error", item.error_type],
                 ["Latency", latency(item.latency_ms)],

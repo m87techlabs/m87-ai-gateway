@@ -7,6 +7,10 @@ Keep a Changelog format.
 
 ### Added
 
+- [Fallback routes](docs/runbooks/fallback-routes.md): when a model times out, is overloaded or returns a server error,
+  the gateway tries up to three other models in order. An application only falls back to models it is allowed to call.
+  The response, logs, usage and metrics name the model that answered. Off by default.
+
 - Single sign-on for the console through OpenID Connect, off until configured, with admin and read-only
   roles. Read-only people can see activity, settings and captured content, but cannot change anything.
   See the [runbook](docs/runbooks/single-sign-on.md).
@@ -23,7 +27,7 @@ Keep a Changelog format.
 
 ### Changed
 
-- Store schema 12. Back up first, because an older gateway refuses a migrated store. Console sessions
+- Store schema 13, which adds sign-on audit fields and the model a request fell back from. Back up first, because an older gateway refuses a migrated store. Console sessions
   use a new format, so everyone signs in again.
 - Session cookies are `Secure` behind a TLS proxy when `GATEWAY_PUBLIC_URL` is an HTTPS address.
 

@@ -99,11 +99,42 @@ class RoutingRuleConfig(ConfigModel):
         return self
 
 
+class FallbackRuleConfig(ConfigModel):
+    """When model fails with an error another provider could avoid, try fallback instead."""
+
+    model: str
+    fallback: str
+
+    @model_validator(mode="after")
+    def valid_rule(self):
+        validate_model(self.model, allow_auto=False)
+        validate_model(self.fallback, allow_auto=False)
+        if self.model == self.fallback:
+            raise ValueError("A model cannot fall back to itself")
+        return self
+
+
+MAX_FALLBACKS_PER_MODEL = 3
+
+
 class RoutingConfig(ConfigModel):
     default_model: str = Field(
         default="ollama:llama3", validation_alias=AliasChoices("default_model", "default")
     )
     rules: list[RoutingRuleConfig] = Field(default_factory=list)
+    fallback_enabled: bool = False
+    fallbacks: list[FallbackRuleConfig] = Field(default_factory=list)
+
+    @field_validator("fallbacks")
+    @classmethod
+    def bounded_fallbacks(cls, values: list[FallbackRuleConfig]) -> list[FallbackRuleConfig]:
+        pairs = [(item.model, item.fallback) for item in values]
+        if len(set(pairs)) != len(pairs):
+            raise ValueError("Each fallback can appear once for a model")
+        for model in {item.model for item in values}:
+            if sum(item.model == model for item in values) > MAX_FALLBACKS_PER_MODEL:
+                raise ValueError(f"A model can have at most {MAX_FALLBACKS_PER_MODEL} fallbacks")
+        return values
 
     @field_validator("default_model")
     @classmethod

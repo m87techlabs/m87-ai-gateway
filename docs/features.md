@@ -12,7 +12,7 @@ Status terms follow the [documentation conventions](README.md#read-implementatio
 | [Routing](#routing) | Chooses the model that answers | Providers, default model, task routing | Load balancing |
 | [Caching](#caching) | Answers repeats without calling a model | Exact-match cache | Semantic cache, per-request controls |
 | [Rate limiting](#rate-limiting) | Stops one app or a spike overwhelming your models | Requests per minute, concurrency, queue | Token limits |
-| [Reliability](#reliability) | Recovers from provider failures | Automatic retries | Fallback routes, provider health checks |
+| [Reliability](#reliability) | Recovers from provider failures | Automatic retries, fallback routes | Provider health checks |
 | [Guardrails](#guardrails) | Rejects requests you do not allow | Size limits, blocklist, Strict mode | Response policies, personal data detection |
 | [Logging](#logging) | Shows every request | Request logs, optional capture, export, audit log | |
 | [Monitoring](#monitoring) | Tracks traffic and health over time | Console dashboards, Prometheus metrics, Grafana dashboards, alerts | |
@@ -53,9 +53,12 @@ Limits are counted per process and by requests, not by tokens.
 
 ## Reliability
 
-Automatic retries cover provider timeouts, throttling and failures. Streams are not retried, and a retry can
-repeat provider work and charges. When a client disconnects, the gateway stops the upstream request, so a
-local model stops generating.
+- **Automatic retries** cover provider timeouts, throttling and failures. Streams are not retried, and a retry can
+  repeat provider work and charges.
+- **[Fallback routes](runbooks/fallback-routes.md)** try another model when one fails, only for applications
+  allowed to call it. The response names the model that answered.
+
+When a client disconnects, the gateway stops the upstream request, so a local model stops generating.
 
 ## Guardrails
 

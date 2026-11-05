@@ -7,11 +7,10 @@ import { count, number, percent } from "../format";
 import { href } from "../router";
 import type { Capability, Feature, FeatureField, Summary } from "../types";
 
-type Route = { task: string; model: string };
 
 const toDraft = (field: FeatureField, value: unknown): unknown => {
   if (field.kind === "terms") return ((value as string[]) ?? []).join("\n");
-  if (field.kind === "routes") return value ?? [];
+  if (field.kind === "routes" || field.kind === "fallbacks") return value ?? [];
   return String(value ?? "");
 };
 
@@ -22,24 +21,38 @@ const fromDraft = (field: FeatureField, value: unknown): unknown => {
       .map((item) => item.trim())
       .filter(Boolean);
   }
-  if (field.kind === "routes") return value;
+  if (field.kind === "routes" || field.kind === "fallbacks") return value;
   return Number(value);
 };
 
-function Routes({ value, onChange }: { value: Route[]; onChange: (routes: Route[]) => void }) {
-  const update = (index: number, change: Partial<Route>) => onChange(value.map((item, position) => (position === index ? { ...item, ...change } : item)));
+type Pair = Record<string, string>;
+const PAIRS: Record<string, { keys: [string, string]; labels: [string, string]; hints: [string, string]; item: string; add: string }> = {
+  routes: { keys: ["task", "model"], labels: ["Task", "Model"], hints: ["Task, such as code", "provider:model"], item: "route", add: "Add route" },
+  fallbacks: { keys: ["model", "fallback"], labels: ["Model", "Fallback"], hints: ["When this fails, such as ollama:qwen3:14b", "try this, such as openai:gpt-4o-mini"], item: "fallback", add: "Add fallback" },
+};
+
+function Pairs({ kind, value, onChange }: { kind: string; value: Pair[]; onChange: (items: Pair[]) => void }) {
+  const shape = PAIRS[kind];
+  const update = (index: number, change: Pair) => onChange(value.map((item, position) => (position === index ? { ...item, ...change } : item)));
   return (
     <div className="stack" style={{ gap: 8 }}>
-      {value.map((route, index) => (
+      {value.map((pair, index) => (
         <div className="route-row" key={index}>
-          <input aria-label={`Task ${index + 1}`} placeholder="Task, such as code" value={route.task} onChange={(event) => update(index, { task: event.target.value })} />
-          <input aria-label={`Model ${index + 1}`} placeholder="provider:model" value={route.model} onChange={(event) => update(index, { model: event.target.value })} />
-          <Button small variant="ghost" aria-label={`Remove route ${index + 1}`} icon={<X size={14} aria-hidden />} onClick={() => onChange(value.filter((_, position) => position !== index))} />
+          {shape.keys.map((key, column) => (
+            <input
+              key={key}
+              aria-label={`${shape.labels[column]} ${index + 1}`}
+              placeholder={shape.hints[column]}
+              value={pair[key] ?? ""}
+              onChange={(event) => update(index, { [key]: event.target.value })}
+            />
+          ))}
+          <Button small variant="ghost" aria-label={`Remove ${shape.item} ${index + 1}`} icon={<X size={14} aria-hidden />} onClick={() => onChange(value.filter((_, position) => position !== index))} />
         </div>
       ))}
       <div>
-        <Button small icon={<Plus size={14} aria-hidden />} onClick={() => onChange([...value, { task: "", model: "" }])}>
-          Add route
+        <Button small icon={<Plus size={14} aria-hidden />} onClick={() => onChange([...value, Object.fromEntries(shape.keys.map((key) => [key, ""]))])}>
+          {shape.add}
         </Button>
       </div>
     </div>
@@ -106,8 +119,8 @@ function FeatureRow({ feature, etag }: { feature: Feature; etag: string | null }
               <Field key={field.name} label={field.unit ? `${field.label} (${field.unit})` : field.label} help={field.help}>
                 {field.kind === "terms" ? (
                   <textarea rows={4} value={String(draft[field.name])} onChange={(event) => setDraft({ ...draft, [field.name]: event.target.value })} />
-                ) : field.kind === "routes" ? (
-                  <Routes value={draft[field.name] as Route[]} onChange={(routes) => setDraft({ ...draft, [field.name]: routes })} />
+                ) : field.kind === "routes" || field.kind === "fallbacks" ? (
+                  <Pairs kind={field.kind} value={draft[field.name] as Pair[]} onChange={(items) => setDraft({ ...draft, [field.name]: items })} />
                 ) : (
                   <input
                     type="number"

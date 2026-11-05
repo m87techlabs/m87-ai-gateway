@@ -2,6 +2,12 @@ from m87_gateway.adapters import adapters
 from m87_gateway.config import AppConfig, GatewaySettings
 
 
+# Failures another attempt or another provider could fix. A bad request or key would fail again.
+RETRIABLE_PROVIDER_ERRORS = frozenset(
+    {"provider_timeout", "provider_rate_limited", "provider_error"}
+)
+
+
 class ModelNotAllowedError(ValueError):
     pass
 

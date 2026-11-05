@@ -9,6 +9,7 @@ from starlette.responses import Response
 from m87_gateway.api.errors import GatewayError, error_response
 from m87_gateway.api.schemas import USAGE_KEYS
 from m87_gateway.providers.streaming import validate_chunk, invalid_stream
+from m87_gateway.routing.router import RETRIABLE_PROVIDER_ERRORS as RETRIABLE
 from m87_gateway.routing.router import reported_model
 
 
@@ -52,7 +53,8 @@ class ChatStreamResponse(Response):
         request, payload, settings = self.request, self.payload, self.settings
         audit = request.state.audit
         audit.update(streaming=True, cache_status="bypass", request_outcome="failed")
-        provider, selected, _ = self.prepared
+        provider, selected, _, fallbacks = self.prepared
+        targets = [(selected, provider), *fallbacks]
         reported = reported_model(payload.model, selected, settings)
         limiter = request.app.state.inflight_limiter
         include_usage = payload.stream_options is not None and payload.stream_options.include_usage
@@ -80,54 +82,80 @@ class ChatStreamResponse(Response):
                 disconnected=request.state.is_disconnected,
                 audit=audit,
             ):
-                audit.update(provider_attempted=True, provider_attempts=1)
-                async with aclosing(
-                    provider.stream_chat_completions(payload, selected.split(":", 1)[1])
-                ) as upstream:
-                    async for value in upstream:
-                        chunk = validate_chunk(value)
-                        if identity is not None and chunk["id"] != identity["id"]:
-                            raise invalid_stream()
-                        identity = {key: chunk[key] for key in ("id", "object", "created", "model")}
-                        chunk["model"] = reported
-                        if chunk["choices"]:
-                            for choice in chunk["choices"]:
-                                if choice.get("finish_reason") is None:
-                                    continue
-                                finished = True
-                                if choice["index"] == 0:
-                                    finish_reason = choice["finish_reason"]
-                            # Capture covers the first choice's text; tool deltas pass through.
-                            choice = next(
-                                (item for item in chunk["choices"] if item["index"] == 0), None
+                audit["provider_attempted"] = True
+                for position, (target, upstream_provider) in enumerate(targets):
+                    if position:
+                        # Nothing has been sent yet, so another model can still answer.
+                        audit.update(
+                            provider=target.split(":", 1)[0],
+                            routed_model=target,
+                            fallback_from=selected,
+                            provider_fallbacks=position,
+                        )
+                        reported = target
+                        identity, usage, finished, finish_reason = None, None, False, None
+                    audit["provider_attempts"] = position + 1
+                    try:
+                        async with aclosing(
+                            upstream_provider.stream_chat_completions(
+                                payload, target.split(":", 1)[1]
                             )
-                            content = (
-                                (choice["delta"].get("content") or choice["delta"].get("refusal"))
-                                if choice
-                                else None
-                            ) or ""
-                            if capture:
-                                remaining = prefix_limit - len(text)
-                                text += content[:remaining]
-                                truncated = truncated or len(content) > remaining
-                            if chunk.get("usage") is not None:
-                                usage = chunk["usage"]
-                            chunk.pop("usage", None)
-                            if include_usage:
-                                chunk["usage"] = None
-                            started = True
-                            yield event(chunk)
-                        elif chunk.get("usage") is not None:
-                            usage = chunk["usage"]
-                    if not finished or identity is None:
-                        raise invalid_stream()
-                    if usage is not None:
-                        audit.update({key: usage[key] for key in USAGE_KEYS})
-                    if include_usage:
-                        yield event({**identity, "model": reported, "choices": [], "usage": usage})
-                    yield b"data: [DONE]\n\n"
-                    completed = True
-                    audit["request_outcome"] = "completed"
+                        ) as upstream:
+                            async for value in upstream:
+                                chunk = validate_chunk(value)
+                                if identity is not None and chunk["id"] != identity["id"]:
+                                    raise invalid_stream()
+                                identity = {
+                                    key: chunk[key] for key in ("id", "object", "created", "model")
+                                }
+                                chunk["model"] = reported
+                                if chunk["choices"]:
+                                    for choice in chunk["choices"]:
+                                        if choice.get("finish_reason") is None:
+                                            continue
+                                        finished = True
+                                        if choice["index"] == 0:
+                                            finish_reason = choice["finish_reason"]
+                                    # Capture covers the first choice's text; tool deltas pass through.
+                                    choice = next(
+                                        (item for item in chunk["choices"] if item["index"] == 0),
+                                        None,
+                                    )
+                                    content = (
+                                        (
+                                            choice["delta"].get("content")
+                                            or choice["delta"].get("refusal")
+                                        )
+                                        if choice
+                                        else None
+                                    ) or ""
+                                    if capture:
+                                        remaining = prefix_limit - len(text)
+                                        text += content[:remaining]
+                                        truncated = truncated or len(content) > remaining
+                                    if chunk.get("usage") is not None:
+                                        usage = chunk["usage"]
+                                    chunk.pop("usage", None)
+                                    if include_usage:
+                                        chunk["usage"] = None
+                                    started = True
+                                    yield event(chunk)
+                                elif chunk.get("usage") is not None:
+                                    usage = chunk["usage"]
+                    except GatewayError as exc:
+                        if started or exc.code not in RETRIABLE or position + 1 == len(targets):
+                            raise
+                        continue
+                    break
+                if not finished or identity is None:
+                    raise invalid_stream()
+                if usage is not None:
+                    audit.update({key: usage[key] for key in USAGE_KEYS})
+                if include_usage:
+                    yield event({**identity, "model": reported, "choices": [], "usage": usage})
+                yield b"data: [DONE]\n\n"
+                completed = True
+                audit["request_outcome"] = "completed"
         except asyncio.CancelledError:
             audit.update(request_outcome="cancelled", error_type="client_disconnected")
             raise

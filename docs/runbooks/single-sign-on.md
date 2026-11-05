@@ -161,7 +161,7 @@ Only Keycloak has been tested. See [validation](../validation.md).
 
 ## Upgrading
 
-Sign-on arrives with store schema 12. The migration adds one audit column and keeps your data, but an
+Sign-on arrives with store schema 13. The migration adds audit and fallback columns and keeps your data, but an
 older gateway will then refuse the store, so
 [back up](container-deployment.md) before upgrading. Everyone signs in again after the upgrade, because
 the session format changed. Older audit entries keep the actor `operator`.

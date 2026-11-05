@@ -24,7 +24,7 @@ from m87_gateway.private_storage import (
     prepare_file as _prepare_private_file,
 )
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 class LocalControlStore(BackendFacade):
@@ -161,6 +161,7 @@ class LocalControlStore(BackendFacade):
                 "endpoint": "TEXT",
                 "upstream_status": "INTEGER",
                 "key_id": "TEXT",
+                "fallback_from": "TEXT",
             },
             "app_keys": {
                 "rate_limit_per_minute": "INTEGER",

@@ -59,6 +59,12 @@ modelled fields with `422 strict_mode_rejected`. Use it when you want every requ
 within what the gateway can inspect. Guardrails read message text only, so they do not see
 tool arguments or images, and capture records text and marks other parts as omitted.
 
+## When another model answers
+
+If [fallback routes](runbooks/fallback-routes.md) are on and your model fails, another model may answer. The
+response's `model` field then names that model, and the `X-Gateway-Fallback` header names the one that failed. Check
+`model` if your app depends on which model answered.
+
 ## Embeddings
 
 ```bash

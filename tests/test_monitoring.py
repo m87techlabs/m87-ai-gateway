@@ -135,6 +135,7 @@ def test_dashboard_queries_reference_real_metric_samples():
     metrics.provider_errors.labels("sample", "ollama").inc()
     metrics.cache_requests.labels("miss").inc()
     metrics.rate_limits.labels("sample").inc()
+    metrics.fallbacks.labels("sample", "ollama", "openai").inc()
     names = samples(metrics.render().decode())
     overview = json.loads((ASSETS / "grafana/dashboards/gateway-overview.json").read_text())
     for panel in overview["panels"]:

@@ -38,6 +38,7 @@ EXPORT_FIELDS = (
     "queue_outcome",
     "endpoint",
     "upstream_status",
+    "fallback_from",
 )
 
 

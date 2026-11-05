@@ -90,6 +90,7 @@ automatically. See the [traffic logging runbook](runbooks/traffic-logging.md).
 - `m87_gateway_log_sink_errors_total`
 - `m87_gateway_cache_requests_total`
 - `m87_gateway_provider_retries_total`
+- `m87_gateway_fallbacks_total`, by application and the providers it fell back from and to
 - `m87_gateway_rate_limit_rejections_total`
 - `m87_gateway_concurrency_limit_rejections_total`
 

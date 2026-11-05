@@ -81,6 +81,7 @@ class SQLiteTrafficRepository(SQLiteRepository):
             "queue_outcome",
             "endpoint",
             "upstream_status",
+            "fallback_from",
             "key_id",
             "project_id",
             "created_at",
@@ -220,7 +221,7 @@ class SQLiteTrafficRepository(SQLiteRepository):
                            total_tokens, error_type, cache_status, provider_attempts,
                            provider_retries, streaming, request_outcome, http_status_code,
                            response_content_partial, queue_wait_ms, queue_outcome, client_user_hash,
-                           endpoint, upstream_status, key_id,
+                           endpoint, upstream_status, fallback_from, key_id,
                            capture_enabled, request_content_recorded, response_content_recorded,
                            request_content_truncated, response_content_truncated, content_deleted
                     FROM events {where} ORDER BY created_at DESC, request_id DESC LIMIT ?""",

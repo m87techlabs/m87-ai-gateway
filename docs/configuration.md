@@ -59,6 +59,9 @@ rule wins; otherwise `routing.default_model` is used. Rules can match
 `when_model: auto`, `when_task`, or both. Targets accept `route_to` or the
 legacy `model` spelling. Final-target authorization always applies.
 
+`routing.fallback_enabled` and `routing.fallbacks`, a list of `model` and `fallback` pairs with up to three for each
+model, set [fallback routes](runbooks/fallback-routes.md). The console edits them under **Features -> Reliability**.
+
 ## Providers
 
 Applications can include `project_id` (default `default`). The control plane adds

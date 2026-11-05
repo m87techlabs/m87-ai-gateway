@@ -52,6 +52,27 @@ the profile's data source.
 ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
 session reaching its real expiry; dashboard panels below the first screen by eye.
 
+## Fallback routes: 2026-11-05
+
+The image built from source, in an isolated Compose project, with two synthetic model servers: an Ollama-style primary
+and an OpenAI-compatible fallback. The outage was made by stopping the primary's container.
+
+| Checked | Result |
+| --- | --- |
+| Primary up | Primary answered, no fallback |
+| Primary stopped, app allowed the fallback | Fallback answered; `model` and `X-Gateway-Fallback` said so; about 4 seconds, waiting for the primary's error |
+| Primary stopped, app not allowed the fallback | Normal error, fallback not called |
+| Stream with the primary stopped | Fallback answered from the first chunk |
+| Primary started again | Primary answered, no fallback |
+| Logs, usage and metrics | Each names the model that answered and the one it fell back from |
+| Console | Fallback editor saves; log detail shows **Fallback from** |
+
+Unit tests cover each failure that falls back and each that must not, order, retries before fallback, caching, streams
+that have started, embeddings and validation.
+
+**Not checked:** a real cloud provider as the fallback; a real Ollama that hangs rather than refusing, which would wait
+for the full timeout; Horizon's traffic.
+
 ## Features page: 2026-11-05
 
 Checked in Chrome against a temporary gateway from source, in both themes and at phone width. All nine cards

@@ -83,6 +83,12 @@ class GatewayMetrics:
             ("provider",),
             registry=self.registry,
         )
+        self.fallbacks = Counter(
+            "m87_gateway_fallbacks_total",
+            "Requests sent to a fallback model after the first model failed",
+            ("app_id", "from_provider", "to_provider"),
+            registry=self.registry,
+        )
         self.rate_limits = Counter(
             "m87_gateway_rate_limit_rejections_total",
             "Requests rejected by per-app rate limits",
@@ -111,11 +117,19 @@ class GatewayMetrics:
         attempts = event.get("provider_attempts", 0) or (
             1 if event.get("provider_attempted") else 0
         )
+        fallbacks = event.get("provider_fallbacks", 0)
+        if fallbacks and event.get("fallback_from"):
+            origin = event["fallback_from"].split(":", 1)[0]
+            self.fallbacks.labels(app, origin, provider).inc()
+            # The failed first model is what caused the fallback, so its provider gets the failure.
+            self.provider_errors.labels(app, origin).inc()
         if attempts:
             self.provider_requests.labels(provider).inc(attempts)
             retries = event.get("provider_retries", 0)
-            failures = retries + (
-                1 if event["status_code"] >= 400 and outcome != "cancelled" else 0
+            failures = (
+                retries
+                + max(fallbacks - 1, 0)
+                + (1 if event["status_code"] >= 400 and outcome != "cancelled" else 0)
             )
             if failures:
                 self.provider_errors.labels(app, provider).inc(failures)
