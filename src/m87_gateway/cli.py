@@ -117,8 +117,14 @@ def main() -> None:
                     backup(args.data_dir, args.backup.expanduser().resolve(), password)
                     print("Encrypted backup created")
                 else:
-                    restore(args.data_dir, args.restore.expanduser().resolve(), password)
+                    carried_key = restore(
+                        args.data_dir, args.restore.expanduser().resolve(), password
+                    )
                     print("Backup restored; start the gateway to verify readiness and a completion")
+                    if not carried_key:
+                        print(
+                            "Set GATEWAY_ADMIN_API_KEY to the original admin key before starting."
+                        )
                 return
             run_gateway(args)
     except ValueError as exc:

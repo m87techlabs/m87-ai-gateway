@@ -5,6 +5,10 @@ Keep a Changelog format.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-05
+
+[Release notes](docs/releases/0.2.0.md)
+
 ### Added
 
 - [Fallback routes](docs/runbooks/fallback-routes.md): when a model times out, is overloaded or returns a server error,
@@ -33,6 +37,8 @@ Keep a Changelog format.
 
 ### Fixed
 
+- Backup failed with a vague storage error when the admin key came from `GATEWAY_ADMIN_API_KEY`. It now works, and
+  restore says to set the key again.
 - Bundled dashboards no longer name the monitoring profile's data sources, so they work in another Grafana.
 - The HTTP 5xx and scrape availability panels keep a sensible axis when every value is zero.
 

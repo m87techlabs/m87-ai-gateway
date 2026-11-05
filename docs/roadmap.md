@@ -8,12 +8,16 @@ and by how little a calling app has to change. Releases follow readiness rather 
 
 See the [release notes](releases/README.md). The 0.1 line includes a drop-in OpenAI-compatible API with chat, streaming and embeddings. Ollama,
 OpenAI and OpenAI-compatible adapters. Per-application keys, reporting and limits. A web console with a
-Features page, and Docker Compose packaging, with optional monitoring. See
+Features page, and Docker Compose packaging, with optional monitoring.
+
+0.2 adds what a team expects from shared infrastructure: single sign-on with admin and read-only roles, an audit
+log that names people, fallback routes, Alertmanager and Loki retention in the monitoring profile, guidance for an
+existing Grafana, and a Features page organised by what a gateway does. See
 [what has been verified](validation.md).
 
 ## Next
 
-### 0.2: ready for a server
+### 0.3: ready for a server
 
 Run safely on a cloud host such as EC2.
 
@@ -25,16 +29,15 @@ Run safely on a cloud host such as EC2.
 **Done when:** someone can deploy to a fresh server from the runbook, with no unauthenticated
 operator surface exposed.
 
-### 0.3: more providers
+### 0.4: more providers
 
 - Named connections, so several providers of one type can run at once.
 - A live check against OpenAI and at least one other compatible provider.
 - An Anthropic adapter.
-- Fallback routes between providers.
 
 **Done when:** each advertised provider has a recorded live check and passes shared contract tests.
 
-### 0.4: spend and safety
+### 0.5: spend and safety
 
 - Budgets per application and project, with cost estimates.
 - Response policies, and guardrails that cover tool arguments and images.
@@ -68,7 +71,7 @@ These were considered and dropped, to keep one clear way to run the gateway:
 | Ollama | `ollama` | Verified live |
 | OpenAI | `openai` | Implemented; live check pending |
 | OpenAI-compatible servers, such as vLLM | `openai_compatible` | Implemented; live check pending |
-| Anthropic | Planned | 0.3 |
+| Anthropic | Planned | 0.4 |
 | AWS Bedrock, Azure OpenAI, Google Vertex AI | Planned | Later |
 
 Hosting the gateway on a cloud and calling that cloud's models are separate goals.

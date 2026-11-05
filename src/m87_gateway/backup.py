@@ -74,8 +74,12 @@ def validate_database(path: Path, master: bytes):
 def backup(data_dir: Path, output: Path, password: str):
     if output.exists() or output.is_symlink():
         raise ValueError("Backup output already exists")
-    for name in ("control.db", "master.key", "admin.key"):
+    for name in ("control.db", "master.key"):
         check_private(data_dir / name)
+    # A gateway given its admin key through GATEWAY_ADMIN_API_KEY never writes this file.
+    admin_file = data_dir / "admin.key"
+    if admin_file.exists() or admin_file.is_symlink():
+        check_private(admin_file)
     prepare_directory(output.parent)
     with tempfile.TemporaryDirectory(prefix="snapshot-", dir=data_dir) as temporary:
         snapshot = Path(temporary) / "control.db"
@@ -95,7 +99,7 @@ def backup(data_dir: Path, output: Path, password: str):
             "schema_version": SCHEMA_VERSION,
             "database": base64.b64encode(snapshot.read_bytes()).decode(),
             "master_key": master.decode(),
-            "admin_key": (data_dir / "admin.key").read_text().strip(),
+            "admin_key": admin_file.read_text().strip() if admin_file.exists() else None,
         }
         salt = os.urandom(16)
         encoded = MAGIC + salt + cipher(password, salt).encrypt(json.dumps(document).encode())
@@ -112,7 +116,8 @@ def backup(data_dir: Path, output: Path, password: str):
             raise
 
 
-def restore(data_dir: Path, source: Path, password: str):
+def restore(data_dir: Path, source: Path, password: str) -> bool:
+    """Returns whether the backup carried the admin key. Without it, set GATEWAY_ADMIN_API_KEY."""
     if any(item.name != "instance.lock" for item in data_dir.iterdir()):
         raise ValueError("Restore needs a fresh, empty data directory")
     if source.stat().st_size > MAX_BYTES or source.is_symlink():
@@ -128,7 +133,9 @@ def restore(data_dir: Path, source: Path, password: str):
         database = base64.b64decode(document["database"], validate=True)
         master = document["master_key"].encode()
         admin = document["admin_key"]
-        if not isinstance(admin, str) or len(admin) < 24 or any(c.isspace() for c in admin):
+        if admin is not None and (
+            not isinstance(admin, str) or len(admin) < 24 or any(c.isspace() for c in admin)
+        ):
             raise ValueError("Invalid operator key")
         with tempfile.TemporaryDirectory(prefix="restore-", dir=data_dir) as temporary:
             directory = Path(temporary)
@@ -138,11 +145,10 @@ def restore(data_dir: Path, source: Path, password: str):
             validate_database(path, master)
             created = []
             try:
-                for name, value in (
-                    ("control.db", database),
-                    ("master.key", master),
-                    ("admin.key", (admin + "\n").encode()),
-                ):
+                files = [("control.db", database), ("master.key", master)]
+                if admin is not None:
+                    files.append(("admin.key", (admin + "\n").encode()))
+                for name, value in files:
                     target = data_dir / name
                     prepare_file(target)
                     created.append(target)
@@ -153,3 +159,4 @@ def restore(data_dir: Path, source: Path, password: str):
                 raise
     except (InvalidToken, ValueError, KeyError, TypeError, UnicodeError, sqlite3.Error):
         raise ValueError("Backup password, contents or compatibility check failed") from None
+    return admin is not None

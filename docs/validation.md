@@ -3,7 +3,7 @@
 What was actually checked, and what was not. A feature being implemented does not mean it has been
 checked against every provider or platform. Earlier checks are in the Git history of this file.
 
-## Status for 0.1.2
+## Status for 0.2.0
 
 | Area | Status |
 | --- | --- |
@@ -11,7 +11,7 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | Horizon, a production RAG app, running through the gateway | Verified live in daily use |
 | Cloudflare Worker, Access and tunnel path | Verified live, including that the console and `/metrics` are not routed |
 | Docker Compose on Docker Desktop with WSL2 | Verified |
-| Quickstart from the published image, with no registry login | Verified on 0.1.2 |
+| Quickstart from the published image, with no registry login | Verified on 0.1.2; see below for 0.2.0 |
 | Compose on a Linux CI runner, with a synthetic model server | Verified on each push |
 | Backup and restore through Compose | Verified |
 | Prometheus, Grafana and Loki through the monitoring profile | Verified live |
@@ -23,7 +23,9 @@ checked against every provider or platform. Earlier checks are in the Git histor
 | macOS | **Not checked** |
 | Cloud hosts | **Not checked**; see the [roadmap](roadmap.md) |
 | Safari, Firefox and screen readers | **Not checked** |
-| Upgrade or rollback between released versions | **Not checked** |
+| Upgrade from 0.1.2 to 0.2.0, and rollback from a backup | Verified; see below |
+| Single sign-on | Verified against disposable Keycloak 26.7; other providers **not checked** |
+| Fallback routes | Verified with synthetic model servers; a real cloud fallback **not checked** |
 
 ## Single sign-on and an existing Grafana: 2026-11-04
 
@@ -51,6 +53,18 @@ the profile's data source.
 **Not checked:** a provider other than Keycloak; a long-running Keycloak and Grafana rather than disposable
 ones; MFA in this flow; a real TLS proxy, so `Secure` cookies are covered by a test only; alert delivery; a
 session reaching its real expiry; dashboard panels below the first screen by eye.
+
+## Upgrade and rollback, 0.1.2 to 0.2.0: 2026-11-05
+
+The published 0.1.2 image and the 0.2.0 build, in isolated Compose projects, following the release notes' commands.
+
+| Checked | Result |
+| --- | --- |
+| A 0.1.2 store with an application, a provider and traffic, backed up | Encrypted backup created |
+| Upgrade to 0.2.0 | Migrated to schema 13; logs, the application key and the admin key all kept working |
+| 0.1.2 started on the migrated store | Refused to start, as intended |
+| Rollback: the backup restored into a new project with 0.1.2 | Logs and the application key restored and working |
+| Backup on 0.2.0 with the admin key set by `GATEWAY_ADMIN_API_KEY` | Works. This found the bug fixed in 0.2.0 |
 
 ## Fallback routes: 2026-11-05
 

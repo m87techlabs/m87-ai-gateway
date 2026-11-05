@@ -48,7 +48,7 @@ def test_encrypted_backup_roundtrip_preserves_identity_config_and_logs(tmp_path)
     check_private(archive)
     recovered = tmp_path / "recovered"
     with instance_lock(recovered):
-        restore(recovered, archive, PASSWORD)
+        assert restore(recovered, archive, PASSWORD) is True
     restored = LocalControlStore(local_settings(recovered).control_plane)
     assert restored.authenticate_app_key(app_key).app_id == "test-app"
     assert restored.get_provider_key("openai") == "synthetic-provider-secret"
@@ -56,6 +56,22 @@ def test_encrypted_backup_roundtrip_preserves_identity_config_and_logs(tmp_path)
     assert restored.runtime_config() == store.runtime_config()
     assert restored.overview() == store.overview()
     assert operator_key(recovered) == admin
+
+
+def test_backup_works_when_the_admin_key_comes_from_the_environment(tmp_path):
+    """Then no admin.key exists. Backup used to fail with a vague storage error."""
+    original = tmp_path / "original"
+    store, app_key, _ = fixture_data(original)
+    (original / "admin.key").unlink()
+    archive = tmp_path / "backups" / "gateway.backup"
+    with instance_lock(original):
+        backup(original, archive, PASSWORD)
+    recovered = tmp_path / "recovered"
+    with instance_lock(recovered):
+        assert restore(recovered, archive, PASSWORD) is False
+    assert not (recovered / "admin.key").exists()
+    restored = LocalControlStore(local_settings(recovered).control_plane)
+    assert restored.authenticate_app_key(app_key).app_id == "test-app"
 
 
 @pytest.mark.parametrize("mode", ["password", "tamper", "nonempty", "future"])
